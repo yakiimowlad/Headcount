@@ -37,6 +37,9 @@
   --sh:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
   --e:cubic-bezier(.32,.72,0,1);
   --beat:900ms; --flow:0;
+  /* Высоты фиксированных этажей. Меряются в JS: угаданные числа
+     давали щель между хроникой и таб-баром на устройствах с чёлкой. */
+  --navH:70px; --chH:96px;
   /* Единственный синий во всей игре — и он у кнопки, которую жать не надо. */
   --blue:#0a84ff;
   color-scheme:light;
@@ -76,9 +79,9 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
 /* ── шапка ── */
 header{position:sticky;top:0;z-index:40;background:var(--glass);
   backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
-  border-bottom:.5px solid var(--hair);padding:13px 20px 11px}
+  border-bottom:.5px solid var(--hair);padding:10px 20px 9px}
 .hw{max-width:520px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:12px}
-h1{font-size:26px;font-weight:700;letter-spacing:-.6px;line-height:1.05}
+h1{font-size:24px;font-weight:700;letter-spacing:-.6px;line-height:1.05}
 .sub{font-size:12px;color:var(--mut);margin-top:2px;letter-spacing:.3px;
   text-transform:uppercase;font-weight:600}
 .ic{width:38px;height:38px;flex:none;border-radius:19px;border:.5px solid var(--hair);
@@ -90,30 +93,31 @@ h1{font-size:26px;font-weight:700;letter-spacing:-.6px;line-height:1.05}
 @media (prefers-color-scheme:dark){:root:not([data-theme=light]) .ic .sn{display:none}
   :root:not([data-theme=light]) .ic .mn{display:block}}
 
-main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-inset-bottom))}
+main{max-width:520px;margin:0 auto;
+  padding:14px 20px calc(var(--navH) + var(--chH) + 20px)}
 .tab{display:none;animation:fade .35s var(--e)}
 .tab.on{display:block}
 @keyframes fade{from{opacity:0}to{opacity:1}}
 .k{font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
-  color:var(--mut);margin:24px 0 10px}
+  color:var(--mut);margin:18px 0 8px}
 .k:first-child{margin-top:0}
 .card{background:var(--sf);border:.5px solid var(--hair);border-radius:20px;
   box-shadow:var(--sh);overflow:hidden}
-.card+.card{margin-top:12px}
+.card+.card{margin-top:10px}
 
 /* ── крупная цифра ── */
-.hero{padding:24px 22px 22px}
-.hero b{display:block;font-size:clamp(44px,13vw,62px);font-weight:700;
-  letter-spacing:-2.5px;line-height:.95;font-variant-numeric:tabular-nums}
-.hero .cap{margin-top:9px;font-size:15px;color:var(--ink2);line-height:1.35}
+.hero{padding:18px 20px 16px}
+.hero b{display:block;font-size:clamp(40px,11.5vw,54px);font-weight:700;
+  letter-spacing:-2.2px;line-height:.95;font-variant-numeric:tabular-nums}
+.hero .cap{margin-top:7px;font-size:15px;color:var(--ink2);line-height:1.35}
 .hero.up b{color:var(--acc-ink)} .hero.down b{color:var(--wrn-ink)}
-.delta{display:inline-block;margin-top:12px;font-size:13px;font-weight:600;
+.delta{display:inline-block;margin-top:10px;font-size:13px;font-weight:600;
   padding:5px 12px;border-radius:13px;background:var(--acc-soft);color:var(--acc-ink);
   font-variant-numeric:tabular-nums}
 .delta.w{background:var(--wrn-soft);color:var(--wrn-ink)}
 
 /* три цифры */
-.read{padding:20px 18px}
+.read{padding:17px 18px}
 .rn{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
 .rn>div{text-align:center;cursor:default}
 .rn b{display:block;font-size:clamp(20px,5.6vw,26px);font-weight:700;
@@ -125,21 +129,21 @@ main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-
   text-transform:uppercase;letter-spacing:.4px;font-weight:600}
 
 /* ── задача ── */
-.task{padding:20px 22px 22px;position:relative;transition:filter .4s var(--e),opacity .4s var(--e)}
-.thead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:9px}
+.task{padding:16px 20px 18px;position:relative;transition:filter .4s var(--e),opacity .4s var(--e)}
+.thead{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:8px}
 .tkey{font:600 11px/1 ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mut);letter-spacing:.6px}
 .diff{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
   padding:4px 11px;border-radius:11px;white-space:nowrap}
 .diff.d0{background:var(--hair2);color:var(--mut)}
 .diff.d1{background:var(--acc-soft);color:var(--acc-ink)}
 .diff.d2{background:var(--wrn-soft);color:var(--wrn-ink)}
-.ttl{font-size:20px;font-weight:600;letter-spacing:-.3px;margin-bottom:16px;min-height:56px}
+.ttl{font-size:20px;font-weight:600;letter-spacing:-.3px;margin-bottom:12px;min-height:52px}
 .task.swap .ttl,.task.swap .thead{animation:swap .28s var(--e)}
 @keyframes swap{0%{opacity:0;transform:translateX(14px)}100%{opacity:1;transform:none}}
 
 /* кнопка с ритмом */
 .acts{display:flex;gap:10px}
-.go{flex:1;padding:17px 14px;border-radius:16px;color:#fff;font-weight:600;font-size:16px;
+.go{flex:1;padding:15px 14px;border-radius:16px;color:#fff;font-weight:600;font-size:16px;
   letter-spacing:-.2px;position:relative;overflow:hidden;
   background:var(--acc);
   transition:transform .09s var(--e),box-shadow .3s ease,opacity .3s;
@@ -160,7 +164,7 @@ main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-
 .go:active{transform:scale(.97)}
 .go[disabled]{background:var(--faint);color:var(--sf);box-shadow:none}
 .go[disabled]::before{display:none}
-.later{padding:17px 20px;border-radius:16px;background:var(--sf);
+.later{padding:15px 20px;border-radius:16px;background:var(--sf);
   border:.5px solid var(--hair);color:var(--ink2);font-weight:600;font-size:15px;
   transition:transform .09s var(--e)}
 .later:active{transform:scale(.96)}
@@ -190,7 +194,7 @@ main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-
   opacity:calc(var(--pulse,0) * var(--flow,0) * .8)}
 
 /* ── строки ── */
-.row{display:flex;align-items:center;gap:12px;padding:14px 18px;
+.row{display:flex;align-items:center;gap:12px;padding:12px 16px;
   border-bottom:.5px solid var(--hair2);transition:background .2s}
 .row:last-child{border-bottom:none}
 .row.tap{cursor:pointer} .row.tap:active{background:var(--hair2)}
@@ -210,11 +214,22 @@ main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-
 .lead{border:1.5px solid var(--acc)}
 .lead .rn2{color:var(--acc-ink)}
 
+/* Закрытый пункт. Показываем ровно один следующий: что это, что даст
+   и чем открывается. Всё остальное будущее интерфейс не спойлерит. */
+.row.lk{opacity:1}
+.row.lk .rn2{color:var(--mut)}
+.lkic{width:12px;height:12px;stroke:var(--mut);fill:none;stroke-width:2;
+  stroke-linecap:round;vertical-align:-1px;margin-right:7px}
+.need{font-size:12px;color:var(--wrn-ink);margin-top:5px;font-weight:600}
+
 /* трек карьеры */
-.tl{padding:18px 22px 18px 46px;position:relative}
-.tl::before{content:"";position:absolute;left:28px;top:24px;bottom:20px;width:2px;
+.tl{padding:16px 22px 16px 46px;position:relative}
+.tl::before{content:"";position:absolute;left:28px;top:22px;bottom:18px;width:2px;
   border-radius:1px;background:var(--hair)}
-.si{position:relative;padding-bottom:18px}
+/* Ветка продолжается за последней видимой ступенью — линия уходит вниз
+   и растворяется. Что там дальше, интерфейс не рассказывает. */
+.tl.more::before{bottom:2px;background:linear-gradient(180deg,var(--hair) 55%,transparent)}
+.si{position:relative;padding-bottom:14px}
 .si:last-child{padding-bottom:0}
 .si::before{content:"";position:absolute;left:-24px;top:4px;width:12px;height:12px;border-radius:50%;
   background:var(--sf);border:2.5px solid var(--faint);box-sizing:border-box}
@@ -225,7 +240,7 @@ main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-
 .si.now .sn2{color:var(--acc-ink)}
 .sd{font-size:13px;color:var(--mut);line-height:1.4;margin-top:3px}
 .sreq{font-size:12px;color:var(--wrn-ink);margin-top:5px;font-weight:600}
-.act{margin-top:9px;padding:9px 16px;border-radius:14px;background:var(--acc-soft);
+.act{margin-top:8px;padding:9px 16px;border-radius:14px;background:var(--acc-soft);
   color:var(--acc-ink);font-weight:600;font-size:14px;transition:transform .1s var(--e)}
 .act:active{transform:scale(.96)}
 .act.dim{background:var(--hair2);color:var(--mut)}
@@ -244,37 +259,49 @@ main{max-width:520px;margin:0 auto;padding:18px 20px calc(176px + env(safe-area-
 .bl2{height:10px;border-radius:5px;background:var(--hair2);overflow:hidden}
 .bl2 i{display:block;height:100%;border-radius:5px;background:var(--acc);width:0;transition:width .7s var(--e)}
 
-/* ── хроника: закреплена над таб-баром, видна без прокрутки ── */
-#chron{position:fixed;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));z-index:45;
+/* ── хроника: закреплена над таб-баром, видна без прокрутки,
+      по тапу разворачивается на весь экран ── */
+#chron{position:fixed;left:0;right:0;bottom:var(--navH);top:auto;z-index:45;
+  display:flex;flex-direction:column;
   background:var(--glass);backdrop-filter:blur(30px) saturate(160%);
   -webkit-backdrop-filter:blur(30px) saturate(160%);
-  border-top:.5px solid var(--hair);transition:max-height .4s var(--e)}
-.chw{max-width:520px;margin:0 auto;padding:0 20px}
-.chh{display:flex;justify-content:space-between;align-items:center;
-  padding:7px 0 5px;font-size:11px;font-weight:600;letter-spacing:.5px;
+  border-top:.5px solid var(--hair);transition:top .4s var(--e)}
+#chron.open{top:0;z-index:47;background:var(--bg);backdrop-filter:none;
+  -webkit-backdrop-filter:none;padding-top:env(safe-area-inset-top)}
+.chw{max-width:520px;margin:0 auto;padding:0 18px;width:100%;
+  flex:1;min-height:0;display:flex;flex-direction:column}
+.chh{flex:none;display:flex;justify-content:space-between;align-items:center;
+  padding:8px 2px 6px;font-size:11px;font-weight:600;letter-spacing:.5px;
   text-transform:uppercase;color:var(--mut);cursor:pointer;user-select:none}
+#chron.open .chh{padding:14px 2px 10px}
 .chh span{transition:transform .3s var(--e)}
 #chron.open .chh span{transform:rotate(180deg)}
-.log{max-height:78px;overflow:auto;overscroll-behavior:contain;
-  padding-bottom:8px;transition:max-height .4s var(--e);
-  -webkit-mask-image:linear-gradient(180deg,#000 82%,transparent)}
-#chron.open .log{max-height:44dvh;-webkit-mask-image:none}
-.le{display:flex;gap:10px;padding:7px 0;border-bottom:.5px solid var(--hair2);
+.log{flex:1 1 auto;min-height:0;max-height:64px;overflow:auto;
+  overscroll-behavior:contain;padding-bottom:8px;
+  scrollbar-width:none;-ms-overflow-style:none;
+  -webkit-mask-image:linear-gradient(180deg,#000 78%,transparent)}
+.log::-webkit-scrollbar{display:none}
+#chron.open .log{max-height:none;-webkit-mask-image:none;
+  padding-bottom:calc(12px + env(safe-area-inset-bottom))}
+.le{display:flex;gap:10px;padding:8px 2px;border-bottom:.5px solid var(--hair2);
   animation:slidein .4s var(--e)}
 .le:last-child{border-bottom:none}
 @keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .le i{width:3px;border-radius:2px;flex:none;background:var(--faint)}
 .le div{flex:1;min-width:0}
 .le time{display:block;font:600 10px/1 ui-monospace,Menlo,monospace;color:var(--mut);
-  letter-spacing:.5px;margin-bottom:3px;text-transform:uppercase}
+  letter-spacing:.5px;margin-bottom:4px;text-transform:uppercase}
 .le p{font-size:14px;line-height:1.35;color:var(--ink2)}
 .le b{font-weight:600;color:var(--ink)}
 .le.noise p{color:var(--mut);font-size:13px}
 .le.noise time{opacity:.5}
 .le.good i{background:var(--acc)} .le.good p{color:var(--ink)}
 .le.bad  i{background:var(--wrn)} .le.bad  p{color:var(--ink)}
-.le.lore{background:var(--wrn-soft);margin:4px -10px;padding:11px 10px;border-radius:12px;border-bottom:none}
-.le.lore i{background:var(--wrn)}
+/* Смена эпохи — плашка. Поля подобраны так, что риска и текст внутри неё
+   стоят ровно в той же колонке, что и у обычных записей: −12 + 14 = +2,
+   то есть внутренний отступ .le. Плашка шире текста, колонка не едет. */
+.le.lore{background:var(--wrn-soft);margin:6px -12px;padding:14px;
+  border-radius:14px;border-bottom:none}
 .le.lore p{font-size:15px;line-height:1.4;color:var(--ink);font-weight:500}
 .le.lore time{color:var(--wrn-ink);font-weight:700}
 
@@ -319,7 +346,7 @@ nav .dot.on{opacity:1}
 
 /* ── виджет созвона: не блокирует, но и не даёт забыть о себе ── */
 #callbar{position:fixed;left:0;right:0;z-index:46;
-  bottom:calc(70px + env(safe-area-inset-bottom) + 122px);
+  bottom:calc(var(--navH) + var(--chH));
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
   backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
   animation:slidein .3s var(--e)}
@@ -337,7 +364,7 @@ nav .dot.on{opacity:1}
 .cbline i{display:block;height:100%;background:var(--wrn);width:100%;transition:width .1s linear}
 
 /* режим тестировщика *//* режим тестировщика */
-#godbar{position:fixed;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));z-index:72;
+#godbar{position:fixed;left:0;right:0;bottom:var(--navH);z-index:72;
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 16px 12px}
 .gb-h{font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:1px;color:var(--wrn-ink);
@@ -702,6 +729,11 @@ const S = {
 C.roles.forEach(r => S.hired[r.id] = 0);
 
 const $ = id => document.getElementById(id);
+// Замок у закрытого пункта. Интерфейс показывает ровно один следующий:
+// что это, что даст и чем открывается. Дальше — не его дело.
+const LOCK = '<svg class="lkic" viewBox="0 0 24 24">'+
+  '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/>'+
+  '<path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
 const MON = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
 function fmt(n){
   const a = Math.abs(n);
@@ -915,13 +947,18 @@ $("theme").onclick = () => {
   const cur = r.getAttribute("data-theme");
   r.setAttribute("data-theme", (cur ? cur==="dark" : sys) ? "light" : "dark");
 };
+// Скролл запоминается по вкладке: ушёл посмотреть кассу — вернулся туда,
+// где читал список найма, а не в начало.
+const scrollAt = {};
 document.querySelectorAll("nav button").forEach(b => {
   b.onclick = () => {
+    scrollAt[S.tab] = window.scrollY;
     S.tab = b.dataset.tab;
     document.querySelectorAll("nav button").forEach(x=>x.classList.toggle("on",x===b));
     document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.id==="t-"+S.tab));
     sig.hire = sig.staff = sig.tracks = sig.ups = null;
     paint();
+    window.scrollTo(0, scrollAt[S.tab] || 0);
   };
 });
 
@@ -937,35 +974,46 @@ function changed(key, val){
 }
 const roleLocked = r => (r.era||0) > S.era ||
   (r.pay*1.5 > Math.max(60000, S.earned*1.2) && !S.hired[r.id]);
+// Открытые роли и ровно одна следующая под замком. Вываливать весь список
+// сразу — значит показать двадцать лет вперёд человеку, у которого пока
+// нет денег даже на стажёра.
 function paintHire(){
-  const key = S.era+"|"+C.roles.map(r => {
+  const all  = C.roles.filter(r => (r.era||0) <= S.era);
+  const open = all.filter(r => !roleLocked(r));
+  const next = all.filter(r => roleLocked(r)).sort((a,b)=>a.pay-b.pay)[0];
+  const key = S.era+"|"+open.map(r => {
     const c = hireCost(r);
-    const locked = roleLocked(r);
-    return r.id+S.hired[r.id]+(locked?"L":S.cash>=c?"1":"0")+c;
-  }).join("|");
+    return r.id+S.hired[r.id]+(S.cash>=c?"1":"0")+c;
+  }).join("|")+"|"+(next?next.id:"-");
   if(!changed("hire", key)) return;
   const box = $("hire"); box.innerHTML = "";
-  C.roles.forEach(r => {
-    if((r.era||0) > S.era) return;
+  open.forEach(r => {
     const c = hireCost(r);
-    const locked = roleLocked(r);
-    const ok = !locked && S.cash >= c;
+    const ok = S.cash >= c;
     const d = document.createElement("div");
     d.className = "row " + (ok ? "tap" : "no");
-    const next = hireCost(r, 1);
+    const after = hireCost(r, 1);
     d.innerHTML =
       '<div class="tier t'+r.tier+'"></div>'+
       '<div class="rl"><div class="rn2">'+r.name+
         (S.hired[r.id] ? ' <span class="cnt">×'+S.hired[r.id]+'</span>' : '')+
         (r.tier===2 ? ' <span class="pill">редкий случай</span>' : '')+'</div>'+
-      '<div class="rd">'+(locked
-        ? 'Откроется, когда компания заработает '+rub(r.pay*1.25)
-        : r.desc+' · зарплата '+rub(r.pay)+'/мес')+'</div></div>'+
-      (locked ? '<div class="rp">—</div>'
-              : '<div class="rp">'+rub(c)+'<small>дальше '+rub(next)+'</small></div>');
+      '<div class="rd">'+r.desc+' · зарплата '+rub(r.pay)+'/мес</div></div>'+
+      '<div class="rp">'+rub(c)+'<small>дальше '+rub(after)+'</small></div>';
     if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sig.hire=sig.staff=null; paint(); };
     box.appendChild(d);
   });
+  if(next){
+    const d = document.createElement("div");
+    d.className = "row lk";
+    d.innerHTML = '<div class="rl"><div class="rn2">'+LOCK+next.name+'</div>'+
+      '<div class="rd">'+next.desc+'</div>'+
+      '<div class="need">Откроется, когда компания заработает '+
+      rub(Math.round(next.pay*1.25/1000)*1000)+'</div></div>';
+    box.appendChild(d);
+  }
+  if(!open.length && !next)
+    box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Нанимать больше некого.</div></div></div>';
 }
 function paintStaff(){
   const key = S.staff.map(p=>p.uid+p.title).join("|");
@@ -1009,12 +1057,15 @@ function paintTracks(){
     if(!opened) return;
     const card = document.createElement("div");
     card.className = "card";
-    let h = '<div class="k" style="padding:16px 22px 0;margin:0">'+tr.name+'</div><div class="tl">';
+    // hidden — есть ли за последней видимой ступенью что-то ещё.
+    // Если есть, линия трека уходит вниз и растворяется: ветка растёт,
+    // а чем именно — интерфейс заранее не рассказывает.
+    let h = '', hidden = false;
     tr.steps.forEach((st,i) => {
       const done = S.done.has(st.id);
       const prev = i===0 || S.done.has(tr.steps[i-1].id);
-      if(!prev && !done) return;
-      if((st.era||0) > S.era && !done) return;
+      if(!prev && !done){ hidden = true; return; }
+      if((st.era||0) > S.era && !done){ hidden = true; return; }
       const ready = !done && stepReady(st);
       h += '<div class="si '+(done?"done":ready?"now":"")+'">'+
         '<div class="sn2">'+st.title+'</div><div class="sd">'+st.desc+'</div>';
@@ -1026,7 +1077,8 @@ function paintTracks(){
       }
       h += '</div>';
     });
-    card.innerHTML = h+'</div>';
+    card.innerHTML = '<div class="k" style="padding:15px 22px 0;margin:0">'+tr.name+'</div>'+
+                     '<div class="tl'+(hidden ? ' more' : '')+'">'+h+'</div>';
     box.appendChild(card);
   });
   box.querySelectorAll(".act").forEach(b => {
@@ -1076,31 +1128,42 @@ function paintTracks(){
 }
 const upLocked = u => (u.era||0) > S.era || (u.req && !S.bought.has(u.req)) ||
   u.cost > Math.max(40000, S.earned);
+// То же правило, что и в найме: купленное исчезает, доступное показано,
+// из закрытого видна одна ближайшая ступень. Лестница избавления от
+// созвонов перестаёт быть списком из пяти «Сначала: …» в 2007 году.
 function paintUps(){
-  const key = S.era+"|"+C.ups.map(u => u.id+(S.bought.has(u.id)?"B":
-    upLocked(u)?"L":S.cash>=u.cost?"1":"0")).join("|");
+  const avail = C.ups.filter(u => !S.bought.has(u.id) && (u.era||0) <= S.era);
+  const open  = avail.filter(u => !upLocked(u));
+  const waits = u => u.req && !S.bought.has(u.req) ? 1 : 0;
+  const next  = avail.filter(u => upLocked(u))
+                     .sort((a,b) => waits(a)-waits(b) || a.cost-b.cost)[0];
+  const key = S.era+"|"+open.map(u => u.id+(S.cash>=u.cost?"1":"0")).join("|")+
+              "|"+(next?next.id:"-");
   if(!changed("ups", key)) return;
   const box = $("ups"); box.innerHTML = "";
   const grps = {};
-  C.ups.forEach(u => {
-    if(S.bought.has(u.id) || (u.era||0) > S.era) return;
-    (grps[u.grp] = grps[u.grp] || []).push(u);
-  });
+  open.concat(next ? [next] : []).forEach(u => (grps[u.grp] = grps[u.grp] || []).push(u));
   Object.keys(grps).forEach(g => {
     const card = document.createElement("div");
     card.className = "card";
-    card.innerHTML = '<div class="k" style="padding:15px 18px 8px;margin:0">'+g+'</div>';
+    card.innerHTML = '<div class="k" style="padding:14px 16px 6px;margin:0">'+g+'</div>';
     grps[g].forEach(u => {
-      const locked = upLocked(u);
-      const ok = !locked && S.cash >= u.cost;
-      const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
       const d = document.createElement("div");
-      d.className = "row " + (ok ? "tap" : "no");
-      d.innerHTML = '<div class="rl"><div class="rn2">'+u.name+'</div>'+
-        '<div class="rd">'+(needs ? 'Сначала: '+needs.name.toLowerCase()
-                          : locked ? 'Откроется при обороте '+rub(u.cost) : u.desc)+'</div></div>'+
-        '<div class="rp">'+(locked ? '—' : rub(u.cost))+'</div>';
-      if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S); sig.ups=null; paint(); };
+      if(u === next){
+        const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
+        d.className = "row lk";
+        d.innerHTML = '<div class="rl"><div class="rn2">'+LOCK+u.name+'</div>'+
+          '<div class="rd">'+u.desc+'</div>'+
+          '<div class="need">'+(needs ? 'Сначала: '+needs.name.toLowerCase()
+                                      : 'Откроется при обороте '+rub(u.cost))+'</div></div>';
+      } else {
+        const ok = S.cash >= u.cost;
+        d.className = "row " + (ok ? "tap" : "no");
+        d.innerHTML = '<div class="rl"><div class="rn2">'+u.name+'</div>'+
+          '<div class="rd">'+u.desc+'</div></div>'+
+          '<div class="rp">'+rub(u.cost)+'</div>';
+        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S); sig.ups=null; paint(); };
+      }
       card.appendChild(d);
     });
     box.appendChild(card);
@@ -1414,10 +1477,33 @@ setInterval(() => {
   requestAnimationFrame(pulse);
 })();
 
-$("chToggle").onclick = () => $("chron").classList.toggle("open");
+/* ── этажи внизу экрана ──────────────────────────────────────────
+   Таб-бар и свёрнутая хроника меряются, а не угадываются: угаданные
+   70 и 122 пикселя оставляли между ними щель на устройствах с чёлкой
+   и загоняли строку созвона под открытую хронику. */
+const chron = $("chron"), navEl = document.querySelector("nav");
+function measure(){
+  const r = document.documentElement.style;
+  // getBoundingClientRect, а не offsetHeight: волосяная граница в полпикселя
+  // округляется и оставляет ровно ту щель, ради которой всё и затевалось
+  r.setProperty("--navH", navEl.getBoundingClientRect().height+"px");
+  // в раскрытом виде хроника во весь экран — высоту этажа не трогаем
+  if(!chron.classList.contains("open"))
+    r.setProperty("--chH", chron.getBoundingClientRect().height+"px");
+}
+addEventListener("resize", measure);
+addEventListener("orientationchange", measure);
+if(window.ResizeObserver) new ResizeObserver(measure).observe(chron);
 
-rollTask(); showTask(); paint();
-log(C.eras[0].note, "lore");
+$("chToggle").onclick = () => {
+  const open = chron.classList.toggle("open");
+  // фон под раскрытой хроникой не должен уезжать под пальцем
+  document.body.style.overflow = open ? "hidden" : "";
+  if(!open) measure();
+};
+
+// Заметку первой эпохи пишет checkEra() внутри paint(). Второй раз не надо.
+rollTask(); showTask(); paint(); measure();
 
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,burnMul,ending,finish,godMode};
