@@ -323,6 +323,34 @@ nav span{font-size:10px;font-weight:600}
 nav .dot{position:absolute;top:2px;right:calc(50% - 18px);width:7px;height:7px;border-radius:50%;
   background:var(--wrn);opacity:0;transition:opacity .3s}
 nav .dot.on{opacity:1}
+/* ── сигнал ──────────────────────────────────────────────────────
+   Отзыв игрока: «лень читать журнал событий». Хроника при этом —
+   единственный носитель сюжета. Значит, не заставлять читать всё,
+   а выталкивать наверх то, что действительно случилось: потери,
+   разрывы, смены эпох. Рутинный шум остаётся в ленте и молчит. */
+#sig{position:fixed;left:0;right:0;z-index:47;padding:0 14px;
+  bottom:calc(var(--navH) + var(--chH) + 8px);
+  display:flex;justify-content:center;pointer-events:none}
+#sig[hidden]{display:none}
+#sig div{max-width:492px;width:100%;background:var(--sf);
+  border:.5px solid var(--wrn);border-left:3px solid var(--wrn);
+  border-radius:14px;padding:11px 14px;font-size:14px;line-height:1.35;
+  color:var(--ink);box-shadow:var(--sh);animation:sigin .35s var(--e)}
+#sig div.lore{border-color:var(--acc);border-left-color:var(--acc)}
+#sig b{font-weight:600}
+@keyframes sigin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+/* Счётчик непрочитанного: подсказка, что заглянуть стоит именно сейчас. */
+.chl{display:inline-flex;align-items:center;gap:7px}
+#chBadge{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 5px;
+  border-radius:8px;background:var(--wrn);color:#fff;font-size:10px;font-weight:700;
+  letter-spacing:0;font-variant-numeric:tabular-nums}
+:root[data-theme=dark] #chBadge,:root:not([data-theme=light]) #chBadge{color:#241a05}
+#chBadge[hidden]{display:none}
+
+/* Закрытая вкладка. Не спрятана — приглушена: видно, что там что-то есть,
+   и видно, что оно пока не про тебя. */
+nav button.lockedtab{opacity:.32;pointer-events:none}
+nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 
 /* ── созвон блокирующий: пока не научился от них уходить ── */
 .scrim{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.45);opacity:0;
@@ -469,7 +497,7 @@ nav .dot.on{opacity:1}
         <div><b class="n" id="ovh">0</b><span>накладные</span></div>
       </div>
     </div>
-    <div class="k">Выручка по отделам</div>
+    <div class="k">Отделы и эффекты</div>
     <div class="card" id="depts"></div>
   </div>
 </main>
@@ -496,9 +524,11 @@ nav .dot.on{opacity:1}
   <div class="cbline"><i id="cbBar"></i></div>
 </div>
 
+<div id="sig" hidden></div>
+
 <div id="chron">
   <div class="chw">
-    <div class="chh" id="chToggle">Хроника<span>⌃</span></div>
+    <div class="chh" id="chToggle"><span class="chl">Хроника<b id="chBadge" hidden></b></span><span>⌃</span></div>
     <div class="log" id="log"></div>
   </div>
 </div>
@@ -819,6 +849,31 @@ function log(text, type){
   // отдельного пути персистентности.
   (S.logHistory = S.logHistory || []).unshift({time, text, type: type||""});
   if(S.logHistory.length > 40) S.logHistory.pop();
+  // Важное выталкиваем на экран. Шум — нет: если сигналить обо всём,
+  // сигнал перестаёт быть сигналом, и его будут листать так же, как ленту.
+  if(type==="bad" || type==="lore" || type==="good") signal(text, type);
+}
+let sigTimer = 0;
+function signal(text, type){
+  const box = $("sig");
+  if(!box) return;
+  box.innerHTML = '<div class="'+(type==="bad"?"":"lore")+'">'+text+'</div>';
+  box.hidden = false;
+  clearTimeout(sigTimer);
+  sigTimer = setTimeout(() => { box.hidden = true; }, type==="lore" ? 9000 : 6500);
+  // Счётчик растёт, только пока хроника закрыта: если она открыта,
+  // игрок уже читает, и напоминать не о чем.
+  const ch = $("chron");
+  if(!ch || !ch.classList.contains("open")){
+    S.unread = (S.unread||0) + 1;
+    paintBadge();
+  }
+}
+function paintBadge(){
+  const b = $("chBadge");
+  if(!b) return;
+  b.textContent = S.unread > 9 ? "9+" : String(S.unread||0);
+  b.hidden = !S.unread;
 }
 function renderLogHistory(){
   const box = $("log"); box.innerHTML = "";
@@ -912,8 +967,22 @@ function revenue(){
   // и не ловушка. Цена приходит отдельно и позже: людьми.
   if(S.rto) r *= S.rtoSoft ? 1.06 : 1.18;
   if(S.chaos>0) r*=0.55;
-  if(S.vacLeft>0) r*=0.5;
+  // Твоё отсутствие. Чем толще управленческий слой, тем меньше компания
+  // его замечает — до пола в 10%. Механически это ответ на «зачем нанимать
+  // управление, если оно не приносит выручку». Сатирически — на вопрос,
+  // зачем нужен ты.
+  if(S.vacLeft>0 || S.sick>0) r *= 1 - absenceHit();
+  // Созвон отнимает не только твоё время. Пока он идёт, на нём сидишь
+  // не ты один, и компания это чувствует.
+  if(onCall()) r *= S.minimize ? 0.94 : 0.82;
   return r;
+}
+// Доля выручки, теряемая на время твоего отсутствия: 50% без управления,
+// 10% когда руководителей хватает на весь штат.
+function absenceHit(){
+  const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*SPAN;
+  const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
+  return 0.5 - 0.4*cover;
 }
 const payroll  = () => S.staff.reduce((a,p)=>a+p.pay,0);
 const overhead = () => S.staff.length*OVERHEAD*S.ovhMul;
@@ -1066,7 +1135,13 @@ $("vac").onclick = () => {
   // кнопкой полного сброса, иначе выгорание не существует как механика
   // для всех, кто просто смотрит на полосу.
   S.cash -= c; S.vacLeft = 14; S.burn = Math.min(S.burn, 22); S.vacTaken++;
-  log("Отпуск. Ты проверял почту дважды в день, но всё равно полегчало.", "good");
+  // Выплата за выращенный управленческий слой: сначала твой отпуск стоит
+  // компании половины выручки, под конец — десятой части. Ты добился того,
+  // что тебя можно не заметить.
+  if(absenceHit() <= 0.16 && !S.unmissed){
+    S.unmissed = true;
+    log("Ты был в отпуске две недели. Никто не заметил.", "lore");
+  } else log("Отпуск. Ты проверял почту дважды в день, но всё равно полегчало.", "good");
   paint();
 };
 // Ловушка. Выглядит как единственное действие, продлевает встречу.
@@ -1351,20 +1426,43 @@ function paintCo(){
   $("ovh").textContent = fmt(ovh);
   $("profit").textContent = (pr>=0?"":"−")+rub(Math.abs(pr));
   $("pnlCard").className = "card hero " + (pr>=0?"up":"down");
-  const d={eng:0,ops:0,people:0,mgmt:0};
+  // Раньше здесь были четыре шкалы выручки, из которых две — «Персонал»
+  // и «Управление» — стояли на нуле всегда: ни одна роль не имеет
+  // dept mgmt, а в people только рекрутёр с out:0. Инфографика выглядела
+  // так, будто половина компании не работает. Отделы, которые приносят
+  // деньги, показываем деньгами; отделы, которые приносят эффект, —
+  // эффектом. И то и другое честно.
+  const d={eng:0,ops:0};
   const qa=soft(S.hired.qa,.15,.45), mE=mult("eng"), mO=mult("ops"), mA=mult("all");
   S.staff.forEach(p=>{
+    if(p.dept!=="eng" && p.dept!=="ops") return;
     let v=p.out;
     if(p.dept==="eng") v*=mE*qa;
     if(p.dept==="ops") v*=mO;
-    d[p.dept]=(d[p.dept]||0)+v*mA;
+    d[p.dept]+=v*mA;
   });
-  const max = Math.max(1, ...Object.values(d));
-  const nm = {eng:"Разработка", ops:"Поддержка", people:"Персонал", mgmt:"Управление"};
-  $("depts").innerHTML = Object.keys(nm).map(k =>
-    '<div class="bar"><div class="bt"><span class="bn">'+nm[k]+'</span>'+
-    '<span class="bv">'+(d[k]?rub(d[k])+"/мес":"нет людей")+'</span></div>'+
-    '<div class="bl2"><i style="width:'+(d[k]/max*100)+'%"></i></div></div>').join("");
+  const max = Math.max(1, d.eng, d.ops);
+  const bar = (name,val) =>
+    '<div class="bar"><div class="bt"><span class="bn">'+name+'</span>'+
+    '<span class="bv">'+(val?rub(val)+"/мес":"нет людей")+'</span></div>'+
+    '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div>';
+  // Отделы поддержки не производят выручку — они меняют её условия.
+  const heads = S.staff.filter(p=>p.bonus && p.scope==="all").length;
+  const seats = heads*SPAN;
+  const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
+  const eff = (name,val,ok) =>
+    '<div class="bar"><div class="bt"><span class="bn">'+name+'</span>'+
+    '<span class="bv" style="color:'+(ok?'var(--acc-ink)':'var(--mut)')+'">'+val+'</span></div></div>';
+  $("depts").innerHTML =
+    bar("Разработка", d.eng) + bar("Поддержка", d.ops) +
+    eff("Управление", heads
+      ? "+"+Math.round((mA-1)*100)+"% выручки · "+Math.round(cover*100)+"% штата"
+      : "нет руководителей", heads>0) +
+    eff("Персонал", S.hired.recruit
+      ? "найм дешевле на "+Math.round((1-S.hireTax*(1-.2))*100)+"%"
+      : "нет рекрутёров", S.hired.recruit>0) +
+    eff("Твоё отсутствие", Math.round(absenceHit()*100)+"% выручки",
+      absenceHit()<=0.2);
 }
 function checkEra(){
   let i=0;
@@ -1415,7 +1513,47 @@ function paint(){
   if(S.tab==="career") { paintTracks(); }
   if(S.tab==="work")   { paintUps(); }
   paintCo();
+  paintLocks();
   $("dotCareer").classList.toggle("on", anyPromo() && S.tab!=="career");
+}
+
+/* ══════════════════════════════════════════════════════════════
+   ЗАМКИ НА ВКЛАДКАХ
+   В 2007 году у фрилансера-одиночки нет ни карьерных треков, ни отчёта
+   о прибылях: показывать четыре вкладки сразу — значит вывалить всю игру
+   на человека, которому пока некуда её приложить. Открываются по факту,
+   а не по времени, и подписаны условием, чтобы замок не был загадкой.
+   ══════════════════════════════════════════════════════════════ */
+// Карьера — когда в одной роли набралось двое: расти можно только из тех,
+// без кого команда не встанет.
+function careerOpen(){
+  if(S.careerSeen) return true;
+  const byRole = {};
+  S.staff.forEach(p => { if(!p.perk) byRole[p.role]=(byRole[p.role]||0)+1; });
+  if(Object.values(byRole).some(n => n>=2)) return (S.careerSeen = true);
+  return false;
+}
+// Компания — когда появился первый руководитель: до этого «прибыль
+// в месяц» это ты и ноутбук, и отчитываться не перед кем.
+function coOpen(){
+  if(S.coSeen) return true;
+  if(S.done.size >= 1) return (S.coSeen = true);
+  return false;
+}
+const LOCK_HINT = {career:"нужны двое в одной роли", co:"нужно первое повышение"};
+function paintLocks(){
+  const open = {work:true, team:true, career:careerOpen(), co:coOpen()};
+  document.querySelectorAll("nav button").forEach(b => {
+    const t = b.dataset.tab, ok = open[t];
+    b.classList.toggle("lockedtab", !ok);
+    b.disabled = !ok;
+    b.title = ok ? "" : LOCK_HINT[t] || "";
+    const lab = b.querySelector("span");
+    if(lab && LOCK_HINT[t]) lab.textContent = ok ? (t==="career"?"Карьера":"Компания") : "Закрыто";
+  });
+  // Если вкладка закрылась под ногами — увести на «Работу», а не оставить
+  // игрока на пустом экране.
+  if(!open[S.tab]) document.querySelector('nav button[data-tab=work]').click();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1535,13 +1673,10 @@ setInterval(() => {
   if(++saveTick % 20 === 0) saveGame();
 
   const p = profit();
-  // На больничном компания работает без тебя, и это отдельно неприятно.
-  // Но не останавливается: обнулённый доход превращал выгорание в спираль,
-  // из которой невнимательный игрок уже не выбирался — денег на отпуск
-  // не было именно потому, что он выгорел. Пройти можно и бездумно,
-  // просто дольше и через больничные.
-  if(p>0){ const k = S.sick>0 ? .4 : 1;
-           S.cash += p*k*(dt/MONTH); S.earned += p*k*(dt/MONTH); }
+  // Штраф за отсутствие теперь целиком внутри revenue() через absenceHit():
+  // он масштабируется управленческим слоем, а расходы на время больничного
+  // никуда не деваются — поэтому прибыль проседает резче выручки.
+  if(p>0){ S.cash += p*(dt/MONTH); S.earned += p*(dt/MONTH); }
 
   // Кассовый разрыв. Убыток проедает кассу, и только когда она упёрлась
   // в ноль, компания начинает расставаться с самым дорогим сотрудником.
@@ -1718,7 +1853,11 @@ $("chToggle").onclick = () => {
   const open = chron.classList.toggle("open");
   // фон под раскрытой хроникой не должен уезжать под пальцем
   document.body.style.overflow = open ? "hidden" : "";
-  if(!open) measure();
+  if(open){
+    // Открыл — значит прочитал: счётчик и висящий сигнал больше не нужны.
+    S.unread = 0; paintBadge();
+    $("sig").hidden = true; clearTimeout(sigTimer);
+  } else measure();
 };
 
 // Восстановление сохранения. Раньше игра не переживала закрытие вкладки —
@@ -1728,6 +1867,7 @@ const saved = readSave();
 const restored = saved && restore(saved);
 if(restored){
   renderLogHistory();
+  paintBadge();
   // Бренд эпохи выставляется напрямую: checkEra() внутри paint() обновляет
   // его только по ИЗМЕНЕНИЮ S.era, а era уже восстановлена той же самой —
   // повторный лог заметки эпохи при обычном перезапуске был бы лишним.
@@ -1756,7 +1896,7 @@ addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
-               log,vacCost,agentDrag,ending,finish,godMode,
+               log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
 </script>
 </body>
