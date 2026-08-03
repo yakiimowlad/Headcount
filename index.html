@@ -592,6 +592,42 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .smeta span{font-size:13px;color:var(--mut)}
 .smeta b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 
+/* ── смена работы и дерево улучшений ─────────────────────────────*/
+.jobn{margin-left:8px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;
+  background:var(--acc-soft);color:var(--acc-ink);font-variant-numeric:tabular-nums}
+#jobCard.ready{border:1.5px solid var(--acc)}
+#jobCard.ready .rn2{color:var(--acc-ink)}
+/* Счётчик доступных улучшений: залитый круг, а не серая цифра.
+   Игрок должен видеть, что его ждут, не заходя внутрь. */
+.upsn{margin-left:8px;display:inline-grid;place-items:center;min-width:20px;height:20px;
+  padding:0 6px;border-radius:10px;background:var(--acc);color:#10210a;
+  font-size:12px;font-weight:700;vertical-align:1px;font-variant-numeric:tabular-nums}
+.upsn[hidden]{display:none}
+.sheet.tall .sh-in{max-height:86dvh;overflow-y:auto;overscroll-behavior:contain}
+.upstree{margin-top:6px}
+.upsgrp{font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--mut);margin:20px 0 2px}
+.upsgrp:first-child{margin-top:8px}
+/* Ветка: та же лесенка, что у треков карьеры. Куплено — залито,
+   доступно — обведено, дальше — приглушено и без цены. */
+.ub{position:relative;padding:12px 0 12px 30px}
+.ub::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--hair)}
+.ub:first-of-type::before{top:16px}
+.ub:last-of-type::before{bottom:auto;height:16px}
+.ub::after{content:"";position:absolute;left:0;top:15px;width:12px;height:12px;border-radius:50%;
+  background:var(--sf);border:2.5px solid var(--faint);box-sizing:border-box}
+.ub.done::after{background:var(--acc);border-color:var(--acc)}
+.ub.can::after{border-color:var(--acc);box-shadow:0 0 0 5px var(--acc-soft)}
+.ub .un{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.ub.done .un{color:var(--mut)}
+.ub.can .un{color:var(--acc-ink)}
+.ub .ud{font-size:13px;color:var(--mut);line-height:1.35;margin-top:2px}
+.ub .up{margin-top:7px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.ub.can .up{color:var(--acc-ink)}
+.ub.no .up{color:var(--mut)}
+.ub.lk{opacity:.55}
+.ub.can{cursor:pointer}
+
 /* ── ООО и смена эпохи ───────────────────────────────────────────*/
 .llcnum{margin-top:20px;border-top:.5px solid var(--hair);padding-top:6px}
 .llcnum div{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;
@@ -699,8 +735,30 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       </div>
     </div>
 
+    <!-- Смена работы. Единственный способ поднять личную ставку: рост
+         внутри компании её не двигает вообще. Это и есть шутка. -->
+    <div class="card" id="jobCard">
+      <div class="row tap" id="jobRow">
+        <div class="rl">
+          <div class="rn2">Сменить работу<span class="jobn" id="jobMul">×2.2</span></div>
+          <div class="rd" id="jobHint">Ставка вырастет вдвое. Здесь она не вырастет никогда</div>
+        </div>
+        <div class="rp" id="jobState">Можно</div>
+      </div>
+    </div>
+
     <div class="k">Инструменты</div>
-    <div id="ups"></div>
+    <!-- Кнопка вместо списка: список улучшений вырос, и на экране задачи
+         ему больше не место. Счётчик доступных виден, не заходя внутрь. -->
+    <div class="card">
+      <div class="row tap" id="upsBtn">
+        <div class="rl">
+          <div class="rn2">Улучшения<span class="upsn" id="upsN" hidden>0</span></div>
+          <div class="rd" id="upsHint">Инструменты, созвоны, здоровье</div>
+        </div>
+        <div class="rp">›</div>
+      </div>
+    </div>
   </div>
 
   <!-- КОМАНДА -->
@@ -795,6 +853,17 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   </div>
 </div>
 
+<!-- Дерево улучшений. Ветки идут лесенкой, как треки карьеры: видно,
+     что куплено, что доступно и что за чем открывается. -->
+<div class="scrim" id="upsScrim"></div>
+<div class="sheet tall" id="upsSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <div class="shead"><h2>Улучшения</h2><button class="xbtn" id="upsClose" aria-label="Закрыть">×</button></div>
+    <div class="upstree" id="upsTree"></div>
+  </div>
+</div>
+
 <!-- Настройки. Закрываемая модалка: у неё есть [×], и его наличие — часть
      языка. Там, где закрыть нельзя (созвон), крестика нет намеренно. -->
 <div class="scrim" id="setScrim"></div>
@@ -885,7 +954,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "0.7.0";
+const VERSION = "0.7.1";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -1308,6 +1377,7 @@ const S = {
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
+  jobs:0, jobAt:undefined,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
@@ -1874,6 +1944,45 @@ function startMusic(){
 }
 
 /* ══════════════════════════════════════════════════════════════
+   СМЕНА РАБОТЫ
+   Личная ставка растёт только так. Внутри компании она не растёт
+   вообще — и это не преувеличение ради шутки, а буквально цифра
+   в коде. Игрок выводит главный тезис индустрии сам, оптимизируя.
+
+   Ограничение одно: не чаще двух раз в игровой год. Материальной цены
+   нет, и это тоже часть шутки — уходить просто выгодно, держит только
+   инерция. К поздней игре механика гаснет сама: клики перестают быть
+   заметной долей дохода.
+   ══════════════════════════════════════════════════════════════ */
+const JOB_GAP = 6;                       // месяцев между переходами
+// Второй переход самый выгодный: на первом вас берут с улицы, на втором
+// уже есть чем торговаться. Дальше рынок остывает.
+const JOB_MUL = [2.2, 3.0, 2.4, 2.0, 1.8];
+const jobMul   = () => JOB_MUL[Math.min(S.jobs||0, JOB_MUL.length-1)] || 1.6;
+const jobWait  = () => Math.max(0, JOB_GAP - (S.month - (S.jobAt ?? -JOB_GAP)));
+const jobReady = () => !S.ended && jobWait() === 0;
+const JOB_SAY = [
+  "Вы ушли впервые. На собеседовании удивились, что вы так долго сидели на одном месте.",
+  "Второй переход дался легче. И стоил дороже — теперь вы знаете, что можно торговаться.",
+  "Рекрутер написал сам. Вы даже не обновляли резюме.",
+  "Сменили работу. Бывший руководитель написал «всегда рады видеть». Вы не ответили.",
+  "Ещё один переход. Коллеги в чате поздравили, половина из них — тоже бывшие коллеги."
+];
+function changeJob(){
+  if(!jobReady()) return;
+  const m = jobMul();
+  S.click *= m;
+  S.jobs = (S.jobs||0) + 1;
+  S.jobAt = S.month;
+  S.burn = 0;                            // на новом месте первые недели не трогают
+  sfx("promote"); buzz([20,60,20]);
+  log(JOB_SAY[Math.min(S.jobs-1, JOB_SAY.length-1)] +
+      " Ставка выросла в "+m.toFixed(1)+" раза.", "lore");
+  paint();
+}
+$("jobRow").onclick = () => jobReady() ? changeJob() : snack("не чаще двух раз в год");
+
+/* ══════════════════════════════════════════════════════════════
    НАСТРОЙКИ
    ══════════════════════════════════════════════════════════════ */
 function applyTheme(mode){
@@ -2212,65 +2321,99 @@ function loopsOpen(){
     desc:l.desc
   }));
 }
-function paintUps(){
-  const avail = C.ups.filter(u => !S.bought.has(u.id) && (u.era||0) <= S.era);
-  const open  = avail.filter(u => !upLocked(u)).concat(loopsOpen());
-  const waits = u => u.req && !S.bought.has(u.req) ? 1 : 0;
-  const next  = avail.filter(u => upLocked(u))
-                     .sort((a,b) => waits(a)-waits(b) || a.cost-b.cost)[0];
-  const key = S.era+"|"+open.map(u => u.id+u.cost+(S.cash>=u.cost?"1":"0")).join("|")+
-              "|"+(next?next.id:"-");
-  if(!changed("ups", key)) return;
-  const box = $("ups"); box.innerHTML = "";
-  const grps = {};
-  open.concat(next ? [next] : []).forEach(u => (grps[u.grp] = grps[u.grp] || []).push(u));
-  Object.keys(grps).forEach(g => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = '<div class="k" style="padding:14px 16px 6px;margin:0">'+g+'</div>';
-    grps[g].forEach(u => {
-      const d = document.createElement("div");
-      if(u === next){
-        const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
-        d.className = "row lk";
-        d.innerHTML = '<div class="tier t'+(u.t||0)+'" style="opacity:.4"></div>'+
-          '<div class="rl"><div class="rn2">'+LOCK+u.name+gradeTag(u.t||0)+'</div>'+
-          '<div class="rd">'+u.desc+'</div>'+
-          '<div class="need">'+(needs ? 'Сначала: '+needs.name.toLowerCase()
-                                      : 'Откроется при обороте '+rub(u.cost))+'</div></div>';
-      } else {
-        const ok = S.cash >= u.cost;
-        d.className = "row " + (ok ? "tap" : "no");
-        d.innerHTML = '<div class="tier t'+(u.t||0)+'"></div>'+
-          '<div class="rl"><div class="rn2">'+u.name+gradeTag(u.t||0)+'</div>'+
-          '<div class="rd">'+u.desc+'</div></div>'+
-          '<div class="rp">'+rub(u.cost)+'</div>';
-        if(ok) d.onclick = () => {
-          S.cash -= u.cost;
-          if(u.loop){
-            // Заход засчитан: цена вырастет, текст поменяется, эффект тот же.
-            S.loops = S.loops || {};
-            const n = S.loops[u.loop.id] = (S.loops[u.loop.id] || 0) + 1;
-            u.loop.f(S);
-            log(u.loop.say[Math.min(n-1, u.loop.say.length-1)], "noise");
-          } else {
-            S.bought.add(u.id); u.f(S); after(u);
-          }
-          sfx("buy"); sig.ups=null; paint();
-        };
-      }
-      card.appendChild(d);
-    });
-    box.appendChild(card);
-  });
-  if(!box.children.length){
-    box.innerHTML = '<div class="card"><div class="row"><div class="rl">'+
-      '<div class="rd">Всё куплено. Работать быстрее уже не выйдет.</div></div></div></div>';
-  }
+/* Дерево улучшений. Ветка группы идёт лесенкой: куплено, доступное,
+   и ровно одна следующая ступень под замком. Дальше ветка не
+   показывается — интерфейс не рассказывает, что будет через десять лет.
+   Циклы встают в конец своей группы: они не кончаются никогда. */
+function upsState(u){
+  if(S.bought.has(u.id)) return "done";
+  if(upLocked(u))        return "lk";
+  return S.cash >= u.cost ? "can" : "no";
 }
-/* Три числа отчёта работают только если по ним видно состояние дел.
-   Само по себе «ФОТ 3.5 млн» не говорит ничего: много это или мало,
-   зависит от выручки. Показываем долю и подсвечиваем порог. */
+// Сколько улучшений можно купить прямо сейчас — число для счётчика.
+function upsReady(){
+  const ups = C.ups.filter(u => !S.bought.has(u.id) && (u.era||0)<=S.era
+                                && !upLocked(u) && S.cash>=u.cost).length;
+  const lps = loopsOpen().filter(l => S.cash >= l.cost).length;
+  return ups + lps;
+}
+function paintUpsBadge(){
+  const n = upsReady();
+  const b = $("upsN");
+  b.textContent = n; b.hidden = !n;
+  $("upsHint").textContent = n
+    ? (n===1 ? "Одно можно купить прямо сейчас" : "Можно купить прямо сейчас: "+n)
+    : "Инструменты, созвоны, здоровье";
+}
+function paintUpsTree(){
+  const box = $("upsTree"); box.innerHTML = "";
+  const grps = {};
+  C.ups.forEach(u => {
+    if((u.era||0) > S.era) return;
+    (grps[u.grp] = grps[u.grp] || []).push(u);
+  });
+  loopsOpen().forEach(l => (grps[l.grp] = grps[l.grp] || []).push(l));
+
+  Object.keys(grps).forEach(g => {
+    // В ветке показываем купленное, доступное и одну следующую закрытую.
+    const list = grps[g];
+    const shown = [];
+    let lockedShown = false;
+    list.forEach(u => {
+      const st = u.loop ? (S.cash>=u.cost ? "can" : "no") : upsState(u);
+      if(st === "lk"){
+        if(lockedShown) return;
+        lockedShown = true;
+      }
+      shown.push({u, st});
+    });
+    if(!shown.length) return;
+    const h = document.createElement("div");
+    h.className = "upsgrp"; h.textContent = g;
+    box.appendChild(h);
+    shown.forEach(({u, st}) => {
+      const d = document.createElement("div");
+      d.className = "ub " + st;
+      const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
+      d.innerHTML =
+        '<div class="un">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(u.t||0)+'</div>'+
+        '<div class="ud">'+u.desc+'</div>'+
+        (st==="done" ? '<div class="up" style="color:var(--mut)">куплено</div>'
+         : st==="lk" ? '<div class="need">'+(needs ? "Сначала: "+needs.name.toLowerCase()
+                                                  : "Откроется при обороте "+rub(u.cost))+'</div>'
+         : '<div class="up">'+rub(u.cost)+'</div>');
+      if(st === "can") d.onclick = () => buyUp(u);
+      box.appendChild(d);
+    });
+  });
+  if(!box.children.length)
+    box.innerHTML = '<div class="ud" style="padding:16px 0">Всё куплено. Работать быстрее уже не выйдет.</div>';
+}
+function buyUp(u){
+  if(S.cash < u.cost) return;
+  S.cash -= u.cost;
+  if(u.loop){
+    // Заход засчитан: цена вырастет, текст поменяется, эффект тот же.
+    S.loops = S.loops || {};
+    const n = S.loops[u.loop.id] = (S.loops[u.loop.id] || 0) + 1;
+    u.loop.f(S);
+    log(u.loop.say[Math.min(n-1, u.loop.say.length-1)], "noise");
+  } else {
+    S.bought.add(u.id); u.f(S); after(u);
+  }
+  sfx("buy"); bumpEcon(); paint(); paintUpsTree();
+}
+const closeUps = () => {
+  $("upsSheet").classList.remove("on"); $("upsScrim").classList.remove("on");
+};
+$("upsBtn").onclick = () => {
+  sfx("tap"); paintUpsTree();
+  $("upsSheet").classList.add("on"); $("upsScrim").classList.add("on");
+};
+$("upsClose").onclick = closeUps;
+$("upsScrim").onclick = closeUps;
+
+
 function share(part, whole){ return whole > 0 ? part/whole : 0; }
 function level(x, ok, warn){ return x <= ok ? "ok" : x <= warn ? "mid" : "bad"; }
 function paintCo(){
@@ -2480,7 +2623,19 @@ function paint(){
     if((S.teamPane||"hire")==="hire") paintHire(); else paintStaff();
   }
   if(S.tab==="career") { paintTracks(); }
-  if(S.tab==="work")   { paintUps(); }
+  if(S.tab==="work"){
+    paintUpsBadge();
+    // Смена работы: единственная кнопка, которая двигает личную ставку.
+    const ready = jobReady(), wait = jobWait();
+    $("jobCard").className = "card" + (ready ? " ready" : "");
+    $("jobMul").textContent = "×" + jobMul().toFixed(1);
+    $("jobState").textContent = ready ? "Можно" : "через " + wait + " мес";
+    $("jobState").style.color = ready ? "var(--acc-ink)" : "var(--mut)";
+    $("jobHint").textContent =
+      !S.jobs   ? "Ставка вырастет вдвое. Здесь она не вырастет никогда" :
+      S.jobs===1? "Второй переход самый выгодный: теперь есть чем торговаться" :
+                  "Переходов: " + S.jobs + ". Рынок постепенно остывает";
+  }
   if(S.tab==="co") paintCo();
   paintLocks();
   $("dotCareer").classList.toggle("on", anyPromo() && S.tab!=="career");
@@ -2981,6 +3136,7 @@ window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,lo
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                loopCost,loopsOpen,span,share,level,
                stepReady,stepPrev,anyPromo,
+               changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
