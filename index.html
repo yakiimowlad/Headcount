@@ -808,16 +808,82 @@ const pick = a => a[Math.floor(Math.random()*a.length)];
 // игрок узнаёт из хроники — уже потратив деньги. Так это и работает.
 function after(o){ if(o.after) setTimeout(() => { if(!S.ended) log(o.after, "bad"); }, 2500); }
 function log(text, type){
+  const time = MON[S.month%12]+' '+year();
   const d = document.createElement("div");
   d.className = "le " + (type || "");
-  d.innerHTML = '<i></i><div><time>'+MON[S.month%12]+' '+year()+'</time><p>'+text+'</p></div>';
+  d.innerHTML = '<i></i><div><time>'+time+'</time><p>'+text+'</p></div>';
   $("log").prepend(d);
   while($("log").children.length > 40) $("log").lastChild.remove();
+  // Хроника — часть прогресса не меньше кассы: живёт внутри S, поэтому
+  // сохраняется и восстанавливается тем же общим механизмом, без второго
+  // отдельного пути персистентности.
+  (S.logHistory = S.logHistory || []).unshift({time, text, type: type||""});
+  if(S.logHistory.length > 40) S.logHistory.pop();
+}
+function renderLogHistory(){
+  const box = $("log"); box.innerHTML = "";
+  (S.logHistory||[]).forEach(e => {
+    const d = document.createElement("div");
+    d.className = "le " + (e.type||"");
+    d.innerHTML = '<i></i><div><time>'+e.time+'</time><p>'+e.text+'</p></div>';
+    box.appendChild(d);
+  });
 }
 function newName(){
   const n = C.names[S.nid % C.names.length];
   const s = S.nid >= C.names.length ? " "+String.fromCharCode(1040+(S.nid*7)%32)+"." : "";
   S.nid++; return n+s;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   СОХРАНЕНИЕ. localStorage — основной путь, куки — запасной на случай
+   приватного режима или отключённого localStorage (бывает в некоторых
+   встроенных браузерах и старом Safari). Кука хранит только то, что
+   физически влезает в её ~4 КБ — на позднюю игру со штатом в сотни
+   человек это не гарантировано, поэтому она подстраховка, а не основа.
+   ══════════════════════════════════════════════════════════════ */
+const SAVE_KEY = "retro_save_v1";
+function setCookie(name, val){
+  const exp = new Date(Date.now()+365*864e5).toUTCString();
+  document.cookie = name+"="+encodeURIComponent(val)+"; expires="+exp+"; path=/; SameSite=Lax";
+}
+function getCookie(name){
+  const m = document.cookie.match(new RegExp("(?:^|; )"+name+"=([^;]*)"));
+  return m ? decodeURIComponent(m[1]) : null;
+}
+function clearSave(){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  try{ document.cookie = SAVE_KEY+"=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/"; }catch(e){}
+}
+// Всё состояние — одним generic-снимком S, а не ручным списком полей:
+// новое поле в S попадает в сохранение само, без риска забыть его здесь.
+function serialize(){
+  return JSON.stringify({v:1,
+    S:{...S, bought:[...S.bought], done:[...S.done]},
+    theme: document.documentElement.getAttribute("data-theme") || null});
+}
+function saveGame(){
+  if(S.ended) return;
+  const payload = serialize();
+  try{ localStorage.setItem(SAVE_KEY, payload); return; }catch(e){}
+  if(payload.length < 3800){ try{ setCookie(SAVE_KEY, payload); }catch(e){} }
+}
+function restore(raw){
+  let data; try{ data = JSON.parse(raw); }catch(e){ return null; }
+  if(!data || !data.S) return null;
+  Object.assign(S, data.S);
+  S.bought = new Set(data.S.bought||[]);
+  S.done = new Set(data.S.done||[]);
+  // Режим тестировщика, ускорение и экран финала никогда не переживают
+  // перезагрузку — иначе игра тихо продолжится в состоянии, которого
+  // игрок не выбирал.
+  S.god = false; S.ended = false; S.speed = 1;
+  if(data.theme) document.documentElement.setAttribute("data-theme", data.theme);
+  return data;
+}
+function readSave(){
+  try{ const s = localStorage.getItem(SAVE_KEY); if(s) return s; }catch(e){}
+  try{ return getCookie(SAVE_KEY); }catch(e){ return null; }
 }
 
 /* ── экономика ── */
@@ -931,6 +997,7 @@ function rollTask(){
   if(!pool.length) pool = C.tasks.filter(t => (t[2]||0) <= era);
   const t = pick(pool);
   task = {diff:t[0], text:t[1], key:"TASK-"+(1042+Math.floor(Math.random()*8000))};
+  S.task = task;   // чтобы текущий тикет не менялся сам собой при перезагрузке
 }
 function showTask(){
   $("ttl").textContent = task.text;
@@ -1434,6 +1501,9 @@ const ENDINGS = {
 };
 function finish(){
   S.ended = true;
+  // Конец цикла — не пауза, а закрытая книга. New Game+ начинается с чистого
+  // листа: следующая перезагрузка не должна воскресить проданную компанию.
+  clearSave();
   const e = ENDINGS[ending()];
   $("chron").style.display = "none";
   document.querySelector("main").innerHTML =
@@ -1449,6 +1519,7 @@ function finish(){
 /* ══════════════════════════════════════════════════════════════
    ЦИКЛ
    ══════════════════════════════════════════════════════════════ */
+let saveTick = 0;
 setInterval(() => {
   // Раскрытая на весь экран хроника — это чтение, а не игра. Время внутри
   // стоит, пока читаешь: иначе пролистываешь прошлое и одновременно
@@ -1456,6 +1527,12 @@ setInterval(() => {
   if(S.ended || chron.classList.contains("open")) return;
   const dt = 0.1 * S.speed;
   S.playTime += dt;
+
+  // Автосохранение раз в ~2 секунды реального времени. Это дешевле и
+  // надёжнее, чем расставлять saveGame() у каждого найма и покупки:
+  // ни один «ключевой момент» не потеряется, потому что состояние
+  // пишется непрерывно, а не по списку угаданных точек.
+  if(++saveTick % 20 === 0) saveGame();
 
   const p = profit();
   // На больничном компания работает без тебя, и это отдельно неприятно.
@@ -1644,12 +1721,43 @@ $("chToggle").onclick = () => {
   if(!open) measure();
 };
 
-// Заметку первой эпохи пишет checkEra() внутри paint(). Второй раз не надо.
-rollTask(); showTask(); paint(); measure();
+// Восстановление сохранения. Раньше игра не переживала закрытие вкладки —
+// весь смысл эпох в длинной дистанции, а без сейва дистанция обнулялась
+// каждым перезапуском браузера.
+const saved = readSave();
+const restored = saved && restore(saved);
+if(restored){
+  renderLogHistory();
+  // Бренд эпохи выставляется напрямую: checkEra() внутри paint() обновляет
+  // его только по ИЗМЕНЕНИЮ S.era, а era уже восстановлена той же самой —
+  // повторный лог заметки эпохи при обычном перезапуске был бы лишним.
+  let i=0; C.eras.forEach((e,k)=>{ if(year()>=e.y) i=k; });
+  S.era = i;
+  $("brand").textContent = C.eras[i].brand;
+  // Если перезагрузка случилась посреди созвона — вернуть нужный виджет,
+  // иначе таймер идёт, а блокирующий шит или строка нигде не показаны.
+  if(S.meetLeft>0){
+    if(S.minimize) $("callbar").hidden = false;
+    else { $("sheet").classList.add("on"); $("scrim").classList.add("on"); }
+  }
+  if(S.task) task = S.task; else rollTask();
+} else {
+  // Заметку первой эпохи пишет checkEra() внутри paint() сама: S.era
+  // стартует с −1, первый же вызов увидит смену на 0 и залогирует её.
+  rollTask();
+}
+showTask(); paint(); measure();
+
+// pagehide переживает и обычное закрытие вкладки, и уход в фон на iOS —
+// beforeunload там ненадёжен, особенно в PWA-режиме с домашнего экрана,
+// который эта игра прямо объявляет своими apple-mobile-web-app-мета-тегами.
+addEventListener("pagehide", saveGame);
+addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
-               log,vacCost,agentDrag,ending,finish,godMode};
+               log,vacCost,agentDrag,ending,finish,godMode,
+               saveGame,loadGame:restore,clearSave,serialize,readSave};
 </script>
 </body>
 </html>
