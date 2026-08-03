@@ -15,6 +15,68 @@
 
 <!--
 ================================================================================
+  КАРТА ФАЙЛА. Обновлять при добавлении разделов.
+  Номера строк плывут — ищите по заголовкам в кавычках.
+
+  РАЗМЕТКА
+    "<style>"          стили: переменные тем, компоненты, экраны
+    "<header>"         шапка: бренд, дата, касса, полоса времени, настройки
+    "<main>"           четыре вкладки: t-work, t-team, t-career, t-co
+    "sheet" id=...     модалки: sheet созвон · bSheet блокер · llcSheet ООО
+                       eraSheet эпоха и разовые пояснения · setSheet настройки
+    "<nav>"            таб-бар с замками
+
+  ДАННЫЕ — весь контент в объекте C, менять можно без риска для логики
+    "eras:"            шесть эпох: год, бренд, заметка
+    "tasks:"           задачи [сложность, текст, минимальная эпоха]
+    "blockers:"        десять требований заказчика, гейты role/step/cash/year/staff
+    "meets:"           созвоны [название, описание, эпоха]
+    "noise:"           фоновые строки хроники [эпоха, текст]
+    "roles:"           роли найма: dept, tier грейд, pay, out, viaBlock
+    "tracks:"          пять треков карьеры, ступени с eff и after
+    "loops:"           пять зацикленных улучшений: cost, mul, say по заходам
+    "ups:"             разовые улучшения: grp, t грейд, era, req, f, after
+
+  СОСТОЯНИЕ
+    "const S = {"      всё состояние игры, сериализуется целиком
+
+  ЭКОНОМИКА
+    "function revenue" выручка со всеми множителями
+    "payroll"          ФОТ с индексацией · "overhead" накладные + бухгалтерия
+    "function absenceHit"  цена отпуска и больничного, гасится управлением
+    "function mult"    норма управляемости · "span()" покрытие руководителя
+    "hireCost"         цена найма · "vacCost" цена отпуска
+
+  МЕХАНИКИ
+    "РИТМ"             loadBal, comboMul: одно сложное = одно среднее или три мелких
+    "function doTask"  клик по задаче: деньги, выгорание, поток
+    "gateOk"           проверка требований блокера
+    "БЛОКЕРЫ"          в тике: выдача и снятие
+    "ООО"              llcOffer, регистрация, экономика до и после
+    "checkEra"         смена эпохи · "showEraLike" экран объяснения
+
+  ИНТЕРФЕЙС
+    "function paint()" общая отрисовка, вызывается из тика
+    "paintHire"        найм · "paintStaff" штат командами и чипами
+    "paintTracks"      треки карьеры · "paintUps" улучшения и циклы
+    "paintCo"          отчёт: выручка, ФОТ, накладные, диагноз
+    "paintLocks"       замки на вкладках
+    "function log"     хроника · "signal" плашка важного · "snack" подсказка
+
+  ЗВУК
+    "ЗВУК"             синтез на WebAudio: tone, noise, thump, SFX, startMusic
+
+  СОХРАНЕНИЕ
+    "СОХРАНЕНИЕ"       serialize, saveGame, restore, localStorage и куки
+
+  ЦИКЛ
+    "ЦИКЛ"             setInterval 100 мс: экономика, события, отрисовка
+    "function pulse"   rAF: фаза волны на кнопке
+
+  РЕЖИМ ТЕСТИРОВЩИКА
+    "godMode"          вход: вкладка «Компания», тапы ФОТ → накладные →
+                       выручка → прибыль за четыре секунды
+================================================================================
   КОРЕНЬ ФИЛОСОФИИ. Проверять об него каждое решение.
   «Никто не злодей. Все решения локально верные. Результат — узнаваемый.»
    · У любой механики есть честная выгода, иначе игрок её не возьмёт.
@@ -38,7 +100,7 @@
   --g0:#b9b9be; --g1:#5fa83a; --g2:#4a7fa5; --g3:#8a6bb8; --g4:#c9a227;
   --sh:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
   --e:cubic-bezier(.32,.72,0,1);
-  --beat:900ms; --flow:0;
+  --flow:0;
   /* Высоты фиксированных этажей. Меряются в JS: угаданные числа
      давали щель между хроникой и таб-баром на устройствах с чёлкой. */
   --navH:70px; --chH:96px;
@@ -82,7 +144,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
 
 /* ── шапка ── */
 header{position:sticky;top:0;z-index:40;background:var(--glass);
-  backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-bottom:.5px solid var(--hair);padding:9px 20px 0}
 .hw{max-width:520px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .hleft{min-width:0;flex:1}
@@ -167,9 +229,11 @@ main{max-width:520px;margin:0 auto;
 
 /* кнопка с ритмом */
 .acts{display:flex;gap:10px}
+/* --heat идёт от полосы выгорания: кнопка и шкала — один прибор.
+   На нуле она зелёная, к сотне уходит в охру. */
 .go{flex:1;padding:15px 14px;border-radius:16px;color:#fff;font-weight:600;font-size:16px;
   letter-spacing:-.2px;position:relative;overflow:hidden;
-  background:var(--acc);
+  background:color-mix(in srgb, var(--wrn) calc(var(--heat,0) * 72%), var(--acc));
   transition:transform .09s var(--e),box-shadow .3s ease,opacity .3s;
   box-shadow:0 0 0 rgba(128,186,39,0), var(--sh)}
 :root[data-theme=dark] .go,:root:not([data-theme=light]) .go{color:#10210a}
@@ -196,7 +260,13 @@ main{max-width:520px;margin:0 auto;
   transition:transform .09s var(--e)}
 .later:active{transform:scale(.96)}
 .later[disabled]{opacity:.4}
-.note{margin-top:11px;font-size:13px;color:var(--mut);text-align:center;min-height:18px}
+/* Две цены клика в одной строке: слева деньги, справа здоровье.
+   Полоса выгорания стоит прямо под ними — связь читается без объяснений. */
+.note{margin-top:10px;font-size:13px;color:var(--mut);min-height:18px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.note i{font-style:normal;font-variant-numeric:tabular-nums}
+.note .pay{color:var(--acc-ink);font-weight:600}
+.note .cost{color:var(--wrn-ink);font-weight:600}
 
 /* штамп состояния */
 .task.off{filter:grayscale(1);opacity:.5}
@@ -311,8 +381,8 @@ main{max-width:520px;margin:0 auto;
       по тапу разворачивается на весь экран ── */
 #chron{position:fixed;left:0;right:0;bottom:var(--navH);top:auto;z-index:45;
   display:flex;flex-direction:column;
-  background:var(--glass);backdrop-filter:blur(30px) saturate(160%);
-  -webkit-backdrop-filter:blur(30px) saturate(160%);
+  background:var(--glass);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
   border-top:.5px solid var(--hair);transition:top .4s var(--e)}
 #chron.open{top:0;z-index:47;background:var(--bg);backdrop-filter:none;
   -webkit-backdrop-filter:none;padding-top:env(safe-area-inset-top)}
@@ -374,7 +444,7 @@ main{max-width:520px;margin:0 auto;
 
 /* таб-бар */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--glass);
-  backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-top:.5px solid var(--hair);padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
 .nw{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
 nav button{display:grid;justify-items:center;gap:3px;padding:4px 0;color:var(--mut);
@@ -452,7 +522,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 #callbar{position:fixed;left:0;right:0;z-index:46;
   bottom:calc(var(--navH) + var(--chH));
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   animation:slidein .3s var(--e)}
 #callbar[hidden]{display:none}
 .cbw{max-width:520px;margin:0 auto;padding:9px 20px;display:flex;align-items:center;gap:11px}
@@ -522,6 +592,42 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .smeta span{font-size:13px;color:var(--mut)}
 .smeta b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 
+/* ── смена работы и дерево улучшений ─────────────────────────────*/
+.jobn{margin-left:8px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:8px;
+  background:var(--acc-soft);color:var(--acc-ink);font-variant-numeric:tabular-nums}
+#jobCard.ready{border:1.5px solid var(--acc)}
+#jobCard.ready .rn2{color:var(--acc-ink)}
+/* Счётчик доступных улучшений: залитый круг, а не серая цифра.
+   Игрок должен видеть, что его ждут, не заходя внутрь. */
+.upsn{margin-left:8px;display:inline-grid;place-items:center;min-width:20px;height:20px;
+  padding:0 6px;border-radius:10px;background:var(--acc);color:#10210a;
+  font-size:12px;font-weight:700;vertical-align:1px;font-variant-numeric:tabular-nums}
+.upsn[hidden]{display:none}
+.sheet.tall .sh-in{max-height:86dvh;overflow-y:auto;overscroll-behavior:contain}
+.upstree{margin-top:6px}
+.upsgrp{font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--mut);margin:20px 0 2px}
+.upsgrp:first-child{margin-top:8px}
+/* Ветка: та же лесенка, что у треков карьеры. Куплено — залито,
+   доступно — обведено, дальше — приглушено и без цены. */
+.ub{position:relative;padding:12px 0 12px 30px}
+.ub::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--hair)}
+.ub:first-of-type::before{top:16px}
+.ub:last-of-type::before{bottom:auto;height:16px}
+.ub::after{content:"";position:absolute;left:0;top:15px;width:12px;height:12px;border-radius:50%;
+  background:var(--sf);border:2.5px solid var(--faint);box-sizing:border-box}
+.ub.done::after{background:var(--acc);border-color:var(--acc)}
+.ub.can::after{border-color:var(--acc);box-shadow:0 0 0 5px var(--acc-soft)}
+.ub .un{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.ub.done .un{color:var(--mut)}
+.ub.can .un{color:var(--acc-ink)}
+.ub .ud{font-size:13px;color:var(--mut);line-height:1.35;margin-top:2px}
+.ub .up{margin-top:7px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+.ub.can .up{color:var(--acc-ink)}
+.ub.no .up{color:var(--mut)}
+.ub.lk{opacity:.55}
+.ub.can{cursor:pointer}
+
 /* ── ООО и смена эпохи ───────────────────────────────────────────*/
 .llcnum{margin-top:20px;border-top:.5px solid var(--hair);padding-top:6px}
 .llcnum div{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;
@@ -540,7 +646,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 #blockbar{position:fixed;left:0;right:0;z-index:46;
   bottom:calc(var(--navH) + var(--chH));
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   animation:slidein .3s var(--e);cursor:pointer}
 #blockbar[hidden]{display:none}
 /* Когда висят оба, строку созвона поднимаем над блокером. */
@@ -549,7 +655,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 /* режим тестировщика */
 #godbar{position:fixed;left:0;right:0;bottom:var(--navH);z-index:72;
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 16px 12px}
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:10px 16px 12px}
 .gb-h{font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:1px;color:var(--wrn-ink);
   display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 #gb-x{font-size:22px;line-height:1;color:var(--wrn-ink);padding:0 4px}
@@ -629,8 +735,30 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       </div>
     </div>
 
+    <!-- Смена работы. Единственный способ поднять личную ставку: рост
+         внутри компании её не двигает вообще. Это и есть шутка. -->
+    <div class="card" id="jobCard">
+      <div class="row tap" id="jobRow">
+        <div class="rl">
+          <div class="rn2">Сменить работу<span class="jobn" id="jobMul">×2.2</span></div>
+          <div class="rd" id="jobHint">Ставка вырастет вдвое. Здесь она не вырастет никогда</div>
+        </div>
+        <div class="rp" id="jobState">Можно</div>
+      </div>
+    </div>
+
     <div class="k">Инструменты</div>
-    <div id="ups"></div>
+    <!-- Кнопка вместо списка: список улучшений вырос, и на экране задачи
+         ему больше не место. Счётчик доступных виден, не заходя внутрь. -->
+    <div class="card">
+      <div class="row tap" id="upsBtn">
+        <div class="rl">
+          <div class="rn2">Улучшения<span class="upsn" id="upsN" hidden>0</span></div>
+          <div class="rd" id="upsHint">Инструменты, созвоны, здоровье</div>
+        </div>
+        <div class="rp">›</div>
+      </div>
+    </div>
   </div>
 
   <!-- КОМАНДА -->
@@ -725,6 +853,17 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   </div>
 </div>
 
+<!-- Дерево улучшений. Ветки идут лесенкой, как треки карьеры: видно,
+     что куплено, что доступно и что за чем открывается. -->
+<div class="scrim" id="upsScrim"></div>
+<div class="sheet tall" id="upsSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <div class="shead"><h2>Улучшения</h2><button class="xbtn" id="upsClose" aria-label="Закрыть">×</button></div>
+    <div class="upstree" id="upsTree"></div>
+  </div>
+</div>
+
 <!-- Настройки. Закрываемая модалка: у неё есть [×], и его наличие — часть
      языка. Там, где закрыть нельзя (созвон), крестика нет намеренно. -->
 <div class="scrim" id="setScrim"></div>
@@ -815,7 +954,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "0.6.0";
+const VERSION = "0.7.1";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -885,8 +1024,12 @@ const C = {
     [2,"Разгрести legacy, который прошлым летом сгенерировали за неделю",5]
   ],
   diffName:["мелочь","задача","сложно"],
-  diffPay:[0.35, 1, 2.8],     // множитель награды
-  diffBurn:[0.3, 1, 3.1],     // множитель выгорания — растёт быстрее награды
+  // Руками зарабатывать стало невыгодно, и это цель. Мелочь и задача
+  // приносят в 2,5 раза меньше и жгут в 2,5 раза быстрее. Сложное платит
+  // как раньше, но жжёт впятеро. Клики — это разгон, а не бизнес:
+  // компанию строят люди, а не ваш палец.
+  diffPay:[0.14, 0.4, 2.8],
+  diffBurn:[0.75, 2.5, 15.5],
 
   /* ── БЛОКЕРЫ ──────────────────────────────────────────────────
      Вторая ось прогресса. Деньги здесь не помогают: проект встал не
@@ -896,11 +1039,11 @@ const C = {
      Гейты: role+count · step · cash · year · staff. Все — комбинируемые.
      hit — доля выручки, которую теряешь, пока не решено.            */
   blockers:[
-    {id:"b1", era:0, hit:.30, title:"Проект не подошёл заказчику",
+    {id:"b1", era:1, hit:.30, title:"Проект не подошёл заказчику",
      text:"«Вы сделали не то, что мы просили». Просили устно, в аське.",
      gate:{role:"analyst"}, need:"Нужен аналитик",
      done:"Требования наконец записали. Оказалось, их четырнадцать."},
-    {id:"b2", era:0, hit:.25, title:"Заказчику не нравится, как это выглядит",
+    {id:"b2", era:1, hit:.25, title:"Заказчику не нравится, как это выглядит",
      text:"«Сделайте красиво». На вопрос «как именно» — «ну красиво».",
      gate:{role:"design"}, need:"Нужен дизайнер",
      done:"Показали макет. Заказчик сказал «вот теперь другое дело». Макет тот же."},
@@ -914,7 +1057,7 @@ const C = {
      done:"Справку приняли. Тендер выиграл тот, кто её не носил."},
     {id:"b5", era:2, hit:.30, title:"У заказчика ТЗ на тридцать листов",
      text:"Двадцать восемь из них — про совместимость с 1Ы.",
-     gate:{role:"analyst", count:2}, need:"Нужны двое аналитиков",
+     gate:{step:"a1"}, need:"Нужен системный аналитик — вырастить из аналитика",
      done:"ТЗ разобрали. Тридцать листов ужались до четырёх экранов."},
     {id:"b6", era:2, hit:.28, title:"Заказчик просит SLA 99,99%",
      text:"Это пятьдесят две минуты простоя в год. У вас нет дежурных.",
@@ -932,9 +1075,21 @@ const C = {
      text:"«Импортозамещение». Сроки прежние.",
      gate:{year:2022, staff:12}, need:"Нужен 2022 год и штат от 12",
      done:"Переехали. Работает так же, называется иначе."},
+    // Инцидент: можно переждать, можно закрыть сразу — если есть кем.
+    {id:"b11", era:2, hit:.34, title:"Ночью упала оплата",
+     text:"Discord-канал дежурных завели вчера. Дежурных не завели.",
+     gate:{or:[{role:"qa",count:2},{time:45}]},
+     need:"Двое тестировщиков — или 45 секунд, пока чинят руками",
+     done:"Починили. Постмортем назначили на пятницу, потом перенесли."},
+    // Дедлайн: единственный блокер, который снимается вашими руками.
+    {id:"b12", era:3, hit:.26, title:"Релиз обещали к пятнице",
+     text:"Обещали не вы. Сообщили вам в среду.",
+     gate:{tasks:12},
+     need:"Закрыть 12 задач",
+     done:"Успели. В понедельник выяснилось, что релиз перенесли на месяц."},
     {id:"b10", era:5, hit:.28, title:"Клиенту нужен брендбук",
      text:"«Ну вы же дизайн делаете». Это другой дизайн.",
-     gate:{role:"design", count:2}, need:"Нужны двое дизайнеров",
+     gate:{step:"d2"}, need:"Нужен графический дизайнер — вырастить из дизайнера",
      done:"Брендбук сдали. Логотип в нём тот же, но теперь на 40 страницах."}
   ],
 
@@ -1027,29 +1182,33 @@ const C = {
   roles:[
     {id:"intern", dept:"eng",   tier:0, name:"Стажёр",            pay:45000,  out:60000,
      desc:"Убыточен и режет награду за задачу. Через минуту станет джуниором"},
-    {id:"junior", dept:"eng",   tier:0, name:"Джуниор",           pay:110000, out:195000,
+    // До 2011-го разделения труда нет, и это правда: в 2007-м один
+    // человек верстал, тестировал и рисовал. Плохо, но сам.
+    {id:"crew",   dept:"eng",   tier:0, name:"Айтишник",          pay:150000, out:250000,
+     desc:"Верстает, тестирует и рисует. Плохо, но сам"},
+    {id:"junior", dept:"eng",   tier:0, era:1, name:"Джуниор",           pay:110000, out:195000,
      desc:"Пишет код. Иногда рабочий"},
-    {id:"middle", dept:"eng",   tier:0, name:"Мидл",              pay:220000, out:400000,
+    {id:"middle", dept:"eng",   tier:0, era:1, name:"Мидл",              pay:220000, out:400000,
      desc:"Опора всего. Никто не замечает"},
-    {id:"senior", dept:"eng",   tier:2, name:"Сеньор",            pay:400000, out:720000,
+    {id:"senior", dept:"eng",   tier:2, era:2, name:"Сеньор",            pay:400000, out:720000,
      desc:"Спрашивает «зачем» до того, как начнёт"},
-    {id:"qa",     dept:"eng",   tier:1, name:"Тестировщик",       pay:200000, out:110000,
+    {id:"qa",     dept:"eng",   tier:1, era:1, name:"Тестировщик",       pay:200000, out:110000,
      desc:"+15% разработке, дальше отдача падает"},
-    {id:"support",dept:"ops",   tier:0, name:"Оператор поддержки",pay:65000,  out:140000,
+    {id:"support",dept:"ops",   tier:0, era:1, name:"Оператор поддержки",pay:65000,  out:140000,
      desc:"Первая линия. Слышит о продукте больше всех"},
     // Две роли, без которых блокеры были бы требованием невозможного.
     // Они же — мост к разделению труда: сначала «все делают всё», потом
     // выясняется, что дизайн и аналитика — это отдельная работа.
-    {id:"analyst",dept:"eng",   tier:1, viaBlock:"b1", name:"Аналитик",          pay:190000, out:300000,
+    {id:"analyst",dept:"eng",   tier:1, era:1, viaBlock:"b1", name:"Аналитик",          pay:190000, out:300000,
      desc:"Переводит «хочу как у конкурентов» в требования"},
-    {id:"design", dept:"eng",   tier:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
+    {id:"design", dept:"eng",   tier:1, era:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
      desc:"Рисует то, на что потом смотрят все и молча"},
-    {id:"recruit",dept:"people",tier:1, name:"Рекрутер",          pay:130000, out:0,
+    {id:"recruit",dept:"people",tier:1, era:1, name:"Рекрутер",          pay:130000, out:0,
      desc:"Найм дешевле на 20%. Сам не приносит ничего"},
     // Название по профессии, а не по ощущению: в списке вакансий рядом
     // с «мидлом» и «тестировщиком» «тот самый коллега» читался как шутка
     // не на своём месте. Шутка теперь в описании, где ей и место.
-    {id:"buddy",  dept:"eng",   tier:4, name:"Ведущий инженер",   pay:350000, out:520000,
+    {id:"buddy",  dept:"eng",   tier:4, era:2, name:"Ведущий инженер",   pay:350000, out:520000,
      desc:"+20% компании. Тот самый, с кем всё понятно с полуслова. Уходит первым"},
     {id:"prompt", dept:"eng",   tier:2, era:4, name:"Промпт-инженер",  pay:250000, out:480000,
      desc:"Профессия, которой два года назад не было"},
@@ -1082,6 +1241,31 @@ const C = {
       {id:"m35",title:"Директор по ИИ-трансформации",from:"senior",pay:800000,desc:"+35% компании. Каждый отдел обязан отчитаться о внедрении",bonus:.35,scope:"all",eff:s=>s.burnRate*=1.15,era:4},
       {id:"m4",title:"Эффективный менеджер",from:"senior",pay:950000,desc:"+90% компании. Возвращает всех в офис, запускает оптимизацию штата",bonus:.9,scope:"all",eff:s=>{s.rto=true;s.opt=true},dangerous:true,
        after:"Первая презентация называлась «Операционная эффективность: точки роста». Слайд про людей был четырнадцатым."}
+     ]},
+    /* fork: ступени идут не лесенкой, а параллельно. Каждая берёт
+       своего свободного человека, поэтому из одного дизайнера нельзя
+       вырастить и UX, и графического — придётся нанять второго.
+       Ровно так это и работает в жизни. */
+    {id:"des", name:"Дизайн", fork:true,
+     steps:[
+      {id:"d1",title:"UX-дизайнер",from:"design",pay:320000,era:2,
+       desc:"+25% разработке. Интерфейсы перестают переделывать по три раза",bonus:.25,scope:"eng"},
+      {id:"d2",title:"Графический дизайнер",from:"design",pay:300000,era:2,
+       desc:"+15% компании. Появляется то, что можно показать заказчику",bonus:.15,scope:"all"},
+      {id:"d3",title:"Арт-директор",from:"design",pay:480000,era:3,
+       desc:"+30% компании. Согласование макета теперь проходит через одного человека",
+       bonus:.3,scope:"all",eff:s=>s.meetGap*=.92,
+       after:"Ввели дизайн-ревью. Макеты стали лучше, а сроки — длиннее."}
+     ]},
+    {id:"ana", name:"Аналитика", fork:true,
+     steps:[
+      {id:"a1",title:"Системный аналитик",from:"analyst",pay:330000,era:2,
+       desc:"+25% разработке. ТЗ наконец пишет тот, кто умеет",bonus:.25,scope:"eng"},
+      {id:"a2",title:"Продуктовый аналитик",from:"analyst",pay:350000,era:2,
+       desc:"+20% компании. Выясняется, чем пользуются, а чем нет",bonus:.2,scope:"all"},
+      {id:"a3",title:"Бизнес-аналитик",from:"analyst",pay:420000,era:3,
+       desc:"+30% компании. Считает деньги до того, как их потратят",bonus:.3,scope:"all",
+       after:"Первый же расчёт показал, что два проекта из пяти убыточны. Их всё равно доделали."}
      ]},
     {id:"people", name:"Люди",
      steps:[
@@ -1189,10 +1373,11 @@ const S = {
   rto:false, opt:false, review:false, surveys:false,
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
-  blocker:null, blockersDone:[], blockIn:75,
+  blocker:null, blockersDone:[], blockIn:75, blockStart:0, blockTasks:0, taskCount:0,
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
+  jobs:0, jobAt:undefined,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
@@ -1376,7 +1561,16 @@ function mult(scope){
   S.staff.forEach(p => { if(p.bonus && p.scope===scope){ bonus+=p.bonus; seats+=span(); } });
   return bonus ? 1 + bonus*Math.min(1, seats/pool) : 1;
 }
+let econTick = 0, revCache = {id:-1, v:0};
+// Любое изменение штата или множителей сбрасывает кэш.
+function bumpEcon(){ econTick++; }
 function revenue(){
+  if(revCache.id === econTick) return revCache.v;
+  const v = revenueRaw();
+  revCache = {id:econTick, v};
+  return v;
+}
+function revenueRaw(){
   let r=0;
   const qa=soft(S.hired.qa,.15,.45), bd=soft(S.hired.buddy,.20,.35);
   const mE=mult("eng"), mO=mult("ops"), mA=mult("all");
@@ -1412,11 +1606,16 @@ function revenue(){
    как справку об оборотах. */
 function gateOk(g){
   if(!g) return true;
+  // Гейт «или»: инцидент чинится временем ИЛИ нужным человеком сразу.
+  if(g.or) return g.or.some(x => gateOk(x));
   if(g.role  && (S.hired[g.role]||0) < (g.count||1)) return false;
   if(g.step  && !S.done.has(g.step))                 return false;
   if(g.cash  && S.cash < g.cash)                     return false;
   if(g.year  && year() < g.year)                     return false;
   if(g.staff && S.staff.length < g.staff)            return false;
+  // Время идёт само. Задачи надо закрыть руками.
+  if(g.time  && S.playTime - (S.blockStart||0) < g.time)      return false;
+  if(g.tasks && S.taskCount - (S.blockTasks||0) < g.tasks)    return false;
   return true;
 }
 const activeBlocker = () => S.blocker ? C.blockers.find(b=>b.id===S.blocker) : null;
@@ -1449,6 +1648,7 @@ function hireCost(r, extra){
   return Math.round(r.pay*1.5*Math.pow(1.15,n)*S.hireTax*(1-.2*(S.hired.recruit>0)));
 }
 function addStaff(r){
+  bumpEcon();
   S.staff.push({uid:++S.nid,name:newName(),role:r.id,dept:r.dept,title:r.name,
                 pay:r.pay,out:r.out,perk:null});
   S.hired[r.id]++;
@@ -1462,6 +1662,7 @@ const meetLenNow = () => S.meetLen * Math.max(.45, 1 - .18*S.hired.assist);
 // тем меньше остаётся от живых инженеров — присмотр никуда не девается.
 const agentDrag   = () => Math.max(.2, 1 - .035*S.hired.agent);
 function loseStaff(why){
+  bumpEcon();
   if(!S.staff.length) return;
   const bd = S.staff.find(p=>p.role==="buddy" && !p.perk);
   const plain = S.staff.filter(p=>!p.perk);
@@ -1565,6 +1766,7 @@ function doTask(){
   S.cash += v; S.earned += v;
   S.burn += 0.5 * C.diffBurn[task.diff] * S.burnRate * burnMul() * (onCall() ? 1.5 : 1);
 
+  S.taskCount = (S.taskCount||0) + 1;
   S.recent.push(task.diff);
   if(S.recent.length > 14) S.recent.shift();
   const was = S.comboOn;
@@ -1740,6 +1942,45 @@ function startMusic(){
   };
   musTimer = setTimeout(ping, 3000);
 }
+
+/* ══════════════════════════════════════════════════════════════
+   СМЕНА РАБОТЫ
+   Личная ставка растёт только так. Внутри компании она не растёт
+   вообще — и это не преувеличение ради шутки, а буквально цифра
+   в коде. Игрок выводит главный тезис индустрии сам, оптимизируя.
+
+   Ограничение одно: не чаще двух раз в игровой год. Материальной цены
+   нет, и это тоже часть шутки — уходить просто выгодно, держит только
+   инерция. К поздней игре механика гаснет сама: клики перестают быть
+   заметной долей дохода.
+   ══════════════════════════════════════════════════════════════ */
+const JOB_GAP = 6;                       // месяцев между переходами
+// Второй переход самый выгодный: на первом вас берут с улицы, на втором
+// уже есть чем торговаться. Дальше рынок остывает.
+const JOB_MUL = [2.2, 3.0, 2.4, 2.0, 1.8];
+const jobMul   = () => JOB_MUL[Math.min(S.jobs||0, JOB_MUL.length-1)] || 1.6;
+const jobWait  = () => Math.max(0, JOB_GAP - (S.month - (S.jobAt ?? -JOB_GAP)));
+const jobReady = () => !S.ended && jobWait() === 0;
+const JOB_SAY = [
+  "Вы ушли впервые. На собеседовании удивились, что вы так долго сидели на одном месте.",
+  "Второй переход дался легче. И стоил дороже — теперь вы знаете, что можно торговаться.",
+  "Рекрутер написал сам. Вы даже не обновляли резюме.",
+  "Сменили работу. Бывший руководитель написал «всегда рады видеть». Вы не ответили.",
+  "Ещё один переход. Коллеги в чате поздравили, половина из них — тоже бывшие коллеги."
+];
+function changeJob(){
+  if(!jobReady()) return;
+  const m = jobMul();
+  S.click *= m;
+  S.jobs = (S.jobs||0) + 1;
+  S.jobAt = S.month;
+  S.burn = 0;                            // на новом месте первые недели не трогают
+  sfx("promote"); buzz([20,60,20]);
+  log(JOB_SAY[Math.min(S.jobs-1, JOB_SAY.length-1)] +
+      " Ставка выросла в "+m.toFixed(1)+" раза.", "lore");
+  paint();
+}
+$("jobRow").onclick = () => jobReady() ? changeJob() : snack("не чаще двух раз в год");
 
 /* ══════════════════════════════════════════════════════════════
    НАСТРОЙКИ
@@ -1970,9 +2211,12 @@ function paintStaff(){
     box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Штат пустой. Ты и есть штат.</div></div></div>';
 }
 const stepReady = st => (st.era||0) <= S.era && S.staff.some(p=>p.role===st.from && !p.perk);
+// В обычном треке ступень открывает предыдущая. В развилке ступени
+// независимы: каждая берёт своего свободного человека.
+const stepPrev = (tr,i) => tr.fork || i===0 || S.done.has(tr.steps[i-1].id);
 function anyPromo(){
   return C.tracks.some(tr => tr.steps.some((st,i) =>
-    !S.done.has(st.id) && (i===0 || S.done.has(tr.steps[i-1].id)) && stepReady(st)));
+    !S.done.has(st.id) && stepPrev(tr,i) && stepReady(st)));
 }
 function paintTracks(){
   const key = S.era+"|"+[...S.done].join(",")+"|"+C.tracks.map(tr=>tr.steps.map(st=>stepReady(st)?1:0).join("")).join("")+
@@ -1980,7 +2224,7 @@ function paintTracks(){
   if(!changed("tracks", key)) return;
   const box = $("tracks"); box.innerHTML = "";
   C.tracks.forEach(tr => {
-    const opened = tr.steps.some((st,i)=> i===0 || S.done.has(tr.steps[i-1].id));
+    const opened = tr.steps.some((st,i)=> stepPrev(tr,i));
     if(!opened) return;
     const card = document.createElement("div");
     card.className = "card";
@@ -1990,7 +2234,7 @@ function paintTracks(){
     let h = '', hidden = false;
     tr.steps.forEach((st,i) => {
       const done = S.done.has(st.id);
-      const prev = i===0 || S.done.has(tr.steps[i-1].id);
+      const prev = stepPrev(tr,i);
       if(!prev && !done){ hidden = true; return; }
       if((st.era||0) > S.era && !done){ hidden = true; return; }
       const ready = !done && stepReady(st);
@@ -2077,65 +2321,99 @@ function loopsOpen(){
     desc:l.desc
   }));
 }
-function paintUps(){
-  const avail = C.ups.filter(u => !S.bought.has(u.id) && (u.era||0) <= S.era);
-  const open  = avail.filter(u => !upLocked(u)).concat(loopsOpen());
-  const waits = u => u.req && !S.bought.has(u.req) ? 1 : 0;
-  const next  = avail.filter(u => upLocked(u))
-                     .sort((a,b) => waits(a)-waits(b) || a.cost-b.cost)[0];
-  const key = S.era+"|"+open.map(u => u.id+u.cost+(S.cash>=u.cost?"1":"0")).join("|")+
-              "|"+(next?next.id:"-");
-  if(!changed("ups", key)) return;
-  const box = $("ups"); box.innerHTML = "";
-  const grps = {};
-  open.concat(next ? [next] : []).forEach(u => (grps[u.grp] = grps[u.grp] || []).push(u));
-  Object.keys(grps).forEach(g => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.innerHTML = '<div class="k" style="padding:14px 16px 6px;margin:0">'+g+'</div>';
-    grps[g].forEach(u => {
-      const d = document.createElement("div");
-      if(u === next){
-        const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
-        d.className = "row lk";
-        d.innerHTML = '<div class="tier t'+(u.t||0)+'" style="opacity:.4"></div>'+
-          '<div class="rl"><div class="rn2">'+LOCK+u.name+gradeTag(u.t||0)+'</div>'+
-          '<div class="rd">'+u.desc+'</div>'+
-          '<div class="need">'+(needs ? 'Сначала: '+needs.name.toLowerCase()
-                                      : 'Откроется при обороте '+rub(u.cost))+'</div></div>';
-      } else {
-        const ok = S.cash >= u.cost;
-        d.className = "row " + (ok ? "tap" : "no");
-        d.innerHTML = '<div class="tier t'+(u.t||0)+'"></div>'+
-          '<div class="rl"><div class="rn2">'+u.name+gradeTag(u.t||0)+'</div>'+
-          '<div class="rd">'+u.desc+'</div></div>'+
-          '<div class="rp">'+rub(u.cost)+'</div>';
-        if(ok) d.onclick = () => {
-          S.cash -= u.cost;
-          if(u.loop){
-            // Заход засчитан: цена вырастет, текст поменяется, эффект тот же.
-            S.loops = S.loops || {};
-            const n = S.loops[u.loop.id] = (S.loops[u.loop.id] || 0) + 1;
-            u.loop.f(S);
-            log(u.loop.say[Math.min(n-1, u.loop.say.length-1)], "noise");
-          } else {
-            S.bought.add(u.id); u.f(S); after(u);
-          }
-          sfx("buy"); sig.ups=null; paint();
-        };
-      }
-      card.appendChild(d);
-    });
-    box.appendChild(card);
-  });
-  if(!box.children.length){
-    box.innerHTML = '<div class="card"><div class="row"><div class="rl">'+
-      '<div class="rd">Всё куплено. Работать быстрее уже не выйдет.</div></div></div></div>';
-  }
+/* Дерево улучшений. Ветка группы идёт лесенкой: куплено, доступное,
+   и ровно одна следующая ступень под замком. Дальше ветка не
+   показывается — интерфейс не рассказывает, что будет через десять лет.
+   Циклы встают в конец своей группы: они не кончаются никогда. */
+function upsState(u){
+  if(S.bought.has(u.id)) return "done";
+  if(upLocked(u))        return "lk";
+  return S.cash >= u.cost ? "can" : "no";
 }
-/* Три числа отчёта работают только если по ним видно состояние дел.
-   Само по себе «ФОТ 3.5 млн» не говорит ничего: много это или мало,
-   зависит от выручки. Показываем долю и подсвечиваем порог. */
+// Сколько улучшений можно купить прямо сейчас — число для счётчика.
+function upsReady(){
+  const ups = C.ups.filter(u => !S.bought.has(u.id) && (u.era||0)<=S.era
+                                && !upLocked(u) && S.cash>=u.cost).length;
+  const lps = loopsOpen().filter(l => S.cash >= l.cost).length;
+  return ups + lps;
+}
+function paintUpsBadge(){
+  const n = upsReady();
+  const b = $("upsN");
+  b.textContent = n; b.hidden = !n;
+  $("upsHint").textContent = n
+    ? (n===1 ? "Одно можно купить прямо сейчас" : "Можно купить прямо сейчас: "+n)
+    : "Инструменты, созвоны, здоровье";
+}
+function paintUpsTree(){
+  const box = $("upsTree"); box.innerHTML = "";
+  const grps = {};
+  C.ups.forEach(u => {
+    if((u.era||0) > S.era) return;
+    (grps[u.grp] = grps[u.grp] || []).push(u);
+  });
+  loopsOpen().forEach(l => (grps[l.grp] = grps[l.grp] || []).push(l));
+
+  Object.keys(grps).forEach(g => {
+    // В ветке показываем купленное, доступное и одну следующую закрытую.
+    const list = grps[g];
+    const shown = [];
+    let lockedShown = false;
+    list.forEach(u => {
+      const st = u.loop ? (S.cash>=u.cost ? "can" : "no") : upsState(u);
+      if(st === "lk"){
+        if(lockedShown) return;
+        lockedShown = true;
+      }
+      shown.push({u, st});
+    });
+    if(!shown.length) return;
+    const h = document.createElement("div");
+    h.className = "upsgrp"; h.textContent = g;
+    box.appendChild(h);
+    shown.forEach(({u, st}) => {
+      const d = document.createElement("div");
+      d.className = "ub " + st;
+      const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
+      d.innerHTML =
+        '<div class="un">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(u.t||0)+'</div>'+
+        '<div class="ud">'+u.desc+'</div>'+
+        (st==="done" ? '<div class="up" style="color:var(--mut)">куплено</div>'
+         : st==="lk" ? '<div class="need">'+(needs ? "Сначала: "+needs.name.toLowerCase()
+                                                  : "Откроется при обороте "+rub(u.cost))+'</div>'
+         : '<div class="up">'+rub(u.cost)+'</div>');
+      if(st === "can") d.onclick = () => buyUp(u);
+      box.appendChild(d);
+    });
+  });
+  if(!box.children.length)
+    box.innerHTML = '<div class="ud" style="padding:16px 0">Всё куплено. Работать быстрее уже не выйдет.</div>';
+}
+function buyUp(u){
+  if(S.cash < u.cost) return;
+  S.cash -= u.cost;
+  if(u.loop){
+    // Заход засчитан: цена вырастет, текст поменяется, эффект тот же.
+    S.loops = S.loops || {};
+    const n = S.loops[u.loop.id] = (S.loops[u.loop.id] || 0) + 1;
+    u.loop.f(S);
+    log(u.loop.say[Math.min(n-1, u.loop.say.length-1)], "noise");
+  } else {
+    S.bought.add(u.id); u.f(S); after(u);
+  }
+  sfx("buy"); bumpEcon(); paint(); paintUpsTree();
+}
+const closeUps = () => {
+  $("upsSheet").classList.remove("on"); $("upsScrim").classList.remove("on");
+};
+$("upsBtn").onclick = () => {
+  sfx("tap"); paintUpsTree();
+  $("upsSheet").classList.add("on"); $("upsScrim").classList.add("on");
+};
+$("upsClose").onclick = closeUps;
+$("upsScrim").onclick = closeUps;
+
+
 function share(part, whole){ return whole > 0 ? part/whole : 0; }
 function level(x, ok, warn){ return x <= ok ? "ok" : x <= warn ? "mid" : "bad"; }
 function paintCo(){
@@ -2316,8 +2594,7 @@ function paint(){
 
   // ритм влияет на скорость волны: в потоке дышится ровнее
   S.beat = 900 + S.flow*420;
-  document.documentElement.style.setProperty("--beat", Math.round(S.beat)+"ms");
-  document.documentElement.style.setProperty("--flow", S.flow.toFixed(2));
+  $("taskCard").style.setProperty("--flow", S.flow.toFixed(2));
   const go = $("do");
   go.style.boxShadow = "0 0 "+(6+S.flow*26).toFixed(0)+"px rgba(128,186,39,"+(S.flow*.5).toFixed(2)+"), var(--sh)";
 
@@ -2326,20 +2603,40 @@ function paint(){
   card.className = "task" + (stamp?" off":"");
   card.dataset.stamp = stamp;
   go.disabled = !canWork(); $("skip").disabled = !canWork();
-  $("donote").textContent =
+  // У клика две цены, и обе видны рядом: деньги слева, выгорание справа.
+  // Раньше вторая была невидимой, и связь между кнопкой и полосой под ней
+  // приходилось выводить самому.
+  const burnPer = 0.5 * C.diffBurn[task.diff] * S.burnRate * burnMul() * (onCall() ? 1.5 : 1);
+  $("donote").innerHTML =
     S.sick>0 ? "Ты не в состоянии" :
     S.vacLeft>0 ? "Ты в отпуске, осталось "+Math.ceil(S.vacLeft)+" дн." :
     blocked() ? "Идёт созвон" :
-    onCall() ? "+"+rub(clickVal())+" · вполуха, "+Math.round((1-S.callMul)*100)+"% мимо" :
-    "+"+rub(clickVal());
+    '<i class="pay">+'+rub(clickVal())+'</i>'+
+    '<i class="cost">+'+burnPer.toFixed(1)+'% выгорания</i>'+
+    (onCall() ? '<i class="cost">вполуха, '+Math.round((1-S.callMul)*100)+'% мимо</i>' : '');
+  // Кнопка темнеет к охре вместе с полосой: чем ближе к больничному,
+  // тем очевиднее, что жать её — уже не бесплатно.
+  go.style.setProperty("--heat", (Math.min(100,S.burn)/100).toFixed(2));
 
   if(S.tab==="team"){
     $("segStaffN").textContent = S.staff.length;
     if((S.teamPane||"hire")==="hire") paintHire(); else paintStaff();
   }
   if(S.tab==="career") { paintTracks(); }
-  if(S.tab==="work")   { paintUps(); }
-  paintCo();
+  if(S.tab==="work"){
+    paintUpsBadge();
+    // Смена работы: единственная кнопка, которая двигает личную ставку.
+    const ready = jobReady(), wait = jobWait();
+    $("jobCard").className = "card" + (ready ? " ready" : "");
+    $("jobMul").textContent = "×" + jobMul().toFixed(1);
+    $("jobState").textContent = ready ? "Можно" : "через " + wait + " мес";
+    $("jobState").style.color = ready ? "var(--acc-ink)" : "var(--mut)";
+    $("jobHint").textContent =
+      !S.jobs   ? "Ставка вырастет вдвое. Здесь она не вырастет никогда" :
+      S.jobs===1? "Второй переход самый выгодный: теперь есть чем торговаться" :
+                  "Переходов: " + S.jobs + ". Рынок постепенно остывает";
+  }
+  if(S.tab==="co") paintCo();
   paintLocks();
   $("dotCareer").classList.toggle("on", anyPromo() && S.tab!=="career");
 }
@@ -2520,6 +2817,7 @@ setInterval(() => {
   if(S.ended || chron.classList.contains("open") ||
      $("llcSheet").classList.contains("on") ||
      $("eraSheet").classList.contains("on")) return;
+  bumpEcon();
   const dt = 0.1 * S.speed;
   S.playTime += dt;
 
@@ -2614,6 +2912,7 @@ setInterval(() => {
       // становится невыполнимым по кругу. Проиграть в этой игре нельзя.
       if(next && S.staff.length && p > 0){
         S.blocker = next.id;
+        S.blockStart = S.playTime; S.blockTasks = S.taskCount||0;
         sfx("block");
         $("bTitle").textContent = next.title;
         $("bText").textContent  = next.text;
@@ -2735,13 +3034,19 @@ setInterval(() => {
 
 // Пульс кнопки: пик колокола совпадает с окном попадания.
 // Подсветка едва заметна — это подсказка, а не светомузыка.
+/* Волна считается в rAF, но не всегда и не в корне документа.
+   Раньше цикл писал две переменные в <html> шестьдесят раз в секунду:
+   браузер пересчитывал стили всего дерева на каждый кадр, и телефон
+   грелся ровно от этого. Теперь пишем в карточку задачи — инвалидация
+   ограничена ею — и не считаем вовсе, когда волну никто не видит. */
 (function pulse(){
+  requestAnimationFrame(pulse);
+  const card = $("taskCard");
+  if(!card || document.hidden || S.tab !== "work" || S.ended) return;
   const ph = (performance.now() % S.beat) / S.beat;
   const x = Math.max(0, 1 - Math.abs(ph - .52) / .22);
-  const r = document.documentElement.style;
-  r.setProperty("--phase", ph.toFixed(3));
-  r.setProperty("--pulse", (x*x*(3-2*x)).toFixed(3));
-  requestAnimationFrame(pulse);
+  card.style.setProperty("--phase", ph.toFixed(3));
+  card.style.setProperty("--pulse", (x*x*(3-2*x)).toFixed(2));
 })();
 
 /* ── этажи внизу экрана ──────────────────────────────────────────
@@ -2830,6 +3135,8 @@ window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,lo
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                loopCost,loopsOpen,span,share,level,
+               stepReady,stepPrev,anyPromo,
+               changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
