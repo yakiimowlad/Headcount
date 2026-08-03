@@ -34,6 +34,8 @@
   --hair:rgba(0,0,0,.09); --hair2:rgba(0,0,0,.045);
   --acc:#80BA27; --acc-ink:#5D8A19; --acc-soft:rgba(128,186,39,.13);
   --wrn:#ff9f0a; --wrn-ink:#a86400; --wrn-soft:rgba(255,159,10,.14);
+  /* грейды: обычный, редкий, очень редкий, эпический, легендарный */
+  --g0:#b9b9be; --g1:#5fa83a; --g2:#4a7fa5; --g3:#8a6bb8; --g4:#c9a227;
   --sh:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
   --e:cubic-bezier(.32,.72,0,1);
   --beat:900ms; --flow:0;
@@ -50,6 +52,7 @@
   --hair:rgba(255,255,255,.14); --hair2:rgba(255,255,255,.06);
   --acc:#9ACD46; --acc-ink:#A8DB55; --acc-soft:rgba(154,205,70,.16);
   --wrn:#e0a458; --wrn-ink:#e8b877; --wrn-soft:rgba(224,164,88,.16);
+  --g0:#6b6b70; --g1:#7cc44f; --g2:#6aa3cc; --g3:#a98cd8; --g4:#e0b840;
   --sh:0 1px 3px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.6);
   color-scheme:dark;}}
 :root[data-theme=dark]{
@@ -58,6 +61,7 @@
   --hair:rgba(255,255,255,.14); --hair2:rgba(255,255,255,.06);
   --acc:#9ACD46; --acc-ink:#A8DB55; --acc-soft:rgba(154,205,70,.16);
   --wrn:#e0a458; --wrn-ink:#e8b877; --wrn-soft:rgba(224,164,88,.16);
+  --g0:#6b6b70; --g1:#7cc44f; --g2:#6aa3cc; --g3:#a98cd8; --g4:#e0b840;
   --sh:0 1px 3px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.6);
   color-scheme:dark;}
 
@@ -196,6 +200,9 @@ main{max-width:520px;margin:0 auto;
 
 /* ── выгорание ── */
 .gauge{padding:16px 18px}
+/* Внутри карточки задачи: без боковых отступов, чтобы полоса выгорания
+   встала ровно по ширине кнопки «Выполнить» — они про одно и то же. */
+.gauge.tight{padding:14px 0 0;margin-top:2px;border-top:.5px solid var(--hair2)}
 .gt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .gn{font-size:14px;font-weight:600}
 .gv{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
@@ -222,9 +229,27 @@ main{max-width:520px;margin:0 auto;
 .rp{font-size:14px;font-weight:600;white-space:nowrap;font-variant-numeric:tabular-nums;color:var(--acc-ink);text-align:right}
 .rp small{display:block;font-size:11px;font-weight:500;color:var(--mut);margin-top:2px}
 .row.no .rp{color:var(--mut)}
-.cnt{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--mut);font-weight:600}
-.tier{width:4px;align-self:stretch;border-radius:2px;flex:none;background:var(--faint)}
-.tier.t1{background:var(--acc)} .tier.t2{background:var(--wrn)}
+/* ── грейды ──────────────────────────────────────────────────────
+   Пять ступеней редкости. Палитра приглушённая: это дашборд, а не
+   витрина лутбоксов, и цвет здесь код, а не украшение. Синий взят
+   стальной, заметно тусклее кнопочного #0a84ff — тот остаётся
+   эксклюзивом «Поднять руку», иначе единственная синяя шутка в игре
+   перестанет читаться как единственная. */
+.tier{width:4px;align-self:stretch;border-radius:2px;flex:none;background:var(--g0)}
+.tier.t0{background:var(--g0)} .tier.t1{background:var(--g1)}
+.tier.t2{background:var(--g2)} .tier.t3{background:var(--g3)}
+.tier.t4{background:var(--g4)}
+/* Счётчик нанятых: раньше серый моношрифт терялся рядом с названием,
+   хотя это одно из главных чисел экрана. */
+.cnt{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:700;
+  color:var(--ink);background:var(--hair2);padding:1px 7px;border-radius:8px}
+.gname{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;
+  text-transform:uppercase;padding:2px 7px;border-radius:7px;vertical-align:2px}
+.gname.t1{color:var(--g1);background:rgba(95,168,58,.14)}
+.gname.t2{color:var(--g2);background:rgba(74,127,165,.16)}
+.gname.t3{color:var(--g3);background:rgba(138,107,184,.16)}
+.gname.t4{color:var(--g4);background:rgba(201,162,39,.16)}
+.stars{color:var(--g4);font-size:11px;letter-spacing:1px}
 .pill{display:inline-block;margin-top:7px;font-size:11px;font-weight:600;letter-spacing:.3px;
   padding:3px 10px;border-radius:11px;background:var(--acc-soft);color:var(--acc-ink)}
 .pill.w{background:var(--wrn-soft);color:var(--wrn-ink)}
@@ -459,6 +484,33 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .seg button{padding:9px 6px;border-radius:11px;font-size:13px;font-weight:600;
   color:var(--ink2);transition:background .2s,color .2s}
 .seg button.on{background:var(--sf);color:var(--acc-ink);box-shadow:var(--sh)}
+/* Тот же компонент во всю ширину контента, две доли вместо трёх. */
+.segtop{grid-template-columns:repeat(2,1fr);margin:0 0 10px}
+.segn{margin-left:6px;font-size:11px;font-weight:700;color:var(--mut);
+  font-variant-numeric:tabular-nums}
+.seg button.on .segn{color:var(--acc-ink)}
+
+/* ── штат: команды и чипы имён ────────────────────────────────────
+   Список из трёхсот строк «Мидл ×1» нечитаем. Люди сгруппированы по
+   специальности, имена — чипами: видно и сколько их, и что это живые
+   люди с именами, которых потом сократят поимённо. */
+.team{padding:13px 16px;border-bottom:.5px solid var(--hair2)}
+.team:last-child{border-bottom:none}
+.tmh{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.tmh b{font-size:15px;font-weight:600;letter-spacing:-.2px}
+.tmh .money{margin-left:auto;font-size:12px;color:var(--mut);
+  font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+.tmh .money i{font-style:normal;color:var(--acc-ink)}
+.tmh .money s{text-decoration:none;color:var(--wrn-ink)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:12px;font-weight:500;padding:3px 9px;border-radius:9px;
+  background:var(--hair2);color:var(--ink2);white-space:nowrap}
+.chip.lead{background:var(--acc-soft);color:var(--acc-ink);font-weight:600}
+.chip.more{color:var(--mut);background:none;padding-left:2px}
+/* Заголовок группы «под руководителем / без руководителя» */
+.tgrp{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
+  color:var(--mut);padding:14px 16px 6px}
+.tgrp.warn{color:var(--wrn-ink)}
 .smeta{margin-top:24px;padding-top:16px;border-top:.5px solid var(--hair)}
 .smeta div{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0}
 .smeta span{font-size:13px;color:var(--mut)}
@@ -533,6 +585,10 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <span class="delta n" id="rate">+0 ₽ в месяц</span>
     </div>
 
+    <!-- Задача и выгорание — один блок. Волна на кнопке снижает прирост
+         выгорания, и увидеть эту связь можно, только когда полоса стоит
+         прямо под кнопкой: раздельными карточками они читались как две
+         независимые механики, каковыми не являются. -->
     <div class="card" style="margin-top:12px">
       <div class="task" id="taskCard">
         <div class="thead">
@@ -545,13 +601,10 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
           <button class="later" id="skip">Отложить</button>
         </div>
         <div class="note" id="donote">+5 000 ₽</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="gauge" data-tip="растёт от задач и созвонов">
-        <div class="gt"><span class="gn" id="burnName">Выгорание</span><span class="gv n" id="burnVal">0%</span></div>
-        <div class="bl"><i id="burnBar"></i></div>
+        <div class="gauge tight" data-tip="ровный ритм задач замедляет вдвое">
+          <div class="gt"><span class="gn" id="burnName">Выгорание</span><span class="gv n" id="burnVal">0%</span></div>
+          <div class="bl"><i id="burnBar"></i></div>
+        </div>
       </div>
       <div class="row tap" id="vac">
         <div class="rl"><div class="rn2">Взять отпуск</div>
@@ -566,10 +619,19 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 
   <!-- КОМАНДА -->
   <div class="tab" id="t-team">
-    <div class="k">Нанять</div>
-    <div class="card" id="hire"></div>
-    <div class="k">Штат</div>
-    <div class="card" id="staff"></div>
+    <!-- Найм и штат — два разных вопроса: «кого взять» и «кто уже есть».
+         Раньше они лежали в одну колонку, и к середине игры до штата надо
+         было пролистать весь список вакансий. -->
+    <div class="seg segtop" id="teamSeg">
+      <button data-pane="hire" class="on">Найм</button>
+      <button data-pane="staff">Штат<b class="segn n" id="segStaffN">0</b></button>
+    </div>
+    <div id="pane-hire">
+      <div class="card" id="hire"></div>
+    </div>
+    <div id="pane-staff" hidden>
+      <div class="card" id="staff"></div>
+    </div>
   </div>
 
   <!-- КАРЬЕРА -->
@@ -770,7 +832,7 @@ const C = {
     [2,"Объяснить бизнесу, почему модель не заменит четверых",5],
     [2,"Разгрести legacy, который прошлым летом сгенерировали за неделю",5]
   ],
-  diffName:["мелочь","задача","разбирательство"],
+  diffName:["мелочь","задача","сложно"],
   diffPay:[0.35, 1, 2.8],     // множитель награды
   diffBurn:[0.3, 1, 3.1],     // множитель выгорания — растёт быстрее награды
 
@@ -917,7 +979,7 @@ const C = {
      desc:"Пишет код. Иногда рабочий"},
     {id:"middle", dept:"eng",   tier:0, name:"Мидл",              pay:220000, out:400000,
      desc:"Опора всего. Никто не замечает"},
-    {id:"senior", dept:"eng",   tier:1, name:"Сеньор",            pay:400000, out:720000,
+    {id:"senior", dept:"eng",   tier:2, name:"Сеньор",            pay:400000, out:720000,
      desc:"Спрашивает «зачем» до того, как начнёт"},
     {id:"qa",     dept:"eng",   tier:1, name:"Тестировщик",       pay:200000, out:110000,
      desc:"+15% разработке, дальше отдача падает"},
@@ -926,20 +988,20 @@ const C = {
     // Две роли, без которых блокеры были бы требованием невозможного.
     // Они же — мост к разделению труда: сначала «все делают всё», потом
     // выясняется, что дизайн и аналитика — это отдельная работа.
-    {id:"analyst",dept:"eng",   tier:0, name:"Аналитик",          pay:190000, out:300000,
+    {id:"analyst",dept:"eng",   tier:1, viaBlock:"b1", name:"Аналитик",          pay:190000, out:300000,
      desc:"Переводит «хочу как у конкурентов» в требования"},
-    {id:"design", dept:"eng",   tier:0, name:"Дизайнер",          pay:180000, out:280000,
+    {id:"design", dept:"eng",   tier:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
      desc:"Рисует то, на что потом смотрят все и молча"},
     {id:"recruit",dept:"people",tier:1, name:"Рекрутер",          pay:130000, out:0,
      desc:"Найм дешевле на 20%. Сам не приносит ничего"},
     // Название по профессии, а не по ощущению: в списке вакансий рядом
     // с «мидлом» и «тестировщиком» «тот самый коллега» читался как шутка
     // не на своём месте. Шутка теперь в описании, где ей и место.
-    {id:"buddy",  dept:"eng",   tier:2, name:"Ведущий инженер",   pay:350000, out:520000,
+    {id:"buddy",  dept:"eng",   tier:4, name:"Ведущий инженер",   pay:350000, out:520000,
      desc:"+20% компании. Тот самый, с кем всё понятно с полуслова. Уходит первым"},
-    {id:"prompt", dept:"eng",   tier:1, era:4, name:"Промпт-инженер",  pay:250000, out:480000,
+    {id:"prompt", dept:"eng",   tier:2, era:4, name:"Промпт-инженер",  pay:250000, out:480000,
      desc:"Профессия, которой два года назад не было"},
-    {id:"agent",  dept:"eng",   tier:1, era:4, name:"ИИ-агент",        pay:35000,  out:260000,
+    {id:"agent",  dept:"eng",   tier:3, era:4, name:"ИИ-агент",        pay:35000,  out:260000,
      desc:"Дёшев и производителен. Через одного нужен присмотр"},
     {id:"assist", dept:"ops",   tier:1, era:4, name:"Ассистент",       pay:90000,  out:60000,
      desc:"Ходит на созвоны вместо тебя. Созвоны реже и короче"}
@@ -985,29 +1047,29 @@ const C = {
   ],
 
   ups:[
-    {id:"u1",grp:"Задачи",   name:"Механическая клавиатура",cost:40000,    desc:"Задача приносит вдвое больше",f:s=>s.click*=2},
-    {id:"u2",grp:"Задачи",   name:"Второй монитор",         cost:300000,   desc:"Ещё вдвое",f:s=>s.click*=2},
-    {id:"u5",grp:"Задачи",   name:"Отключить уведомления",  cost:18000000, desc:"Задача приносит втрое больше",f:s=>s.click*=3},
-    {id:"c1",grp:"Созвоны",  name:"Лимит встреч",             cost:900000,   desc:"Не больше четырёх созвонов в месяц",f:s=>s.dayCap=4},
-    {id:"u3",grp:"Созвоны",  req:"c1", name:"Своя переговорка",  cost:3500000,  desc:"Созвоны на треть короче",f:s=>s.meetLen*=.66},
-    {id:"c2",grp:"Созвоны",  req:"u3", name:"Планировать календарь",cost:9000000,desc:"Не больше двух в месяц, и те реже",f:s=>{s.dayCap=2;s.meetGap*=1.5}},
-    {id:"u4",grp:"Созвоны",  req:"c2", name:"Выключить камеру",   cost:22000000, desc:"Созвон сворачивается в строку: работать можно, но вполуха",f:s=>{s.minimize=true;s.callMul=.55}},
-    {id:"u8",grp:"Созвоны",  era:4, req:"u4", name:"ИИ-конспект встреч",cost:60000000,desc:"Созвоны вдвое короче, потери почти незаметны",f:s=>{s.meetLen*=.5;s.callMul=Math.min(.85,s.callMul+.2)}},
-    {id:"u9",grp:"Созвоны",  era:5, req:"u8", name:"ИИ-ассистент на созвонах",cost:220000000,desc:"На встречи ходит он. Решения иногда принимают без тебя",f:s=>s.noMeets=true},
-    {id:"u6",grp:"Здоровье", name:"Переезд за город",       cost:90000000, desc:"Выгорание растёт вдвое медленнее",f:s=>s.burnRate*=.5},
-    {id:"u7",grp:"Здоровье", name:"Спортзал в подвале",     cost:6000000,  desc:"Выгорание растёт на четверть медленнее",f:s=>s.burnRate*=.75},
-    {id:"u10",grp:"Задачи",  era:4, name:"Копилот",             cost:2500000,  desc:"Задача приносит вдвое больше. Проверять всё равно тебе",f:s=>s.click*=2},
-    {id:"u11",grp:"Задачи",  era:5, name:"Свой инференс",       cost:400000000,desc:"Задача приносит вчетверо больше",f:s=>s.click*=4},
-    {id:"u12",grp:"Команда", era:5, name:"ИИ-скрининг резюме",  cost:60000000, desc:"Найм дешевле на 35%. Иногда приходит не тот, кого ждали",f:s=>s.hireTax*=.65,
+    {id:"u1",grp:"Задачи", t:0,   name:"Механическая клавиатура",cost:40000,    desc:"Задача приносит вдвое больше",f:s=>s.click*=2},
+    {id:"u2",grp:"Задачи", t:0,   name:"Второй монитор",         cost:300000,   desc:"Ещё вдвое",f:s=>s.click*=2},
+    {id:"u5",grp:"Задачи", t:2,   name:"Отключить уведомления",  cost:18000000, desc:"Задача приносит втрое больше",f:s=>s.click*=3},
+    {id:"c1",grp:"Созвоны", t:1,  name:"Лимит встреч",             cost:900000,   desc:"Не больше четырёх созвонов в месяц",f:s=>s.dayCap=4},
+    {id:"u3",grp:"Созвоны", t:1,  req:"c1", name:"Своя переговорка",  cost:3500000,  desc:"Созвоны на треть короче",f:s=>s.meetLen*=.66},
+    {id:"c2",grp:"Созвоны", t:2,  req:"u3", name:"Планировать календарь",cost:9000000,desc:"Не больше двух в месяц, и те реже",f:s=>{s.dayCap=2;s.meetGap*=1.5}},
+    {id:"u4",grp:"Созвоны", t:3,  req:"c2", name:"Выключить камеру",   cost:22000000, desc:"Созвон сворачивается в строку: работать можно, но вполуха",f:s=>{s.minimize=true;s.callMul=.55}},
+    {id:"u8",grp:"Созвоны", t:3,  era:4, req:"u4", name:"ИИ-конспект встреч",cost:60000000,desc:"Созвоны вдвое короче, потери почти незаметны",f:s=>{s.meetLen*=.5;s.callMul=Math.min(.85,s.callMul+.2)}},
+    {id:"u9",grp:"Созвоны", t:4,  era:5, req:"u8", name:"ИИ-ассистент на созвонах",cost:220000000,desc:"На встречи ходит он. Решения иногда принимают без тебя",f:s=>s.noMeets=true},
+    {id:"u6",grp:"Здоровье", t:3, name:"Переезд за город",       cost:90000000, desc:"Выгорание растёт вдвое медленнее",f:s=>s.burnRate*=.5},
+    {id:"u7",grp:"Здоровье", t:1, name:"Спортзал в подвале",     cost:6000000,  desc:"Выгорание растёт на четверть медленнее",f:s=>s.burnRate*=.75},
+    {id:"u10",grp:"Задачи", t:1,  era:4, name:"Копилот",             cost:2500000,  desc:"Задача приносит вдвое больше. Проверять всё равно тебе",f:s=>s.click*=2},
+    {id:"u11",grp:"Задачи", t:4,  era:5, name:"Свой инференс",       cost:400000000,desc:"Задача приносит вчетверо больше",f:s=>s.click*=4},
+    {id:"u12",grp:"Команда", t:2, era:5, name:"ИИ-скрининг резюме",  cost:60000000, desc:"Найм дешевле на 35%. Иногда приходит не тот, кого ждали",f:s=>s.hireTax*=.65,
      after:"Первый отобранный кандидат не пришёл на созвон. В резюме слово «синергия» встречалось четырнадцать раз."},
     // Локально верное решение с честной выгодой. Плюс написан на карточке
     // и он настоящий. Минус придёт в хронику через минуту после покупки —
     // и ещё раз, и ещё, пока кто-то не уйдёт совсем.
-    {id:"u13",grp:"Команда", era:3, name:"Вернуть всех в офис", cost:7000000,
+    {id:"u13",grp:"Команда", t:2, era:3, name:"Вернуть всех в офис", cost:7000000,
      desc:"+18% выработки: вопросы решаются за минуту, а не за день",
      f:s=>{s.rto=true; s.burnRate*=1.15},
      after:"«Дорога занимает два часа в день», — написали трое. Четвёртый ничего не написал."},
-    {id:"u14",grp:"Здоровье", era:3, name:"Гибридный график", req:"u13", cost:45000000,
+    {id:"u14",grp:"Здоровье", t:3, era:3, name:"Гибридный график", req:"u13", cost:45000000,
      desc:"Два дня из дома. Выработка падает до +6%, но люди перестают уходить",
      f:s=>{s.rtoSoft=true; s.burnRate*=.9},
      after:"В опросе вовлечённости гибрид назвали главным достижением года. Автором инициативы записан не ты."}
@@ -1295,6 +1357,7 @@ function loseStaff(why){
   const boss = S.staff.find(x=>x.danger);
   const by = boss ? " Решение подписал "+boss.name+"." : "";
   log(why+": <b>"+p.name+"</b>, "+p.title.toLowerCase()+", больше здесь не работает."+by, "bad");
+  sfx("lose");
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1376,6 +1439,8 @@ function doTask(){
   S.flow = Math.max(0, Math.min(1, S.flow + (hit ? (onCall() ? .03 : .11) : -.07)));
   btn.classList.remove("hit","miss"); void btn.offsetWidth;
   btn.classList.add(hit ? "hit" : "miss");
+  sfx(hit ? "hit" : "miss");
+  if(hit) buzz(8);
 
   const v = clickVal();
   S.cash += v; S.earned += v;
@@ -1413,6 +1478,7 @@ $("vac").onclick = () => {
   // Выплата за выращенный управленческий слой: сначала твой отпуск стоит
   // компании половины выручки, под конец — десятой части. Ты добился того,
   // что тебя можно не заметить.
+  sfx("good");
   if(absenceHit() <= 0.16 && !S.unmissed){
     S.unmissed = true;
     log("Ты был в отпуске две недели. Никто не заметил.", "lore");
@@ -1452,6 +1518,111 @@ $("blockbar").onclick = () => {
 };
 
 /* ══════════════════════════════════════════════════════════════
+   ЗВУК
+   Всё синтезируется в браузере. Никаких файлов и base64: игра — один
+   HTML без зависимостей, и аудиофайлы раздули бы её на сотни килобайт
+   ради секунды звука. Осциллятор с огибающей стоит ноль байт.
+
+   Регистр подобран под тон игры: не мультяшные «пиу», а короткие сухие
+   щелчки и низкие удары. Тяжёлые события говорят телом, а не мелодией —
+   80→40 Гц с быстрым спадом ощущается животом, а не ухом.
+   ══════════════════════════════════════════════════════════════ */
+let AC = null, sfxBus = null, musBus = null, musicOn = false;
+function audio(){
+  // Контекст создаётся только по первому касанию: браузеры не дают
+  // играть до жеста пользователя, и попытка до него ломает весь звук.
+  if(AC) return AC;
+  try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  sfxBus = AC.createGain(); musBus = AC.createGain();
+  sfxBus.connect(AC.destination); musBus.connect(AC.destination);
+  applyVolume();
+  return AC;
+}
+function applyVolume(){
+  if(!AC) return;
+  sfxBus.gain.value = (S.volSfx ?? .7);
+  musBus.gain.value = (S.volMus ?? .35) * .22;   // музыка тише по умолчанию: она фон
+}
+// Одна нота: тип волны, частота (со спадом), длительность, громкость.
+function tone(type, f0, f1, dur, vol, bus){
+  const ac = audio(); if(!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, ac.currentTime);
+  if(f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1,f1), ac.currentTime+dur);
+  g.gain.setValueAtTime(0, ac.currentTime);
+  g.gain.linearRampToValueAtTime(vol, ac.currentTime+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+  o.connect(g); g.connect(bus||sfxBus);
+  o.start(); o.stop(ac.currentTime+dur+0.02);
+}
+// Короткий шумовой щелчок — «сухая» составляющая, без неё всё звучит мультяшно.
+function noise(dur, vol, freq){
+  const ac = audio(); if(!ac) return;
+  const n = Math.floor(ac.sampleRate*dur);
+  const buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/n, 3);
+  const src = ac.createBufferSource(); src.buffer = buf;
+  const bp = ac.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value = freq||1800;
+  const g = ac.createGain(); g.gain.value = vol;
+  src.connect(bp); bp.connect(g); g.connect(sfxBus);
+  src.start();
+}
+// Низкий удар: то самое «вибро», которым говорят тяжёлые события.
+function thump(vol, from, to){
+  tone("sine", from||85, to||38, .34, vol ?? .55);
+  noise(.05, (vol ?? .55)*.25, 260);
+}
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+
+const SFX = {
+  tap:    () => noise(.03, .10, 2600),
+  hit:    () => { tone("triangle", 660, 880, .09, .16); noise(.02,.06,3200); },
+  miss:   () => { tone("sine", 190, 120, .10, .13); },
+  buy:    () => { tone("triangle", 520, 780, .10, .17); tone("triangle", 780, 1040, .12, .11); },
+  hire:   () => { tone("triangle", 420, 620, .12, .17); },
+  promote:() => { tone("triangle", 520, 700, .13, .17); setTimeout(()=>tone("triangle",700,940,.16,.14),90); },
+  // тяжёлое — телом
+  lose:   () => { thump(.6, 90, 34); buzz(38); },
+  gap:    () => { thump(.55, 70, 30); buzz([26,60,26]); },
+  block:  () => { thump(.6, 100, 42); tone("sine",300,180,.22,.12); buzz(45); },
+  sick:   () => { thump(.5, 60, 26); tone("sine",150,80,.6,.10); buzz([50,80,50]); },
+  era:    () => { tone("sine", 220, 330, .5, .12); setTimeout(()=>tone("sine",330,440,.6,.09),140); },
+  call:   () => { tone("square", 480, 480, .1, .07); setTimeout(()=>tone("square",480,480,.1,.07),160); },
+  good:   () => { tone("triangle", 600, 900, .14, .15); }
+};
+function sfx(name){
+  if(!(S.volSfx ?? .7)) return;
+  const f = SFX[name]; if(!f) return;
+  try{ audio(); applyVolume(); f(); }catch(e){}
+}
+
+/* Фоновая музыка — тоже синтез. Медленный минорный дрон с редкими
+   нотами сверху: не мелодия, а гул опенспейса, под который можно
+   не отвлекаясь работать. Ровно то, чем притворяется вся игра. */
+const SCALE = [220, 261.63, 293.66, 349.23, 392];
+let musTimer = 0;
+function startMusic(){
+  const ac = audio(); if(!ac || musicOn) return;
+  musicOn = true;
+  // дрон: две расстроенные пилы через фильтр
+  [110, 110.4].forEach(f => {
+    const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+    o.type = "sawtooth"; o.frequency.value = f;
+    lp.type = "lowpass"; lp.frequency.value = 380;
+    g.gain.value = .05;
+    o.connect(lp); lp.connect(g); g.connect(musBus); o.start();
+  });
+  // редкие ноты: раз в 6–14 секунд, чтобы не превратиться в мелодию
+  const ping = () => {
+    if(!musicOn) return;
+    if((S.volMus ?? .35) > 0 && !S.ended)
+      tone("sine", pick(SCALE)*2, pick(SCALE)*2, 2.2, .05, musBus);
+    musTimer = setTimeout(ping, 6000 + Math.random()*8000);
+  };
+  musTimer = setTimeout(ping, 3000);
+}
+
+/* ══════════════════════════════════════════════════════════════
    НАСТРОЙКИ
    ══════════════════════════════════════════════════════════════ */
 function applyTheme(mode){
@@ -1483,8 +1654,35 @@ $("setClose").onclick = closeSet;
 $("setScrim").onclick = closeSet;
 document.querySelectorAll("#themeSeg button").forEach(b =>
   b.onclick = () => applyTheme(b.dataset.theme));
-$("volSfx").oninput = e => { S.volSfx = e.target.value/100; $("volSfxV").textContent = e.target.value; };
-$("volMus").oninput = e => { S.volMus = e.target.value/100; $("volMusV").textContent = e.target.value; };
+$("volSfx").oninput = e => {
+  S.volSfx = e.target.value/100; $("volSfxV").textContent = e.target.value;
+  applyVolume(); sfx("tap");           // слышно, что именно крутишь
+};
+$("volMus").oninput = e => {
+  S.volMus = e.target.value/100; $("volMusV").textContent = e.target.value;
+  applyVolume(); if(S.volMus > 0) startMusic();
+};
+
+// Звук просыпается от первого касания экрана — раньше браузер не позволит.
+addEventListener("pointerdown", function wake(){
+  removeEventListener("pointerdown", wake);
+  audio();
+  if((S.volMus ?? .35) > 0) startMusic();
+}, {once:false});
+
+// Сегмент «Найм / Штат». Выбор запоминается: если ты разбирался со штатом,
+// возврат на вкладку не должен снова кидать тебя в список вакансий.
+function setTeamPane(pane){
+  S.teamPane = pane;
+  document.querySelectorAll("#teamSeg button").forEach(b =>
+    b.classList.toggle("on", b.dataset.pane===pane));
+  $("pane-hire").hidden  = pane!=="hire";
+  $("pane-staff").hidden = pane!=="staff";
+  sig.hire = sig.staff = null;
+  paint();
+}
+document.querySelectorAll("#teamSeg button").forEach(b =>
+  b.onclick = () => { sfx("tap"); setTeamPane(b.dataset.pane); });
 // Скролл запоминается по вкладке: ушёл посмотреть кассу — вернулся туда,
 // где читал список найма, а не в начало.
 const scrollAt = {};
@@ -1513,7 +1711,21 @@ function changed(key, val){
   if(sig[key] === val) return false;
   sig[key] = val; return true;
 }
-const roleLocked = r => (r.era||0) > S.era ||
+// Метка грейда. Обычный не подписываем: подпись «обычный» на каждой
+// второй строке — шум, а не информация. Легендарный получает звёзды.
+const GRADE = ["", "редкий", "очень редкий", "эпический", "легендарный"];
+function gradeTag(t){
+  if(!t) return "";
+  return ' <span class="gname t'+t+'">'+GRADE[t]+
+    (t===4 ? ' <span class="stars">★★★</span>' : '')+'</span>';
+}
+// Профессия появляется, когда появляется нужда. Дизайнера и аналитика
+// нельзя нанять до того, как проект в них упрётся: иначе игрок наймёт их
+// впрок, блокер отфильтруется как уже выполненный, и момент, ради которого
+// он написан, не случится вообще.
+const roleSeen = r => !r.viaBlock || S.blocker===r.viaBlock ||
+  (S.blockersDone||[]).includes(r.viaBlock);
+const roleLocked = r => (r.era||0) > S.era || !roleSeen(r) ||
   (r.pay*1.5 > Math.max(60000, S.earned*1.2) && !S.hired[r.id]);
 // Открытые роли и ровно одна следующая под замком. Вываливать весь список
 // сразу — значит показать двадцать лет вперёд человеку, у которого пока
@@ -1521,7 +1733,9 @@ const roleLocked = r => (r.era||0) > S.era ||
 function paintHire(){
   const all  = C.roles.filter(r => (r.era||0) <= S.era);
   const open = all.filter(r => !roleLocked(r));
-  const next = all.filter(r => roleLocked(r)).sort((a,b)=>a.pay-b.pay)[0];
+  // роль, которая ждёт своего блокера, в тизер не берём: её появление —
+  // это событие, а не пункт прайса
+  const next = all.filter(r => roleLocked(r) && roleSeen(r)).sort((a,b)=>a.pay-b.pay)[0];
   const key = S.era+"|"+open.map(r => {
     const c = hireCost(r);
     return r.id+S.hired[r.id]+(S.cash>=c?"1":"0")+c;
@@ -1536,15 +1750,15 @@ function paintHire(){
     d.innerHTML =
       '<div class="tier t'+r.tier+'"></div>'+
       '<div class="rl"><div class="rn2">'+r.name+
-        (S.hired[r.id] ? ' <span class="cnt">×'+S.hired[r.id]+'</span>' : '')+
-        (r.tier===2 ? ' <span class="pill">легендарный</span>' : '')+'</div>'+
+        (S.hired[r.id] ? ' <span class="cnt">'+S.hired[r.id]+'</span>' : '')+
+        gradeTag(r.tier)+'</div>'+
       // Зарплата уехала из описания в колонку цены: вместе с шуткой она
       // разгоняла строку на три ряда, и список переставал читаться.
       '<div class="rd">'+r.desc+'</div></div>'+
       // Только ФОТ. Будущая цена найма на 393 пикселях стоила больше, чем
       // давала: она разгоняла колонку и зажимала описание в три строки.
       '<div class="rp">'+rub(c)+'<small>ФОТ '+fmt(r.pay)+'</small></div>';
-    if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sig.hire=sig.staff=null; paint(); };
+    if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sfx("hire"); sig.hire=sig.staff=null; paint(); };
     box.appendChild(d);
   });
   if(next){
@@ -1565,9 +1779,9 @@ function paintStaff(){
   const box = $("staff"); box.innerHTML = "";
   // Норма управляемости перестала быть невидимой. До этого игрок просто
   // видел, что повышения больше ничего не дают, и не знал почему.
+  const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*SPAN;
+  const cov = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
   if(S.staff.length){
-    const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*SPAN;
-    const cov = Math.min(1, seats/S.staff.length);
     const g = document.createElement("div");
     g.className = "gauge";
     g.dataset.tip = "один руководитель — восемь человек";
@@ -1580,26 +1794,59 @@ function paintStaff(){
           'Один руководитель покрывает восемь человек')+'</div>';
     box.appendChild(g);
   }
+  // Руководители — отдельно и поимённо: это они меняют правила для всех
+  // остальных, и когда одного из них сократят, читаться это должно иначе,
+  // чем «−1 юнит».
   const named = S.staff.filter(p=>p.perk);
-  const plain = {};
-  S.staff.filter(p=>!p.perk).forEach(p => plain[p.role]=(plain[p.role]||0)+1);
-  named.forEach(p => {
-    const d = document.createElement("div");
-    d.className = "row lead";
-    d.innerHTML = '<div class="rl"><div class="rn2">'+p.name+'</div>'+
-      '<div class="rd">'+p.title+' · '+rub(p.pay)+'/мес</div>'+
-      '<div class="pill'+(p.danger?" w":"")+'">'+p.perk+'</div></div>';
-    box.appendChild(d);
-  });
-  C.roles.forEach(r => {
-    if(!plain[r.id]) return;
-    const d = document.createElement("div");
-    d.className = "row";
-    d.innerHTML = '<div class="tier t'+r.tier+'"></div><div class="rl">'+
-      '<div class="rn2">'+r.name+' <span class="cnt">×'+plain[r.id]+'</span></div>'+
-      '<div class="rd">ФОТ '+rub(r.pay*plain[r.id])+'/мес</div></div>';
-    box.appendChild(d);
-  });
+  if(named.length){
+    const h = document.createElement("div");
+    h.className = "tgrp"; h.textContent = "Руководят";
+    box.appendChild(h);
+    named.forEach(p => {
+      const d = document.createElement("div");
+      d.className = "row lead";
+      // Плашка показывает не должность (она строкой выше), а что он даёт:
+      // повторять одно и то же слово дважды — не забота, а шум.
+      const gives = p.bonus
+        ? "+"+Math.round(p.bonus*100)+"% "+(p.scope==="eng" ? "разработке"
+            : p.scope==="ops" ? "поддержке" : "компании")
+        : "без множителя";
+      d.innerHTML = '<div class="rl"><div class="rn2">'+p.name+'</div>'+
+        '<div class="rd">'+p.title+' · ФОТ '+rub(p.pay)+'/мес</div></div>'+
+        '<div class="rp'+(p.danger?" w":"")+'" style="color:'+
+          (p.bonus?"var(--acc-ink)":"var(--mut)")+'">'+gives+'</div>';
+      box.appendChild(d);
+    });
+  }
+  // Остальные — командами по специальности. Внутри команды имена чипами:
+  // видно и сколько их, и что это живые люди, а не счётчик.
+  const plain = S.staff.filter(p=>!p.perk);
+  if(plain.length){
+    const covered = cov >= 1;
+    const h = document.createElement("div");
+    h.className = "tgrp" + (covered ? "" : " warn");
+    h.textContent = covered ? "Команды · все под руководителем"
+                            : "Команды · под руководителем "+Math.round(cov*100)+"%";
+    box.appendChild(h);
+    C.roles.forEach(r => {
+      const list = plain.filter(p=>p.role===r.id);
+      if(!list.length) return;
+      const out = list.reduce((a,p)=>a+p.out,0), pay = list.reduce((a,p)=>a+p.pay,0);
+      const shown = list.slice(0,8);
+      const d = document.createElement("div");
+      d.className = "team";
+      d.innerHTML =
+        '<div class="tmh"><div class="tier t'+r.tier+'" style="height:15px"></div>'+
+        '<b>'+r.name+'</b><span class="cnt">'+list.length+'</span>'+
+        '<span class="money"><i>+'+fmt(out)+'</i> · <s>−'+fmt(pay)+'</s></span></div>'+
+        '<div class="chips">'+
+          shown.map(p=>'<span class="chip">'+p.name+'</span>').join("")+
+          (list.length>shown.length
+            ? '<span class="chip more">и ещё '+(list.length-shown.length)+'</span>' : '')+
+        '</div>';
+      box.appendChild(d);
+    });
+  }
   if(!S.staff.length)
     box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Штат пустой. Ты и есть штат.</div></div></div>';
 }
@@ -1654,7 +1901,7 @@ function paintTracks(){
       who.bonus = st.bonus||0; who.scope = st.scope||"all";
       if(st.dangerous){ who.danger=true; S.demoteReady=true; }
       if(st.eff) st.eff(S);
-      S.done.add(st.id);
+      S.done.add(st.id); sfx("promote");
       log("<b>"+who.name+"</b> — теперь "+st.title.toLowerCase()+". "+
           (st.dangerous ? "Все поздравили." : "Команда порадовалась."), "good");
       after(st);
@@ -1720,17 +1967,19 @@ function paintUps(){
       if(u === next){
         const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
         d.className = "row lk";
-        d.innerHTML = '<div class="rl"><div class="rn2">'+LOCK+u.name+'</div>'+
+        d.innerHTML = '<div class="tier t'+(u.t||0)+'" style="opacity:.4"></div>'+
+          '<div class="rl"><div class="rn2">'+LOCK+u.name+gradeTag(u.t||0)+'</div>'+
           '<div class="rd">'+u.desc+'</div>'+
           '<div class="need">'+(needs ? 'Сначала: '+needs.name.toLowerCase()
                                       : 'Откроется при обороте '+rub(u.cost))+'</div></div>';
       } else {
         const ok = S.cash >= u.cost;
         d.className = "row " + (ok ? "tap" : "no");
-        d.innerHTML = '<div class="rl"><div class="rn2">'+u.name+'</div>'+
+        d.innerHTML = '<div class="tier t'+(u.t||0)+'"></div>'+
+          '<div class="rl"><div class="rn2">'+u.name+gradeTag(u.t||0)+'</div>'+
           '<div class="rd">'+u.desc+'</div></div>'+
           '<div class="rp">'+rub(u.cost)+'</div>';
-        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S);
+        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S); sfx("buy");
                                    after(u); sig.ups=null; paint(); };
       }
       card.appendChild(d);
@@ -1797,6 +2046,7 @@ function checkEra(){
   S.era = i;
   $("brand").textContent = C.eras[i].brand;
   log(C.eras[i].note, "lore");
+  sfx("era"); buzz([18,50,18]);
 }
 function paint(){
   if(S.ended) return;
@@ -1808,10 +2058,9 @@ function paint(){
   dl.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+" в месяц";
   dl.className = "delta n" + (pr>=0?"":" w");
 
-  // Шапка: те же числа, но доступные с любой вкладки. На «Работе» их
-  // прячем — там за кассу отвечает крупная цифра, и одно и то же число
-  // дважды на экране разным весом читается как ошибка, а не как забота.
-  document.querySelector(".hcash").style.visibility = S.tab==="work" ? "hidden" : "visible";
+  // Шапка: те же числа, доступные с любой вкладки, включая «Работу».
+  // Дублирование с крупной цифрой сознательное: касса — предмет игры,
+  // и она должна быть на месте всегда, даже когда экран уехал вниз.
   $("hCash").textContent = rub(S.cash);
   const hr = $("hRate");
   hr.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+"/мес";
@@ -1846,7 +2095,10 @@ function paint(){
     onCall() ? "+"+rub(clickVal())+" · вполуха, "+Math.round((1-S.callMul)*100)+"% мимо" :
     "+"+rub(clickVal());
 
-  if(S.tab==="team")   { paintHire(); paintStaff(); }
+  if(S.tab==="team"){
+    $("segStaffN").textContent = S.staff.length;
+    if((S.teamPane||"hire")==="hire") paintHire(); else paintStaff();
+  }
   if(S.tab==="career") { paintTracks(); }
   if(S.tab==="work")   { paintUps(); }
   paintCo();
@@ -2052,6 +2304,7 @@ setInterval(() => {
       const worst = S.staff.reduce((a,b)=> b.pay>a.pay?b:a);
       S.staff = S.staff.filter(x=>x.uid!==worst.uid);
       S.hired[worst.role] = Math.max(0,S.hired[worst.role]-1);
+      sfx("gap");
       log("Смета не сходится. <b>"+worst.name+"</b> ("+worst.title.toLowerCase()+
           ") получил расчёт. Формально — по соглашению сторон.", "bad");
     }
@@ -2070,7 +2323,7 @@ setInterval(() => {
   else if(S.vacLeft<=0){
     S.burn += (0.15 + S.staff.length*0.012) * S.burnRate * burnMul() * dt;
     if(S.burn>=100){
-      S.burn=100; S.sick=18;
+      S.burn=100; S.sick=18; sfx("sick");
       log("Выгорание. Ты не встаёшь с кровати. Компания работает без тебя, и это отдельно неприятно.","bad");
       loseStaff("Пока ты болел");
     }
@@ -2104,6 +2357,7 @@ setInterval(() => {
       // становится невыполнимым по кругу. Проиграть в этой игре нельзя.
       if(next && S.staff.length && p > 0){
         S.blocker = next.id;
+        sfx("block");
         $("bTitle").textContent = next.title;
         $("bText").textContent  = next.text;
         $("bNeed").textContent  = next.need;
@@ -2205,6 +2459,7 @@ setInterval(() => {
         $("mHandNote").textContent = "Участников: 9. Говорят двое.";
         $("sheet").classList.add("on"); $("scrim").classList.add("on");
       }
+      sfx("call"); buzz(20);
       S.meetIn = meetGapNow()*(0.75+Math.random()*0.5);
     }
   }
@@ -2250,7 +2505,10 @@ addEventListener("resize", measure);
 addEventListener("orientationchange", measure);
 if(window.ResizeObserver) new ResizeObserver(measure).observe(chron);
 
-$("chToggle").onclick = () => {
+// Переключатель висит и на заголовке, и на свёрнутой строке: в свёрнутом
+// виде заголовок скрыт, и обработчик на нём одном означал, что открыть
+// хронику физически нечем.
+const toggleChron = () => {
   const open = chron.classList.toggle("open");
   // фон под раскрытой хроникой не должен уезжать под пальцем
   document.body.style.overflow = open ? "hidden" : "";
@@ -2258,8 +2516,11 @@ $("chToggle").onclick = () => {
     // Открыл — значит прочитал: счётчик и висящий сигнал больше не нужны.
     S.unread = 0; paintBadge();
     $("sig").hidden = true; clearTimeout(sigTimer);
+    sfx("tap");
   } else measure();
 };
+$("chToggle").onclick = toggleChron;
+$("chPeek").onclick = toggleChron;
 
 // Восстановление сохранения. Раньше игра не переживала закрытие вкладки —
 // весь смысл эпох в длинной дистанции, а без сейва дистанция обнулялась
@@ -2297,6 +2558,7 @@ if(restored){
   rollTask();
 }
 applyTheme(S.theme || "auto");
+setTeamPane(S.teamPane || "hire");
 showTask(); paint(); measure();
 
 // pagehide переживает и обычное закрытие вкладки, и уход в фон на iOS —
@@ -2308,7 +2570,9 @@ addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
-               snack,ending,finish,godMode,
+               snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
+               audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
+               ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
 </script>
 </body>
