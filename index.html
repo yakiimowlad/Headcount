@@ -885,7 +885,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "0.6.1";
+const VERSION = "0.7.0";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -970,11 +970,11 @@ const C = {
      Гейты: role+count · step · cash · year · staff. Все — комбинируемые.
      hit — доля выручки, которую теряешь, пока не решено.            */
   blockers:[
-    {id:"b1", era:0, hit:.30, title:"Проект не подошёл заказчику",
+    {id:"b1", era:1, hit:.30, title:"Проект не подошёл заказчику",
      text:"«Вы сделали не то, что мы просили». Просили устно, в аське.",
      gate:{role:"analyst"}, need:"Нужен аналитик",
      done:"Требования наконец записали. Оказалось, их четырнадцать."},
-    {id:"b2", era:0, hit:.25, title:"Заказчику не нравится, как это выглядит",
+    {id:"b2", era:1, hit:.25, title:"Заказчику не нравится, как это выглядит",
      text:"«Сделайте красиво». На вопрос «как именно» — «ну красиво».",
      gate:{role:"design"}, need:"Нужен дизайнер",
      done:"Показали макет. Заказчик сказал «вот теперь другое дело». Макет тот же."},
@@ -988,7 +988,7 @@ const C = {
      done:"Справку приняли. Тендер выиграл тот, кто её не носил."},
     {id:"b5", era:2, hit:.30, title:"У заказчика ТЗ на тридцать листов",
      text:"Двадцать восемь из них — про совместимость с 1Ы.",
-     gate:{role:"analyst", count:2}, need:"Нужны двое аналитиков",
+     gate:{step:"a1"}, need:"Нужен системный аналитик — вырастить из аналитика",
      done:"ТЗ разобрали. Тридцать листов ужались до четырёх экранов."},
     {id:"b6", era:2, hit:.28, title:"Заказчик просит SLA 99,99%",
      text:"Это пятьдесят две минуты простоя в год. У вас нет дежурных.",
@@ -1006,9 +1006,21 @@ const C = {
      text:"«Импортозамещение». Сроки прежние.",
      gate:{year:2022, staff:12}, need:"Нужен 2022 год и штат от 12",
      done:"Переехали. Работает так же, называется иначе."},
+    // Инцидент: можно переждать, можно закрыть сразу — если есть кем.
+    {id:"b11", era:2, hit:.34, title:"Ночью упала оплата",
+     text:"Discord-канал дежурных завели вчера. Дежурных не завели.",
+     gate:{or:[{role:"qa",count:2},{time:45}]},
+     need:"Двое тестировщиков — или 45 секунд, пока чинят руками",
+     done:"Починили. Постмортем назначили на пятницу, потом перенесли."},
+    // Дедлайн: единственный блокер, который снимается вашими руками.
+    {id:"b12", era:3, hit:.26, title:"Релиз обещали к пятнице",
+     text:"Обещали не вы. Сообщили вам в среду.",
+     gate:{tasks:12},
+     need:"Закрыть 12 задач",
+     done:"Успели. В понедельник выяснилось, что релиз перенесли на месяц."},
     {id:"b10", era:5, hit:.28, title:"Клиенту нужен брендбук",
      text:"«Ну вы же дизайн делаете». Это другой дизайн.",
-     gate:{role:"design", count:2}, need:"Нужны двое дизайнеров",
+     gate:{step:"d2"}, need:"Нужен графический дизайнер — вырастить из дизайнера",
      done:"Брендбук сдали. Логотип в нём тот же, но теперь на 40 страницах."}
   ],
 
@@ -1101,29 +1113,33 @@ const C = {
   roles:[
     {id:"intern", dept:"eng",   tier:0, name:"Стажёр",            pay:45000,  out:60000,
      desc:"Убыточен и режет награду за задачу. Через минуту станет джуниором"},
-    {id:"junior", dept:"eng",   tier:0, name:"Джуниор",           pay:110000, out:195000,
+    // До 2011-го разделения труда нет, и это правда: в 2007-м один
+    // человек верстал, тестировал и рисовал. Плохо, но сам.
+    {id:"crew",   dept:"eng",   tier:0, name:"Айтишник",          pay:150000, out:250000,
+     desc:"Верстает, тестирует и рисует. Плохо, но сам"},
+    {id:"junior", dept:"eng",   tier:0, era:1, name:"Джуниор",           pay:110000, out:195000,
      desc:"Пишет код. Иногда рабочий"},
-    {id:"middle", dept:"eng",   tier:0, name:"Мидл",              pay:220000, out:400000,
+    {id:"middle", dept:"eng",   tier:0, era:1, name:"Мидл",              pay:220000, out:400000,
      desc:"Опора всего. Никто не замечает"},
-    {id:"senior", dept:"eng",   tier:2, name:"Сеньор",            pay:400000, out:720000,
+    {id:"senior", dept:"eng",   tier:2, era:2, name:"Сеньор",            pay:400000, out:720000,
      desc:"Спрашивает «зачем» до того, как начнёт"},
-    {id:"qa",     dept:"eng",   tier:1, name:"Тестировщик",       pay:200000, out:110000,
+    {id:"qa",     dept:"eng",   tier:1, era:1, name:"Тестировщик",       pay:200000, out:110000,
      desc:"+15% разработке, дальше отдача падает"},
-    {id:"support",dept:"ops",   tier:0, name:"Оператор поддержки",pay:65000,  out:140000,
+    {id:"support",dept:"ops",   tier:0, era:1, name:"Оператор поддержки",pay:65000,  out:140000,
      desc:"Первая линия. Слышит о продукте больше всех"},
     // Две роли, без которых блокеры были бы требованием невозможного.
     // Они же — мост к разделению труда: сначала «все делают всё», потом
     // выясняется, что дизайн и аналитика — это отдельная работа.
-    {id:"analyst",dept:"eng",   tier:1, viaBlock:"b1", name:"Аналитик",          pay:190000, out:300000,
+    {id:"analyst",dept:"eng",   tier:1, era:1, viaBlock:"b1", name:"Аналитик",          pay:190000, out:300000,
      desc:"Переводит «хочу как у конкурентов» в требования"},
-    {id:"design", dept:"eng",   tier:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
+    {id:"design", dept:"eng",   tier:1, era:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
      desc:"Рисует то, на что потом смотрят все и молча"},
-    {id:"recruit",dept:"people",tier:1, name:"Рекрутер",          pay:130000, out:0,
+    {id:"recruit",dept:"people",tier:1, era:1, name:"Рекрутер",          pay:130000, out:0,
      desc:"Найм дешевле на 20%. Сам не приносит ничего"},
     // Название по профессии, а не по ощущению: в списке вакансий рядом
     // с «мидлом» и «тестировщиком» «тот самый коллега» читался как шутка
     // не на своём месте. Шутка теперь в описании, где ей и место.
-    {id:"buddy",  dept:"eng",   tier:4, name:"Ведущий инженер",   pay:350000, out:520000,
+    {id:"buddy",  dept:"eng",   tier:4, era:2, name:"Ведущий инженер",   pay:350000, out:520000,
      desc:"+20% компании. Тот самый, с кем всё понятно с полуслова. Уходит первым"},
     {id:"prompt", dept:"eng",   tier:2, era:4, name:"Промпт-инженер",  pay:250000, out:480000,
      desc:"Профессия, которой два года назад не было"},
@@ -1156,6 +1172,31 @@ const C = {
       {id:"m35",title:"Директор по ИИ-трансформации",from:"senior",pay:800000,desc:"+35% компании. Каждый отдел обязан отчитаться о внедрении",bonus:.35,scope:"all",eff:s=>s.burnRate*=1.15,era:4},
       {id:"m4",title:"Эффективный менеджер",from:"senior",pay:950000,desc:"+90% компании. Возвращает всех в офис, запускает оптимизацию штата",bonus:.9,scope:"all",eff:s=>{s.rto=true;s.opt=true},dangerous:true,
        after:"Первая презентация называлась «Операционная эффективность: точки роста». Слайд про людей был четырнадцатым."}
+     ]},
+    /* fork: ступени идут не лесенкой, а параллельно. Каждая берёт
+       своего свободного человека, поэтому из одного дизайнера нельзя
+       вырастить и UX, и графического — придётся нанять второго.
+       Ровно так это и работает в жизни. */
+    {id:"des", name:"Дизайн", fork:true,
+     steps:[
+      {id:"d1",title:"UX-дизайнер",from:"design",pay:320000,era:2,
+       desc:"+25% разработке. Интерфейсы перестают переделывать по три раза",bonus:.25,scope:"eng"},
+      {id:"d2",title:"Графический дизайнер",from:"design",pay:300000,era:2,
+       desc:"+15% компании. Появляется то, что можно показать заказчику",bonus:.15,scope:"all"},
+      {id:"d3",title:"Арт-директор",from:"design",pay:480000,era:3,
+       desc:"+30% компании. Согласование макета теперь проходит через одного человека",
+       bonus:.3,scope:"all",eff:s=>s.meetGap*=.92,
+       after:"Ввели дизайн-ревью. Макеты стали лучше, а сроки — длиннее."}
+     ]},
+    {id:"ana", name:"Аналитика", fork:true,
+     steps:[
+      {id:"a1",title:"Системный аналитик",from:"analyst",pay:330000,era:2,
+       desc:"+25% разработке. ТЗ наконец пишет тот, кто умеет",bonus:.25,scope:"eng"},
+      {id:"a2",title:"Продуктовый аналитик",from:"analyst",pay:350000,era:2,
+       desc:"+20% компании. Выясняется, чем пользуются, а чем нет",bonus:.2,scope:"all"},
+      {id:"a3",title:"Бизнес-аналитик",from:"analyst",pay:420000,era:3,
+       desc:"+30% компании. Считает деньги до того, как их потратят",bonus:.3,scope:"all",
+       after:"Первый же расчёт показал, что два проекта из пяти убыточны. Их всё равно доделали."}
      ]},
     {id:"people", name:"Люди",
      steps:[
@@ -1263,7 +1304,7 @@ const S = {
   rto:false, opt:false, review:false, surveys:false,
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
-  blocker:null, blockersDone:[], blockIn:75,
+  blocker:null, blockersDone:[], blockIn:75, blockStart:0, blockTasks:0, taskCount:0,
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
@@ -1495,11 +1536,16 @@ function revenueRaw(){
    как справку об оборотах. */
 function gateOk(g){
   if(!g) return true;
+  // Гейт «или»: инцидент чинится временем ИЛИ нужным человеком сразу.
+  if(g.or) return g.or.some(x => gateOk(x));
   if(g.role  && (S.hired[g.role]||0) < (g.count||1)) return false;
   if(g.step  && !S.done.has(g.step))                 return false;
   if(g.cash  && S.cash < g.cash)                     return false;
   if(g.year  && year() < g.year)                     return false;
   if(g.staff && S.staff.length < g.staff)            return false;
+  // Время идёт само. Задачи надо закрыть руками.
+  if(g.time  && S.playTime - (S.blockStart||0) < g.time)      return false;
+  if(g.tasks && S.taskCount - (S.blockTasks||0) < g.tasks)    return false;
   return true;
 }
 const activeBlocker = () => S.blocker ? C.blockers.find(b=>b.id===S.blocker) : null;
@@ -1650,6 +1696,7 @@ function doTask(){
   S.cash += v; S.earned += v;
   S.burn += 0.5 * C.diffBurn[task.diff] * S.burnRate * burnMul() * (onCall() ? 1.5 : 1);
 
+  S.taskCount = (S.taskCount||0) + 1;
   S.recent.push(task.diff);
   if(S.recent.length > 14) S.recent.shift();
   const was = S.comboOn;
@@ -2055,9 +2102,12 @@ function paintStaff(){
     box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Штат пустой. Ты и есть штат.</div></div></div>';
 }
 const stepReady = st => (st.era||0) <= S.era && S.staff.some(p=>p.role===st.from && !p.perk);
+// В обычном треке ступень открывает предыдущая. В развилке ступени
+// независимы: каждая берёт своего свободного человека.
+const stepPrev = (tr,i) => tr.fork || i===0 || S.done.has(tr.steps[i-1].id);
 function anyPromo(){
   return C.tracks.some(tr => tr.steps.some((st,i) =>
-    !S.done.has(st.id) && (i===0 || S.done.has(tr.steps[i-1].id)) && stepReady(st)));
+    !S.done.has(st.id) && stepPrev(tr,i) && stepReady(st)));
 }
 function paintTracks(){
   const key = S.era+"|"+[...S.done].join(",")+"|"+C.tracks.map(tr=>tr.steps.map(st=>stepReady(st)?1:0).join("")).join("")+
@@ -2065,7 +2115,7 @@ function paintTracks(){
   if(!changed("tracks", key)) return;
   const box = $("tracks"); box.innerHTML = "";
   C.tracks.forEach(tr => {
-    const opened = tr.steps.some((st,i)=> i===0 || S.done.has(tr.steps[i-1].id));
+    const opened = tr.steps.some((st,i)=> stepPrev(tr,i));
     if(!opened) return;
     const card = document.createElement("div");
     card.className = "card";
@@ -2075,7 +2125,7 @@ function paintTracks(){
     let h = '', hidden = false;
     tr.steps.forEach((st,i) => {
       const done = S.done.has(st.id);
-      const prev = i===0 || S.done.has(tr.steps[i-1].id);
+      const prev = stepPrev(tr,i);
       if(!prev && !done){ hidden = true; return; }
       if((st.era||0) > S.era && !done){ hidden = true; return; }
       const ready = !done && stepReady(st);
@@ -2707,6 +2757,7 @@ setInterval(() => {
       // становится невыполнимым по кругу. Проиграть в этой игре нельзя.
       if(next && S.staff.length && p > 0){
         S.blocker = next.id;
+        S.blockStart = S.playTime; S.blockTasks = S.taskCount||0;
         sfx("block");
         $("bTitle").textContent = next.title;
         $("bText").textContent  = next.text;
@@ -2929,6 +2980,7 @@ window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,lo
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                loopCost,loopsOpen,span,share,level,
+               stepReady,stepPrev,anyPromo,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
