@@ -516,6 +516,16 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .smeta span{font-size:13px;color:var(--mut)}
 .smeta b{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums}
 
+/* ── ООО и смена эпохи ───────────────────────────────────────────*/
+.llcnum{margin-top:20px;border-top:.5px solid var(--hair);padding-top:6px}
+.llcnum div{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;
+  border-bottom:.5px solid var(--hair2)}
+.llcnum div:last-child{border-bottom:none}
+.llcnum span{font-size:14px;color:var(--mut)}
+.llcnum b{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+.erayear{font:700 12px/1 ui-monospace,Menlo,monospace;letter-spacing:1.5px;
+  color:var(--wrn-ink);margin-bottom:8px}
+
 /* ── блокер ──────────────────────────────────────────────────────
    Полоса живёт над строкой созвона: они независимы и могут висеть
    одновременно — созвон отнимает время, блокер требует человека. */
@@ -670,6 +680,39 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
     <div class="timer n" id="mTimer">0:08</div>
     <button class="hand" id="mHand">Поднять руку 🙋</button>
     <div class="handnote" id="mHandNote">Участников: 9. Говорят двое.</div>
+  </div>
+</div>
+
+<!-- Регистрация ООО. Крестика нет намеренно: это не справка, а развилка,
+     и оба ответа — ответы. «Потом» тоже решение, и оно тоже стоит. -->
+<div class="scrim" id="llcScrim"></div>
+<div class="sheet" id="llcSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <h2>Открыть ООО?</h2>
+    <p id="llcText">Вас уже несколько, и заказчики спрашивают про договор.</p>
+    <div class="llcnum">
+      <div><span>Регистрация</span><b class="n" id="llcCost">—</b></div>
+      <div><span>Бухгалтерия</span><b class="n" id="llcFix">—</b></div>
+      <div><span>Штат сейчас</span><b class="n" id="llcStaff">—</b></div>
+    </div>
+    <div class="bneed" id="llcGain"></div>
+    <button class="go" id="llcYes" style="width:100%;margin-top:18px">Открыть</button>
+    <button class="later" id="llcNo" style="width:100%;margin-top:9px">Потом</button>
+  </div>
+</div>
+
+<!-- Смена эпохи. Единственный экран, который повышает голос: время
+     двинулось, и правила вместе с ним. -->
+<div class="scrim" id="eraScrim"></div>
+<div class="sheet" id="eraSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <div class="erayear n" id="eraYears">2007–2010</div>
+    <h2 id="eraName">Фриланс</h2>
+    <p id="eraNote"></p>
+    <div class="bneed" id="eraWhat"></div>
+    <button class="go" id="eraOk" style="width:100%;margin-top:18px">Дальше</button>
   </div>
 </div>
 
@@ -1090,6 +1133,8 @@ const S = {
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
   blocker:null, blockersDone:[], blockIn:75,
+  // ООО: пока false, экономики компании не существует — только заказы
+  llc:false, llcOpen:false, llcAskedAt:undefined,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
@@ -1322,7 +1367,15 @@ function absenceHit(){
   return 0.5 - 0.4*cover;
 }
 const payroll  = () => S.staff.reduce((a,p)=>a+p.pay,0);
-const overhead = () => S.staff.length*OVERHEAD*S.ovhMul;
+// Регистрация стоит денег один раз, а бухгалтерия — каждый месяц и
+// независимо от того, работал ли ты. Именно этот фиксированный хвост
+// делает раннее ООО невыгодным: с одним человеком он съедает всю прибыль,
+// с пятью — уже незаметен.
+// 350 тысяч в месяц — это два сотрудника, которые ничего не производят.
+// Ровно в этом и шутка, и балансировка: с тремя людьми юрлицо почти
+// съедает прибыль, с пятью — окупается заметно. Ждать выгодно.
+const LLC_COST = 300000, LLC_FIXED = 350000;
+const overhead = () => S.staff.length*OVERHEAD*S.ovhMul + (S.llc ? LLC_FIXED : 0);
 const profit   = () => revenue()-payroll()-overhead();
 // Цена отпуска считается и от выручки, и от накопленного: иначе к финалу
 // это бесплатная кнопка «обнулить выгорание» на фоне миллиардов оборота.
@@ -1425,8 +1478,13 @@ const callPenalty = () => onCall() ? S.callMul : 1;
 // Поток теперь платит не только здоровьем, но и деньгами: до +55% к задаче.
 // Раньше умение снижало выгорание, а выгорание было единственным способом
 // проиграть — то есть вся награда за ритм была штрафом за его отсутствие.
+// Люди делают заказы дороже: не «пассивный доход», а то, что с командой
+// берёшься за то, за что один не взялся бы. Это единственный способ расти
+// до регистрации ООО — и причина, по которой нанимать имеет смысл раньше,
+// чем открывать компанию.
+const crewBoost = () => 1 + Math.min(1.2, 0.16*S.staff.length);
 function clickVal(){
-  return S.click * C.diffPay[task.diff] * (1 + .55*S.flow)
+  return S.click * C.diffPay[task.diff] * (1 + .55*S.flow) * crewBoost()
        * (1 - Math.min(.4, S.hired.intern*.08)) * callPenalty();
 }
 
@@ -2039,15 +2097,81 @@ function paintCo(){
     eff("Твоё отсутствие", "−"+Math.round(absenceHit()*100)+"% выручки", W,
       "меньше при сильном управлении");
 }
+// Что именно поменялось со сменой эпохи. Не «стало интереснее», а список:
+// новые задачи, новые роли, новые требования заказчиков.
+function eraChanges(i){
+  const t = C.tasks.filter(x=>(x[2]||0)===i).length;
+  const r = C.roles.filter(x=>(x.era||0)===i).map(x=>x.name);
+  const b = C.blockers.filter(x=>(x.era||0)===i).length;
+  const out = [];
+  if(t) out.push("новых задач: "+t);
+  if(r.length) out.push("можно нанимать: "+r.join(", ").toLowerCase());
+  if(b) out.push("новых требований заказчиков: "+b);
+  return out.length ? out.join(" · ") : "новых людей и задач пока нет — меняется только контекст";
+}
 function checkEra(){
   let i=0;
   C.eras.forEach((e,k)=>{ if(year()>=e.y) i=k; });
   if(i===S.era) return;
+  const first = S.era < 0;
   S.era = i;
   $("brand").textContent = C.eras[i].brand;
   log(C.eras[i].note, "lore");
   sfx("era"); buzz([18,50,18]);
+  // Первую эпоху не объявляем модалкой: игра только что открылась,
+  // и первый экран должен быть игрой, а не окном про игру.
+  if(!first) showEra(i);
 }
+function showEra(i){
+  const e = C.eras[i], next = C.eras[i+1];
+  $("eraYears").textContent = e.y + "–" + (next ? next.y-1 : 2026);
+  $("eraName").textContent  = e.brand;
+  $("eraNote").textContent  = e.note;
+  $("eraWhat").textContent  = eraChanges(i);
+  $("eraSheet").classList.add("on"); $("eraScrim").classList.add("on");
+}
+$("eraOk").onclick = () => {
+  $("eraSheet").classList.remove("on"); $("eraScrim").classList.remove("on");
+};
+
+/* ── ООО ─────────────────────────────────────────────────────────
+   Развилка, а не награда. Открыть можно в любой момент, но пока штат
+   мал, фиксированная бухгалтерия съедает всю прибыль: выгодно дождаться
+   пятерых. «Потом» — полноценный ответ, он просто откладывает вопрос
+   на год, и весь этот год компания не зарабатывает пассивно. */
+function llcOffer(){
+  if(S.llc || S.llcOpen) return;
+  if(S.staff.length < 3) return;
+  if(S.llcAskedAt !== undefined && S.month - S.llcAskedAt < 12) return;
+  S.llcOpen = true;
+  const gain = Math.round(revenue() - payroll() - S.staff.length*OVERHEAD*S.ovhMul - LLC_FIXED);
+  $("llcText").textContent = S.staff.length >= 5
+    ? "Вас уже " + S.staff.length + ". Заказчики спрашивают про договор, а без юрлица крупные не приходят."
+    : "Вас " + S.staff.length + ". Можно оформить всё по-белому — но бухгалтерия начнёт стоить каждый месяц.";
+  $("llcCost").textContent  = rub(LLC_COST) + " разово";
+  $("llcFix").textContent   = rub(LLC_FIXED) + "/мес";
+  $("llcStaff").textContent = S.staff.length + " чел.";
+  $("llcGain").textContent  = gain > 0
+    ? "Пассивная прибыль сразу: " + rub(gain) + "/мес"
+    : "Сейчас это в минус: " + rub(gain) + "/мес. Стоит подождать людей";
+  $("llcSheet").classList.add("on"); $("llcScrim").classList.add("on");
+}
+const closeLlc = () => {
+  S.llcOpen = false;
+  $("llcSheet").classList.remove("on"); $("llcScrim").classList.remove("on");
+};
+$("llcYes").onclick = () => {
+  if(S.cash < LLC_COST){ snack("не хватает на регистрацию"); return; }
+  S.cash -= LLC_COST; S.llc = true; closeLlc();
+  sfx("promote"); buzz([20,60,20]);
+  log("<b>ООО зарегистрировано.</b> Теперь у вас есть выручка, ФОТ и бухгалтер, "+
+      "который будет стоить денег даже в месяцы без заказов.", "lore");
+  paint();
+};
+$("llcNo").onclick = () => {
+  S.llcAskedAt = S.month; closeLlc();
+  log("Решили пока работать как есть. К вопросу вернутся через год.", "noise");
+};
 function paint(){
   if(S.ended) return;
   checkEra();
@@ -2126,10 +2250,13 @@ function careerOpen(){
 // в месяц» это ты и ноутбук, и отчитываться не перед кем.
 function coOpen(){
   if(S.coSeen) return true;
-  if(S.done.size >= 1) return (S.coSeen = true);
+  // До регистрации отчёта о прибылях не существует буквально: нет ни
+  // выручки, ни ФОТ, ни накладных. Показывать пустой P&L фрилансеру —
+  // это показывать форму без содержания.
+  if(S.llc) return (S.coSeen = true);
   return false;
 }
-const LOCK_HINT = {career:"нужны двое в одной роли", co:"нужно первое повышение"};
+const LOCK_HINT = {career:"нужны двое в одной роли", co:"нужно открыть ООО"};
 function paintLocks(){
   const open = {work:true, team:true, career:careerOpen(), co:coOpen()};
   document.querySelectorAll("nav button").forEach(b => {
@@ -2274,7 +2401,11 @@ setInterval(() => {
   // Раскрытая на весь экран хроника — это чтение, а не игра. Время внутри
   // стоит, пока читаешь: иначе пролистываешь прошлое и одновременно
   // теряешь настоящее — новый созвон или выгорание мимо экрана.
-  if(S.ended || chron.classList.contains("open")) return;
+  // Время стоит, пока читаешь: раскрытая хроника, развилка про ООО и
+  // экран смены эпохи — это моменты чтения и решения, а не игры.
+  if(S.ended || chron.classList.contains("open") ||
+     $("llcSheet").classList.contains("on") ||
+     $("eraSheet").classList.contains("on")) return;
   const dt = 0.1 * S.speed;
   S.playTime += dt;
 
@@ -2284,11 +2415,19 @@ setInterval(() => {
   // пишется непрерывно, а не по списку угаданных точек.
   if(++saveTick % 20 === 0) saveGame();
 
-  const p = profit();
+  // До регистрации компании её экономики не существует: люди помогают
+  // с заказами, но ни выручки, ни ФОТ, ни накладных нет. Ты фрилансер,
+  // у которого просто появились знакомые получше. Весь пассивный доход
+  // включается ровно в тот момент, когда ты открываешь ООО.
+  const p = S.llc ? profit() : 0;
   // Штраф за отсутствие теперь целиком внутри revenue() через absenceHit():
   // он масштабируется управленческим слоем, а расходы на время больничного
   // никуда не деваются — поэтому прибыль проседает резче выручки.
   if(p>0){ S.cash += p*(dt/MONTH); S.earned += p*(dt/MONTH); }
+
+  // Вопрос про юрлицо задаём, когда вас уже несколько. Ответ «потом»
+  // откладывает его на год — и весь этот год компания не зарабатывает.
+  if(!S.llc) llcOffer();
 
   // Кассовый разрыв. Убыток проедает кассу, и только когда она упёрлась
   // в ноль, компания начинает расставаться с самым дорогим сотрудником.
@@ -2571,6 +2710,7 @@ window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,lo
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
+               llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
