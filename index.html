@@ -149,14 +149,17 @@ main{max-width:520px;margin:0 auto;
   transition:transform .09s var(--e),box-shadow .3s ease,opacity .3s;
   box-shadow:0 0 0 rgba(128,186,39,0), var(--sh)}
 :root[data-theme=dark] .go,:root:not([data-theme=light]) .go{color:#10210a}
-/* пульс: едва заметное дыхание, пик совпадает с окном попадания.
-   Управляется из rAF через --pulse, поэтому синхронизация точная. */
+/* Волна. По кнопке идёт светлая полоса, попадание — когда она в центре.
+   Фаза и пик считаются в rAF (--phase, --pulse), поэтому подсказка
+   совпадает с окном попадания до кадра, а не «примерно». */
 .go::before{content:"";position:absolute;inset:0;pointer-events:none;
-  background:radial-gradient(120% 140% at 50% 50%,rgba(255,255,255,.30),transparent 68%);
-  opacity:calc(var(--pulse,0) * (.30 + var(--flow,0) * .55))}
+  background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.62) 50%,transparent 70%);
+  transform:translateX(calc(var(--phase,0) * 240% - 120%));
+  opacity:calc(.55 + var(--flow,0) * .45)}
+/* Кольцо загорается ровно в окне попадания — момент, а не свечение. */
 .go::after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:16px;
-  box-shadow:inset 0 0 0 2px rgba(255,255,255,.55);
-  opacity:calc(var(--pulse,0) * var(--flow,0) * .6)}
+  box-shadow:inset 0 0 0 2.5px rgba(255,255,255,.85);
+  opacity:calc(var(--pulse,0) * (.45 + var(--flow,0) * .55))}
 .go.hit{animation:hit .34s var(--e)}
 @keyframes hit{0%{transform:scale(.965)}45%{transform:scale(1.022)}100%{transform:scale(1)}}
 .go.miss{animation:miss .3s ease}
@@ -268,22 +271,24 @@ main{max-width:520px;margin:0 auto;
   border-top:.5px solid var(--hair);transition:top .4s var(--e)}
 #chron.open{top:0;z-index:47;background:var(--bg);backdrop-filter:none;
   -webkit-backdrop-filter:none;padding-top:env(safe-area-inset-top)}
-.chw{max-width:520px;margin:0 auto;padding:0 18px;width:100%;
+/* Боковой отступ живёт на записях, а не на обёртке: плашка эпохи тогда
+   обходится без отрицательных полей, и горизонтального скролла нет. */
+.chw{max-width:520px;margin:0 auto;padding:0 6px;width:100%;
   flex:1;min-height:0;display:flex;flex-direction:column}
 .chh{flex:none;display:flex;justify-content:space-between;align-items:center;
-  padding:8px 2px 6px;font-size:11px;font-weight:600;letter-spacing:.5px;
+  padding:8px 14px 6px;font-size:11px;font-weight:600;letter-spacing:.5px;
   text-transform:uppercase;color:var(--mut);cursor:pointer;user-select:none}
-#chron.open .chh{padding:14px 2px 10px}
+#chron.open .chh{padding:14px 14px 10px}
 .chh span{transition:transform .3s var(--e)}
 #chron.open .chh span{transform:rotate(180deg)}
-.log{flex:1 1 auto;min-height:0;max-height:64px;overflow:auto;
+.log{flex:1 1 auto;min-height:0;max-height:64px;overflow-y:auto;overflow-x:hidden;
   overscroll-behavior:contain;padding-bottom:8px;
   scrollbar-width:none;-ms-overflow-style:none;
   -webkit-mask-image:linear-gradient(180deg,#000 78%,transparent)}
 .log::-webkit-scrollbar{display:none}
 #chron.open .log{max-height:none;-webkit-mask-image:none;
   padding-bottom:calc(12px + env(safe-area-inset-bottom))}
-.le{display:flex;gap:10px;padding:8px 2px;border-bottom:.5px solid var(--hair2);
+.le{display:flex;gap:10px;padding:8px 14px;border-bottom:.5px solid var(--hair2);
   animation:slidein .4s var(--e)}
 .le:last-child{border-bottom:none}
 @keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
@@ -291,16 +296,15 @@ main{max-width:520px;margin:0 auto;
 .le div{flex:1;min-width:0}
 .le time{display:block;font:600 10px/1 ui-monospace,Menlo,monospace;color:var(--mut);
   letter-spacing:.5px;margin-bottom:4px;text-transform:uppercase}
-.le p{font-size:14px;line-height:1.35;color:var(--ink2)}
+.le p{font-size:14px;line-height:1.35;color:var(--ink2);overflow-wrap:anywhere}
 .le b{font-weight:600;color:var(--ink)}
 .le.noise p{color:var(--mut);font-size:13px}
 .le.noise time{opacity:.5}
 .le.good i{background:var(--acc)} .le.good p{color:var(--ink)}
 .le.bad  i{background:var(--wrn)} .le.bad  p{color:var(--ink)}
-/* Смена эпохи — плашка. Поля подобраны так, что риска и текст внутри неё
-   стоят ровно в той же колонке, что и у обычных записей: −12 + 14 = +2,
-   то есть внутренний отступ .le. Плашка шире текста, колонка не едет. */
-.le.lore{background:var(--wrn-soft);margin:6px -12px;padding:14px;
+/* Смена эпохи — плашка. Отступ равен горизонтальному отступу обычной
+   записи, поэтому колонка текста не едет и ничего никуда не вылезает. */
+.le.lore{background:var(--wrn-soft);margin:6px 0;padding:14px;
   border-radius:14px;border-bottom:none}
 .le.lore p{font-size:15px;line-height:1.4;color:var(--ink);font-weight:500}
 .le.lore time{color:var(--wrn-ink);font-weight:700}
@@ -512,14 +516,16 @@ nav .dot.on{opacity:1}
 /* ══════════════════════════════════════════════════════════════
    CONTENT · баланс и тексты. Зарплаты — медианы рынка РФ, 2026.
    ══════════════════════════════════════════════════════════════ */
-const MONTH = 12, OVERHEAD = 42000;
+// Игровой месяц в секундах. Единственная ручка длины прохождения:
+// 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
+const MONTH = 9, OVERHEAD = 42000;
 
 const C = {
   eras:[
     {y:2007, brand:"Фриланс",        note:"Первый заказ. Пять тысяч. Ты счастлив и не знаешь, что это надолго."},
     {y:2011, brand:"Студия",         note:"Сняли комнату, купили бинбэг. Тимлид объясняет, что опционы — это как акции, только лучше."},
     {y:2016, brand:"Компания",       note:"Появились грейды, джира и слово «синканемся». Ипотека появилась сама."},
-    {y:2020, brand:"Компания",       note:"Офис закрыли. Ты не выходил из дома одиннадцать дней и чувствуешь себя прекрасно. Наверное."},
+    {y:2020, brand:"Удалёнка",       note:"Офис закрыли. Ты не выходил из дома одиннадцать дней и чувствуешь себя прекрасно. Наверное."},
     {y:2022, brand:"Холдинг",        note:"Пик рынка. Оффер приходит сам, зарплата удваивается за переход, все вокруг стали наставниками."},
     {y:2024, brand:"Группа компаний",note:"Найм заморожен, все возвращаются в офис. На вакансию триста откликов, половина — твои бывшие коллеги."}
   ],
@@ -545,6 +551,20 @@ const C = {
     [2,"Перенести всё на новый фреймворк к понедельнику",0],
     [2,"Заменить одну строку. Падают тесты в другом сервисе",0],
     [2,"Срочно на прод. Пятница, восемь вечера",0],
+    // ── студия, 2011+
+    [0,"Перенести задачи из почты в Рудник. Почту не закрывать",1],
+    [1,"Сверстать лендинг на Бутсшнуре. Заказчик хочет «поживее»",1],
+    [1,"Объяснить инвестору, что опционы — это не акции",1],
+    [2,"Починить сборку в Женькинсе. Локально всё работает",1],
+    // ── грейды, 2016+
+    [0,"Проставить стори-поинты. Оценку всё равно поменяют на планёрке",2],
+    [1,"Описать процесс в Конфузе. Читать будет только автор",2],
+    [1,"Разнести монолит на два сервиса. Получилось три",2],
+    [2,"Понять, почему Кубарем убивает именно нужный под",2],
+    // ── удалёнка, 2020+
+    [0,"Выключить микрофон и доесть",3],
+    [1,"Настроить удалённый доступ всем. Всем — это тридцати",3],
+    [2,"Воспроизвести баг, который есть только в Анзуме и только у Сергея",3],
     // ── эпоха ИИ, с 2022-го
     [0,"Принять подсказку копилота, не читая",4],
     [0,"Переписать коммит, который сгенерировала модель",4],
@@ -567,30 +587,52 @@ const C = {
   diffPay:[0.35, 1, 2.8],     // множитель награды
   diffBurn:[0.3, 1, 3.1],     // множитель выгорания — растёт быстрее награды
 
+  // [название, описание, минимальная эпоха]
   meets:[
-    ["Ежедневный статус","Каждый рассказывает, что делал вчера. Это видно на доске."],
-    ["Синк по синку","Встреча, чтобы договориться, когда встретиться."],
-    ["Ретроспектива","Обсуждаем, что улучшить. Улучшим в следующем квартале."],
-    ["Груминг бэклога","Час спорим про оценку задачи, которую отменят."],
-    ["Всё-команд-колл","Директор рассказывает про ценности. Сорок минут."],
-    ["Звонок «на пять минут»","Идёт сорок. Камера включена."]
+    ["Ежедневный статус","Каждый рассказывает, что делал вчера. Это видно на доске.",0],
+    ["Звонок «на пять минут»","Идёт сорок. Камера включена.",0],
+    ["Созвон в Скайбе","Слышно троих из пяти. Двое пишут в чат «меня слышно?».",1],
+    ["Ретроспектива","Обсуждаем, что улучшить. Улучшим в следующем квартале.",1],
+    ["Груминг бэклога","Час спорим про оценку задачи, которую отменят.",2],
+    ["Синк по итогам синка","Обсуждаем, что решили на прошлом синке. Никто не помнит.",2],
+    ["Разбор инцидента","Ищем не виноватых, а причины. Виноватых уже нашли.",2],
+    ["Всё-команд-колл","Директор рассказывает про ценности. Сорок минут.",2],
+    ["Зум-квиз","Пятница, Анзум, «угадай коллегу по кухне». Присутствие добровольное.",3],
+    ["Стратегическая сессия","Три часа. Итог — договорились встретиться ещё раз.",4]
   ],
 
   noise:[
    [0,"Заказчик прислал правки в вордовском файле. Скриншоты внутри."],
-   [0,"Аська отвалилась. Опять."],
+   [0,"Оська отвалилась. Опять."],
    [0,"«А можно как на этом сайте, только лучше?»"],
+   [0,"Заказчик хочет «как у Лебедева». Прислал ссылку на сайт на Жмуле."],
+   [0,"Дёнвер поднялся с третьего раза. Никто не понял почему."],
+   [0,"Интернет-Разведчик 6 рисует вёрстку иначе. Заказчик смотрит только в нём."],
+   [0,"Залил по фтп Тотальным Командиром. Половина файлов доехала."],
    [1,"Кто-то поставил реакцию на твоё сообщение трёхдневной давности."],
    [1,"Кофемашина сломалась. Опять."],
    [1,"В переговорке остались стикеры с прошлой ретроспективы."],
    [1,"«Мы же семья», — сказал человек, который не знает твоей фамилии."],
-   [2,"Джира тормозит. Все написали в общий чат, что джира тормозит."],
+   [1,"Завели Рудник. Задачи теперь теряются организованно."],
+   [1,"Трепло переехало на вторую доску. Первую закрыть забыли."],
+   [1,"Женькинс собрал зелёное, через час — красное. Ничего не меняли."],
+   [2,"Жира тормозит. Все написали в Шлак, что Жира тормозит."],
    [2,"На кухне обсуждают грейды. Никто не называет цифр."],
    [2,"Пришло письмо про важность обратной связи. Без обратной связи."],
+   [2,"Конфуз обновили. Страницу с онбордингом больше не находит поиск."],
+   [2,"Подняли Кубарем. Теперь падает всё то же самое, но масштабируемо."],
+   [2,"Графин показывает ровную линию. Метрику отключили ещё в марте."],
+   [2,"Дизайн переехал в Фигню. Макеты позапрошлого года остались в Скотче."],
    [3,"Сосед сверху начал ремонт ровно в десять утра."],
    [3,"Кот прошёл по клавиатуре во время демо. Всем понравилось."],
    [3,"«Ты на мьюте». Ты был на мьюте."],
    [3,"Зум-квиз в пятницу. Присутствие добровольное, отсутствие заметное."],
+   [3,"Анзум просит оценить качество связи. Связь была отличная."],
+   [3,"Раздор завели для неформального общения. В нём три рабочих канала."],
+   [3,"Все процессы перенесли в Ничто. Ссылку на Ничто потеряли."],
+   [4,"Шлак закрыл доступ. Переехали в ВК Тимзы: всё то же, только поиск не ищет."],
+   [4,"Купили ЧатЖПТ на команду. Первым делом сгенерировали регламент про ЧатЖПТ."],
+   [5,"Курсач написал функцию целиком. Ревьюить её будет тоже Курсач."],
    [4,"В чате коллега получил оффер на плюс сорок процентов."],
    [4,"Знакомый ушёл в наставники на курсах. Говорит, стало спокойнее."],
    [4,"Рекрутер написал третий раз за неделю. Вакансия та же."],
@@ -633,7 +675,7 @@ const C = {
   // tier: 0 обычный, 1 редкий, 2 легендарный
   roles:[
     {id:"intern", dept:"eng",   tier:0, name:"Стажёр",            pay:45000,  out:60000,
-     desc:"С накладными убыточен. Все с чего-то начинали"},
+     desc:"Убыточен и режет награду за задачу. Через минуту станет джуниором"},
     {id:"junior", dept:"eng",   tier:0, name:"Джуниор",           pay:110000, out:195000,
      desc:"Пишет код. Иногда рабочий"},
     {id:"middle", dept:"eng",   tier:0, name:"Мидл",              pay:220000, out:400000,
@@ -667,22 +709,25 @@ const C = {
     {id:"qa", name:"Качество",
      steps:[
       {id:"q1",title:"Ведущий тестировщик",from:"qa",pay:300000,desc:"Меньше правок: выгорание растёт на четверть медленнее",bonus:.2,scope:"eng",eff:s=>s.burnRate*=.75},
-      {id:"q2",title:"Руководитель качества",from:"qa",pay:450000,desc:"+30% разработке. Люди уходят вдвое реже: процессы держат",bonus:.3,scope:"eng",eff:s=>s.retain*=.5},
+      {id:"q2",title:"Руководитель качества",from:"qa",pay:450000,desc:"+30% разработке. Люди уходят вдвое реже: процессы держат",bonus:.3,scope:"eng",eff:s=>s.retain*=2},
       {id:"q3",title:"Директор по качеству",from:"qa",pay:600000,desc:"+40% компании. Регламент на всё, включая переписку",bonus:.4,scope:"all",eff:s=>s.burnRate*=1.15}
      ]},
     {id:"mgmt", name:"Менеджерский",
      steps:[
       {id:"m1",title:"Тимлид",from:"middle",pay:450000,desc:"+20% компании. Появляются планёрки",bonus:.2,scope:"all",eff:s=>s.meetGap*=.85},
       {id:"m2",title:"Руководитель группы",from:"senior",pay:600000,desc:"+30% компании. Еженедельные отчёты: выгорание быстрее",bonus:.3,scope:"all",eff:s=>s.burnRate*=1.25},
-      {id:"m3",title:"Заместитель директора",from:"senior",pay:750000,desc:"+45% компании. Вводит перформанс-ревью",bonus:.45,scope:"all",eff:s=>s.review=true},
+      {id:"m3",title:"Заместитель директора",from:"senior",pay:750000,desc:"+45% компании. Вводит перформанс-ревью",bonus:.45,scope:"all",eff:s=>s.review=true,
+       after:"Календарь на квартал вперёд забит калибровками. Оценки распределят по нормальному закону — так честнее."},
       {id:"m35",title:"Директор по ИИ-трансформации",from:"senior",pay:800000,desc:"+35% компании. Каждый отдел обязан отчитаться о внедрении",bonus:.35,scope:"all",eff:s=>s.burnRate*=1.15,era:4},
-      {id:"m4",title:"Эффективный менеджер",from:"senior",pay:950000,desc:"+90% компании. Возвращает всех в офис, запускает оптимизацию штата",bonus:.9,scope:"all",eff:s=>{s.rto=true;s.opt=true},dangerous:true}
+      {id:"m4",title:"Эффективный менеджер",from:"senior",pay:950000,desc:"+90% компании. Возвращает всех в офис, запускает оптимизацию штата",bonus:.9,scope:"all",eff:s=>{s.rto=true;s.opt=true},dangerous:true,
+       after:"Первая презентация называлась «Операционная эффективность: точки роста». Слайд про людей был четырнадцатым."}
      ]},
     {id:"people", name:"Люди",
      steps:[
       {id:"p1",title:"HR-менеджер",from:"recruit",pay:180000,desc:"Найм дешевле ещё на 25%",bonus:0,scope:"all",eff:s=>s.hireTax*=.75},
       {id:"p2",title:"HR бизнес-партнёр",from:"recruit",pay:280000,desc:"+15% компании. Опросы вовлечённости раз в месяц",bonus:.15,scope:"all",eff:s=>s.surveys=true},
-      {id:"p3",title:"Директор по персоналу",from:"recruit",pay:420000,desc:"Люди уходят вдвое реже. Накладные +30%: обучение, ДМС, мероприятия",bonus:0,scope:"all",eff:s=>{s.retain*=.5;s.ovhMul*=1.3}}
+      {id:"p3",title:"Директор по персоналу",from:"recruit",pay:420000,desc:"Люди уходят вдвое реже. Накладные +30%: обучение, ДМС, мероприятия",bonus:0,scope:"all",eff:s=>{s.retain*=2;s.ovhMul*=1.3},
+       after:"Ввели опрос при увольнении. Уходить стало чуть дольше, а причины в отчёте — «личные обстоятельства»."}
      ]},
     {id:"ops", name:"Операционный",
      steps:[
@@ -706,7 +751,19 @@ const C = {
     {id:"u7",grp:"Здоровье", name:"Спортзал в подвале",     cost:6000000,  desc:"Выгорание растёт на четверть медленнее",f:s=>s.burnRate*=.75},
     {id:"u10",grp:"Задачи",  era:4, name:"Копилот",             cost:2500000,  desc:"Задача приносит вдвое больше. Проверять всё равно тебе",f:s=>s.click*=2},
     {id:"u11",grp:"Задачи",  era:5, name:"Свой инференс",       cost:400000000,desc:"Задача приносит вчетверо больше",f:s=>s.click*=4},
-    {id:"u12",grp:"Команда", era:5, name:"ИИ-скрининг резюме",  cost:60000000, desc:"Найм дешевле на 35%. Иногда приходит не тот, кого ждали",f:s=>s.hireTax*=.65}
+    {id:"u12",grp:"Команда", era:5, name:"ИИ-скрининг резюме",  cost:60000000, desc:"Найм дешевле на 35%. Иногда приходит не тот, кого ждали",f:s=>s.hireTax*=.65,
+     after:"Первый отобранный кандидат не пришёл на созвон. В резюме слово «синергия» встречалось четырнадцать раз."},
+    // Локально верное решение с честной выгодой. Плюс написан на карточке
+    // и он настоящий. Минус придёт в хронику через минуту после покупки —
+    // и ещё раз, и ещё, пока кто-то не уйдёт совсем.
+    {id:"u13",grp:"Команда", era:3, name:"Вернуть всех в офис", cost:7000000,
+     desc:"+18% выработки: вопросы решаются за минуту, а не за день",
+     f:s=>{s.rto=true; s.burnRate*=1.15},
+     after:"«Дорога занимает два часа в день», — написали трое. Четвёртый ничего не написал."},
+    {id:"u14",grp:"Здоровье", era:3, name:"Гибридный график", req:"u13", cost:45000000,
+     desc:"Два дня из дома. Выработка падает до +6%, но люди перестают уходить",
+     f:s=>{s.rtoSoft=true; s.burnRate*=.9},
+     after:"В опросе вовлечённости гибрид назвали главным достижением года. Автором инициативы записан не ты."}
   ]
 };
 
@@ -721,7 +778,8 @@ const S = {
   minimize:false, hands:0, dayCap:99, callsThisMonth:0,
   hireTax:1, burnRate:1, retain:1, ovhMul:1,
   rto:false, opt:false, review:false, surveys:false,
-  meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:8, noiseIn:26, said:[],
+  meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
+  rtoSoft:false, rtoIn:60, growIn:55,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
@@ -746,6 +804,9 @@ const rub = n => fmt(n)+" ₽";
 const year = () => 2007 + Math.floor(S.month/12);
 const pick = a => a[Math.floor(Math.random()*a.length)];
 
+// Цена, которая приходит после покупки. Плюс написан на карточке, минус
+// игрок узнаёт из хроники — уже потратив деньги. Так это и работает.
+function after(o){ if(o.after) setTimeout(() => { if(!S.ended) log(o.after, "bad"); }, 2500); }
 function log(text, type){
   const d = document.createElement("div");
   d.className = "le " + (type || "");
@@ -781,7 +842,9 @@ function revenue(){
     r+=v;
   });
   r*=mA*bd;
-  if(S.rto) r*=0.7;
+  // Возврат в офис действительно поднимает выработку — это не вранье
+  // и не ловушка. Цена приходит отдельно и позже: людьми.
+  if(S.rto) r *= S.rtoSoft ? 1.06 : 1.18;
   if(S.chaos>0) r*=0.55;
   if(S.vacLeft>0) r*=0.5;
   return r;
@@ -789,7 +852,12 @@ function revenue(){
 const payroll  = () => S.staff.reduce((a,p)=>a+p.pay,0);
 const overhead = () => S.staff.length*OVERHEAD*S.ovhMul;
 const profit   = () => revenue()-payroll()-overhead();
-const vacCost  = () => Math.max(80000, revenue()*0.4);
+// Цена отпуска считается и от выручки, и от накопленного: иначе к финалу
+// это бесплатная кнопка «обнулить выгорание» на фоне миллиардов оборота.
+const vacFull  = () => Math.max(80000, revenue()*0.4 + S.earned*0.004);
+// Но отдохнуть можно всегда: платишь тем, что есть. Настоящая цена отпуска
+// не в деньгах — выручка встанет вдвое, и месяц пройдёт мимо.
+const vacCost  = () => Math.min(vacFull(), S.cash*0.55);
 function hireCost(r, extra){
   const n = S.hired[r.id] + (extra||0);
   return Math.round(r.pay*1.5*Math.pow(1.15,n)*S.hireTax*(1-.2*(S.hired.recruit>0)));
@@ -803,7 +871,10 @@ function addStaff(r){
 // каждые двое отнимают у людей часть выработки на ревью за ними.
 const meetGapNow = () => S.meetGap * (1 + 0.55*S.hired.assist);
 const meetLenNow = () => S.meetLen * Math.max(.45, 1 - .18*S.hired.assist);
-const agentDrag   = () => Math.max(.55, 1 - .035*S.hired.agent);
+// Пол убран: раньше он приходился ровно на 13-го агента, и дальше их
+// присутствие не стоило людям вообще ничего. Теперь чем больше агентов,
+// тем меньше остаётся от живых инженеров — присмотр никуда не девается.
+const agentDrag   = () => Math.max(.2, 1 - .035*S.hired.agent);
 function loseStaff(why){
   if(!S.staff.length) return;
   const bd = S.staff.find(p=>p.role==="buddy" && !p.perk);
@@ -821,34 +892,33 @@ function loseStaff(why){
    Правильный темп существует. О нём нигде не написано.
    Волна на кнопке — единственная подсказка, и она не объясняется.
    ══════════════════════════════════════════════════════════════ */
-// целевая пропорция сложностей на последние 7 задач. Меняется по эпохам:
-// то, что работало в 2007-м, к 2020-му уже не работает.
-const COMBO = [
-  {e:0, mix:[4,2,1]},   // фриланс: много мелочи, немного разбирательств
-  {e:2, mix:[3,3,1]},   // корпорация: середины больше
-  {e:4, mix:[2,3,2]}    // поздние эпохи: мелочь уже не спасает
-];
-function targetMix(){
-  let m = COMBO[0].mix;
-  COMBO.forEach(c => { if(S.era >= c.e) m = c.mix; });
-  return m;
+// Одно правило вместо трёх пропорций: разбирательство «оплачивается»
+// одной задачей или тремя мелочами. Держишь баланс — выгорание растёт
+// вдвое медленнее. Отклонение в любую сторону гасит бонус плавно:
+// порога нет, поэтому нащупать режим можно, а объяснить его — нет.
+//
+// Разбирательство дорожает по эпохам: то, что на фрилансе закрывалось
+// тремя мелочами, в корпорации уже не закрывается ничем.
+const HARD = [3,3,4,4,5,5];
+const WIN  = 8;                       // окно: последние восемь задач
+function loadBal(){
+  const w = HARD[Math.max(0,S.era)] || 3;
+  return S.recent.slice(-WIN).reduce((a,d) => a + (d===2 ? w : d===1 ? -3 : -1), 0);
 }
-function checkCombo(){
-  if(S.recent.length < 7) return false;
-  const last = S.recent.slice(-7);
-  const got = [0,0,0];
-  last.forEach(d => got[d]++);
-  const want = targetMix();
-  // допуск в единицу по каждой категории
-  return got.every((g,i) => Math.abs(g - want[i]) <= 1);
+// 0.5 в идеале → 1.0 при полном промахе. Линейно, без ступеней.
+function comboMul(){
+  if(S.recent.length < WIN) return 1;
+  return 1 - .5*(1 - Math.min(1, Math.abs(loadBal())/9));
 }
+// «в такте» для флейвор-строки: только когда действительно ровно
+const checkCombo = () => S.recent.length >= WIN && Math.abs(loadBal()) <= 1;
 // фаза волны: 0..1, пик подсветки в середине
 function beatPhase(){ return (performance.now() % S.beat) / S.beat; }
 function onBeat(){ const p = beatPhase(); return Math.abs(p - .52) < .19; }
 
 function burnMul(){
-  // поток снижает прирост выгорания до 45%, комбо — ещё на 25%
-  return (1 - .45*S.flow) * (S.comboOn ? .75 : 1);
+  // поток снижает прирост выгорания до 45%, ровный порядок задач — вдвое
+  return (1 - .45*S.flow) * comboMul();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -878,8 +948,12 @@ const blocked = () => onCall() && !S.minimize;
 const canWork = () => !S.ended && S.sick<=0 && S.vacLeft<=0 && !blocked();
 const callPenalty = () => onCall() ? S.callMul : 1;
 
+// Поток теперь платит не только здоровьем, но и деньгами: до +55% к задаче.
+// Раньше умение снижало выгорание, а выгорание было единственным способом
+// проиграть — то есть вся награда за ритм была штрафом за его отсутствие.
 function clickVal(){
-  return S.click * C.diffPay[task.diff] * (1 - Math.min(.4, S.hired.intern*.08)) * callPenalty();
+  return S.click * C.diffPay[task.diff] * (1 + .55*S.flow)
+       * (1 - Math.min(.4, S.hired.intern*.08)) * callPenalty();
 }
 
 function doTask(){
@@ -921,7 +995,10 @@ $("skip").addEventListener("pointerdown", e => { e.preventDefault(); skipTask();
 $("vac").onclick = () => {
   const c = vacCost();
   if(S.cash < c || S.vacLeft > 0) return;
-  S.cash -= c; S.vacLeft = 14; S.burn = 0; S.vacTaken++;
+  // Не до нуля: ты проверял почту дважды в день. Отпуск перестал быть
+  // кнопкой полного сброса, иначе выгорание не существует как механика
+  // для всех, кто просто смотрит на полосу.
+  S.cash -= c; S.vacLeft = 14; S.burn = Math.min(S.burn, 22); S.vacTaken++;
   log("Отпуск. Ты проверял почту дважды в день, но всё равно полегчало.", "good");
   paint();
 };
@@ -992,14 +1069,17 @@ function paintHire(){
     const ok = S.cash >= c;
     const d = document.createElement("div");
     d.className = "row " + (ok ? "tap" : "no");
-    const after = hireCost(r, 1);
     d.innerHTML =
       '<div class="tier t'+r.tier+'"></div>'+
       '<div class="rl"><div class="rn2">'+r.name+
         (S.hired[r.id] ? ' <span class="cnt">×'+S.hired[r.id]+'</span>' : '')+
         (r.tier===2 ? ' <span class="pill">редкий случай</span>' : '')+'</div>'+
-      '<div class="rd">'+r.desc+' · зарплата '+rub(r.pay)+'/мес</div></div>'+
-      '<div class="rp">'+rub(c)+'<small>дальше '+rub(after)+'</small></div>';
+      // Зарплата уехала из описания в колонку цены: вместе с шуткой она
+      // разгоняла строку на три ряда, и список переставал читаться.
+      '<div class="rd">'+r.desc+'</div></div>'+
+      // Только ФОТ. Будущая цена найма на 393 пикселях стоила больше, чем
+      // давала: она разгоняла колонку и зажимала описание в три строки.
+      '<div class="rp">'+rub(c)+'<small>ФОТ '+fmt(r.pay)+'</small></div>';
     if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sig.hire=sig.staff=null; paint(); };
     box.appendChild(d);
   });
@@ -1016,9 +1096,25 @@ function paintHire(){
     box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Нанимать больше некого.</div></div></div>';
 }
 function paintStaff(){
-  const key = S.staff.map(p=>p.uid+p.title).join("|");
+  const key = S.staff.map(p=>p.uid+p.title+(p.bonus||0)).join("|");
   if(!changed("staff", key)) return;
   const box = $("staff"); box.innerHTML = "";
+  // Норма управляемости перестала быть невидимой. До этого игрок просто
+  // видел, что повышения больше ничего не дают, и не знал почему.
+  if(S.staff.length){
+    const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*SPAN;
+    const cov = Math.min(1, seats/S.staff.length);
+    const g = document.createElement("div");
+    g.className = "gauge";
+    g.innerHTML = '<div class="gt"><span class="gn">Под руководителем</span>'+
+      '<span class="gv n">'+Math.min(seats,S.staff.length)+' из '+S.staff.length+'</span></div>'+
+      '<div class="bl"><i style="width:'+(cov*100).toFixed(0)+'%"></i></div>'+
+      '<div class="rd" style="margin-top:7px">'+(cov>=1
+        ? 'Бонусы руководителей действуют на весь штат'
+        : 'Бонусы руководителей действуют на '+Math.round(cov*100)+'% штата. '+
+          'Один руководитель покрывает восемь человек')+'</div>';
+    box.appendChild(g);
+  }
   const named = S.staff.filter(p=>p.perk);
   const plain = {};
   S.staff.filter(p=>!p.perk).forEach(p => plain[p.role]=(plain[p.role]||0)+1);
@@ -1096,6 +1192,7 @@ function paintTracks(){
       S.done.add(st.id);
       log("<b>"+who.name+"</b> — теперь "+st.title.toLowerCase()+". "+
           (st.dangerous ? "Все поздравили." : "Команда порадовалась."), "good");
+      after(st);
       paint();
     };
   });
@@ -1116,13 +1213,19 @@ function paintTracks(){
       paint();
     };
   }
+  // Выход открывается по дате, а не по обороту: иначе слабая игра
+  // упиралась в 2026-й и продолжалась вечно без единого финала.
+  // Покупатель есть не всегда — но уехать можно в любом случае.
   const ex = $("exitBox");
-  const can = year()>=2026 && S.earned>3e9;
+  const can = year()>=2026;
+  const rich = S.earned>3e9;
   ex.innerHTML = can
-    ? '<div class="row tap" id="sell"><div class="rl"><div class="rn2">Продать компанию</div>'+
-      '<div class="rd">Забрать деньги и уехать. Обратно не возвращаются</div></div>'+
-      '<div class="rp">'+rub(S.earned*0.2)+'</div></div>'
-    : '<div class="row"><div class="rl"><div class="rd">Выход откроется в 2026 году при обороте от 3 млрд. '+
+    ? '<div class="row tap" id="sell"><div class="rl"><div class="rn2">'+
+      (rich ? 'Продать компанию' : 'Закрыть компанию')+'</div><div class="rd">'+
+      (rich ? 'Забрать деньги и уехать. Обратно не возвращаются'
+            : 'Покупателя не нашлось. Раздать долги и уехать')+'</div></div>'+
+      '<div class="rp">'+rub(S.earned*(rich?0.2:0.05))+'</div></div>'
+    : '<div class="row"><div class="rl"><div class="rd">Выход откроется в 2026 году. '+
       'Сейчас '+year()+', заработано '+rub(S.earned)+'.</div></div></div>';
   if(can) $("sell").onclick = finish;
 }
@@ -1162,7 +1265,8 @@ function paintUps(){
         d.innerHTML = '<div class="rl"><div class="rn2">'+u.name+'</div>'+
           '<div class="rd">'+u.desc+'</div></div>'+
           '<div class="rp">'+rub(u.cost)+'</div>';
-        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S); sig.ups=null; paint(); };
+        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S);
+                                   after(u); sig.ups=null; paint(); };
       }
       card.appendChild(d);
     });
@@ -1351,20 +1455,32 @@ setInterval(() => {
   S.playTime += dt;
 
   const p = profit();
-  if(S.sick<=0 && p>0){ S.cash += p*(dt/MONTH); S.earned += p*(dt/MONTH); }
+  // На больничном компания работает без тебя, и это отдельно неприятно.
+  // Но не останавливается: обнулённый доход превращал выгорание в спираль,
+  // из которой невнимательный игрок уже не выбирался — денег на отпуск
+  // не было именно потому, что он выгорел. Пройти можно и бездумно,
+  // просто дольше и через больничные.
+  if(p>0){ const k = S.sick>0 ? .4 : 1;
+           S.cash += p*k*(dt/MONTH); S.earned += p*k*(dt/MONTH); }
 
-  // отрицательная прибыль: накопленное не отбирают, но платить нечем
+  // Кассовый разрыв. Убыток проедает кассу, и только когда она упёрлась
+  // в ноль, компания начинает расставаться с самым дорогим сотрудником.
+  // Решения об увольнении не принимал никто — просто кончились деньги.
   if(p<0 && S.staff.length){
-    S.gapIn -= dt;
+    // Убыток сначала проедает кассу — накопленное и есть подушка.
+    // Увольнения начинаются, только когда платить действительно нечем.
+    S.cash = Math.max(0, S.cash + p*(dt/MONTH));
+    if(S.cash > 0){ S.gapIn = 6; }
+    else S.gapIn -= dt;
     if(S.gapIn<=0){
-      S.gapIn = 8;
+      S.gapIn = 6;
       const worst = S.staff.reduce((a,b)=> b.pay>a.pay?b:a);
       S.staff = S.staff.filter(x=>x.uid!==worst.uid);
       S.hired[worst.role] = Math.max(0,S.hired[worst.role]-1);
       log("Смета не сходится. <b>"+worst.name+"</b> ("+worst.title.toLowerCase()+
           ") получил расчёт. Формально — по соглашению сторон.", "bad");
     }
-  } else S.gapIn = 8;
+  } else S.gapIn = 6;
 
   // календарь
   S.acc = (S.acc||0) + dt;
@@ -1386,6 +1502,27 @@ setInterval(() => {
   }
 
   if(S.opt){ S.optIn-=dt; if(S.optIn<=0){ S.optIn=70*S.retain; loseStaff("Оптимизация штата"); } }
+  // Возврат в офис оплачивается людьми, а не деньгами. Гибрид останавливает.
+  if(S.rto && !S.rtoSoft){
+    S.rtoIn -= dt;
+    if(S.rtoIn<=0){ S.rtoIn = 60*S.retain; loseStaff("Не поехал в офис"); }
+  }
+  // Стажёр — единственный, кто со временем дорожает сам. Ради этого его
+  // и держат, хотя каждый месяц он приносит меньше, чем стоит.
+  if(S.hired.intern){
+    S.growIn -= dt;
+    if(S.growIn<=0){
+      S.growIn = 55;
+      const it = S.staff.find(p=>p.role==="intern" && !p.perk);
+      const jr = C.roles.find(r=>r.id==="junior");
+      if(it){
+        it.role="junior"; it.title=jr.name; it.pay=jr.pay; it.out=jr.out;
+        S.hired.intern--; S.hired.junior++;
+        log("<b>"+it.name+"</b> больше не стажёр. Заняло дольше, чем обещали на собеседовании.","good");
+        sig.staff=null;
+      }
+    }
+  }
   if(S.review){ S.revIn-=dt; if(S.revIn<=0){ S.revIn=150; S.burn+=7;
     log("Перформанс-ревью. Большинство получило «соответствует ожиданиям».","bad"); } }
   if(S.surveys){ S.srvIn-=dt; if(S.srvIn<=0){ S.srvIn=140; S.burn+=4;
@@ -1439,7 +1576,7 @@ setInterval(() => {
   } else if(S.staff.length>=2 && !S.noMeets && S.callsThisMonth < S.dayCap){
     S.meetIn -= dt;
     if(S.meetIn<=0){
-      const m = pick(C.meets);
+      const m = pick(C.meets.filter(x => (x[2]||0) <= S.era));
       S.meetLeft = S.meetFull = meetLenNow();
       S.callsThisMonth++;
       if(S.minimize){
@@ -1473,7 +1610,9 @@ setInterval(() => {
 (function pulse(){
   const ph = (performance.now() % S.beat) / S.beat;
   const x = Math.max(0, 1 - Math.abs(ph - .52) / .22);
-  document.documentElement.style.setProperty("--pulse", (x*x*(3-2*x)).toFixed(3));
+  const r = document.documentElement.style;
+  r.setProperty("--phase", ph.toFixed(3));
+  r.setProperty("--pulse", (x*x*(3-2*x)).toFixed(3));
   requestAnimationFrame(pulse);
 })();
 
@@ -1506,7 +1645,8 @@ $("chToggle").onclick = () => {
 rollTask(); showTask(); paint(); measure();
 
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
-               paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,burnMul,ending,finish,godMode};
+               paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
+               log,vacCost,agentDrag,ending,finish,godMode};
 </script>
 </body>
 </html>
