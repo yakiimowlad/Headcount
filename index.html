@@ -145,6 +145,12 @@ main{max-width:520px;margin:0 auto;
 .rn>div:nth-child(3) b{color:var(--wrn-ink)}
 .rn span{display:block;margin-top:6px;font-size:11px;color:var(--mut);
   text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+/* Доля под числом: она и есть диагноз. Само по себе «ФОТ 3.5 млн»
+   не говорит ничего — много это или мало, зависит от выручки. */
+.sub2{display:block;margin-top:3px;font-size:10px;font-style:normal;font-weight:600;
+  color:var(--mut);font-variant-numeric:tabular-nums}
+.sub2.ok{color:var(--acc-ink)} .sub2.bad{color:var(--wrn-ink)}
+.cohint{margin-top:11px;font-size:13px;color:var(--ink2);font-weight:600}
 
 /* ── задача ── */
 .task{padding:16px 20px 18px;position:relative;transition:filter .4s var(--e),opacity .4s var(--e)}
@@ -657,12 +663,15 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
     <div class="card hero" id="pnlCard">
       <b class="n" id="profit">0 ₽</b>
       <div class="cap">прибыль в месяц</div>
+      <div class="cohint" id="coHint">Сходится</div>
     </div>
     <div class="card read">
       <div class="rn">
-        <div><b class="n" id="rev">0</b><span>выручка</span></div>
-        <div><b class="n" id="pay">0</b><span>ФОТ</span></div>
-        <div><b class="n" id="ovh">0</b><span>накладные</span></div>
+        <div data-tip="сколько приносят люди"><b class="n" id="rev">0</b><span>выручка</span></div>
+        <div data-tip="зарплаты всего штата"><b class="n" id="pay">0</b><span>ФОТ</span>
+          <em class="sub2" id="payShare">—</em></div>
+        <div data-tip="42 тысячи на человека"><b class="n" id="ovh">0</b><span>накладные</span>
+          <em class="sub2" id="ovhShare">—</em></div>
       </div>
     </div>
     <div class="k">Отделы и эффекты</div>
@@ -806,7 +815,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "0.5.0";
+const VERSION = "0.6.0";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -1089,6 +1098,54 @@ const C = {
      ]}
   ],
 
+  /* ── ЗАЦИКЛЕННЫЕ УЛУЧШЕНИЯ ────────────────────────────────────
+     Не «последнее по кругу», а пять вещей, которые в IT по своей
+     природе не заканчиваются. Повтор здесь и есть шутка: цена растёт,
+     эффект тот же, текст каждый раз новый. Счётчик заходов виден
+     в названии — чтобы игрок понимал, на каком он круге.              */
+  loops:[
+    {id:"lp1", grp:"Команда", t:2, cost:8000000, mul:1.7,
+     name:"Ещё один слой управления",
+     desc:"Руководитель покрывает на четыре человека больше",
+     f:s=>{ s.spanUp=(s.spanUp||0)+4; s.meetGap*=.92 },
+     say:["Появился руководитель руководителей. Ему тоже нужен один-на-один.",
+          "Между тобой и работой теперь три человека.",
+          "Кто-то нарисовал оргструктуру. Она не помещается на слайд.",
+          "Ещё один уровень. Решения идут дольше, зато коллегиально."]},
+    {id:"lp2", grp:"Задачи", t:1, cost:2500000, mul:1.6,
+     name:"Переехать на новый трекер",
+     desc:"+10% выработки команды",
+     f:s=>{ s.teamMul=(s.teamMul||1)*1.10 },
+     say:["Переехали в Рудник. Половина задач осталась в почте.",
+          "Теперь Жира. Старые ссылки ведут в никуда.",
+          "Переехали в Кайф. Импорт получился не весь.",
+          "Новый трекер. Все согласны, что предыдущий был лучше."]},
+    {id:"lp3", grp:"Задачи", t:2, cost:4000000, mul:1.75,
+     name:"Рефакторинг",
+     desc:"Задача приносит на 15% больше",
+     f:s=>{ s.click*=1.15 },
+     say:["Наконец-то разберём легаси.",
+          "В этот раз точно.",
+          "Переписываем то, что переписали в прошлый раз.",
+          "Договорились больше не трогать. Записали в вики."]},
+    {id:"lp4", grp:"Здоровье", t:1, cost:3000000, mul:1.65,
+     name:"Новая методология",
+     desc:"+8% выработки. Созвонов становится больше",
+     f:s=>{ s.teamMul=(s.teamMul||1)*1.08; s.meetGap*=.9 },
+     say:["Теперь скрам. По-настоящему, не как раньше.",
+          "Перешли на канбан. Доска та же, колонок больше.",
+          "Внедрили OKR. Цели квартала написали в последнюю неделю квартала.",
+          "Вернулись к скраму. Теперь правильному."]},
+    {id:"lp5", grp:"Команда", t:1, cost:5000000, mul:1.55,
+     name:"Индексация зарплат",
+     desc:"Люди уходят вдвое реже. ФОТ растёт на 8% навсегда",
+     f:s=>{ s.retain*=2; s.payMul=(s.payMul||1)*1.08 },
+     say:["Проиндексировали. Спасибо не сказал никто, но и не ушёл никто.",
+          "Второй пересмотр за год. В письме — «мы ценим каждого».",
+          "Индексация ниже инфляции. Формально — повышение.",
+          "Подняли всем. На собеседованиях всё равно предлагают больше."]}
+  ],
+
   ups:[
     {id:"u1",grp:"Задачи", t:0,   name:"Механическая клавиатура",cost:40000,    desc:"Задача приносит вдвое больше",f:s=>s.click*=2},
     {id:"u2",grp:"Задачи", t:0,   name:"Второй монитор",         cost:300000,   desc:"Ещё вдвое",f:s=>s.click*=2},
@@ -1135,6 +1192,7 @@ const S = {
   blocker:null, blockersDone:[], blockIn:75,
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
+  loops:{}, spanUp:0, teamMul:1, payMul:1,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
@@ -1307,12 +1365,15 @@ function readSave(){
 
 /* ── экономика ── */
 const soft = (n,step,cap) => 1 + cap*(1 - Math.pow(1-step/cap, n));
+// Норма управляемости растёт покупкой «ещё одного слоя управления».
+// Базовые восемь человек на руководителя — из документа.
 const SPAN = 8;
+const span = () => SPAN + (S.spanUp||0);
 function mult(scope){
   const pool = scope==="all" ? S.staff.length : S.staff.filter(p=>p.dept===scope).length;
   if(!pool) return 1;
   let bonus=0, seats=0;
-  S.staff.forEach(p => { if(p.bonus && p.scope===scope){ bonus+=p.bonus; seats+=SPAN; } });
+  S.staff.forEach(p => { if(p.bonus && p.scope===scope){ bonus+=p.bonus; seats+=span(); } });
   return bonus ? 1 + bonus*Math.min(1, seats/pool) : 1;
 }
 function revenue(){
@@ -1326,7 +1387,7 @@ function revenue(){
     if(p.dept==="ops") v*=mO;
     r+=v;
   });
-  r*=mA*bd;
+  r*=mA*bd*(S.teamMul||1);
   // Возврат в офис действительно поднимает выработку — это не вранье
   // и не ловушка. Цена приходит отдельно и позже: людьми.
   if(S.rto) r *= S.rtoSoft ? 1.06 : 1.18;
@@ -1362,11 +1423,11 @@ const activeBlocker = () => S.blocker ? C.blockers.find(b=>b.id===S.blocker) : n
 // Доля выручки, теряемая на время твоего отсутствия: 50% без управления,
 // 10% когда руководителей хватает на весь штат.
 function absenceHit(){
-  const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*SPAN;
+  const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*span();
   const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
   return 0.5 - 0.4*cover;
 }
-const payroll  = () => S.staff.reduce((a,p)=>a+p.pay,0);
+const payroll  = () => S.staff.reduce((a,p)=>a+p.pay,0) * (S.payMul||1);
 // Регистрация стоит денег один раз, а бухгалтерия — каждый месяц и
 // независимо от того, работал ли ты. Именно этот фиксированный хвост
 // делает раннее ООО невыгодным: с одним человеком он съедает всю прибыль,
@@ -1837,19 +1898,19 @@ function paintStaff(){
   const box = $("staff"); box.innerHTML = "";
   // Норма управляемости перестала быть невидимой. До этого игрок просто
   // видел, что повышения больше ничего не дают, и не знал почему.
-  const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*SPAN;
+  const seats = S.staff.filter(p=>p.bonus && p.scope==="all").length*span();
   const cov = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
   if(S.staff.length){
     const g = document.createElement("div");
     g.className = "gauge";
-    g.dataset.tip = "один руководитель — восемь человек";
+    g.dataset.tip = "один руководитель — "+span()+" человек";
     g.innerHTML = '<div class="gt"><span class="gn">Под руководителем</span>'+
       '<span class="gv n">'+Math.min(seats,S.staff.length)+' из '+S.staff.length+'</span></div>'+
       '<div class="bl"><i style="width:'+(cov*100).toFixed(0)+'%"></i></div>'+
       '<div class="rd" style="margin-top:7px">'+(cov>=1
         ? 'Бонусы руководителей действуют на весь штат'
         : 'Бонусы руководителей действуют на '+Math.round(cov*100)+'% штата. '+
-          'Один руководитель покрывает восемь человек')+'</div>';
+          'Один руководитель покрывает '+span()+' человек')+'</div>';
     box.appendChild(g);
   }
   // Руководители — отдельно и поимённо: это они меняют правила для всех
@@ -2004,13 +2065,25 @@ const upLocked = u => (u.era||0) > S.era || (u.req && !S.bought.has(u.req)) ||
 // То же правило, что и в найме: купленное исчезает, доступное показано,
 // из закрытого видна одна ближайшая ступень. Лестница избавления от
 // созвонов перестаёт быть списком из пяти «Сначала: …» в 2007 году.
+// Цикл превращается в обычную строку списка: та же карточка, но с номером
+// захода и ценой, выросшей от прошлого раза. Открывается, когда оборот
+// дорос до цены — по тем же правилам, что и разовые улучшения.
+function loopCost(l){ return Math.round(l.cost * Math.pow(l.mul, S.loops?.[l.id] || 0)); }
+function loopsOpen(){
+  return C.loops.filter(l => loopCost(l) <= Math.max(40000, S.earned)).map(l => ({
+    id:l.id, grp:l.grp, t:l.t, loop:l, n:(S.loops?.[l.id] || 0) + 1,
+    cost:loopCost(l),
+    name:l.name + " · заход " + ((S.loops?.[l.id] || 0) + 1),
+    desc:l.desc
+  }));
+}
 function paintUps(){
   const avail = C.ups.filter(u => !S.bought.has(u.id) && (u.era||0) <= S.era);
-  const open  = avail.filter(u => !upLocked(u));
+  const open  = avail.filter(u => !upLocked(u)).concat(loopsOpen());
   const waits = u => u.req && !S.bought.has(u.req) ? 1 : 0;
   const next  = avail.filter(u => upLocked(u))
                      .sort((a,b) => waits(a)-waits(b) || a.cost-b.cost)[0];
-  const key = S.era+"|"+open.map(u => u.id+(S.cash>=u.cost?"1":"0")).join("|")+
+  const key = S.era+"|"+open.map(u => u.id+u.cost+(S.cash>=u.cost?"1":"0")).join("|")+
               "|"+(next?next.id:"-");
   if(!changed("ups", key)) return;
   const box = $("ups"); box.innerHTML = "";
@@ -2037,8 +2110,19 @@ function paintUps(){
           '<div class="rl"><div class="rn2">'+u.name+gradeTag(u.t||0)+'</div>'+
           '<div class="rd">'+u.desc+'</div></div>'+
           '<div class="rp">'+rub(u.cost)+'</div>';
-        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S); sfx("buy");
-                                   after(u); sig.ups=null; paint(); };
+        if(ok) d.onclick = () => {
+          S.cash -= u.cost;
+          if(u.loop){
+            // Заход засчитан: цена вырастет, текст поменяется, эффект тот же.
+            S.loops = S.loops || {};
+            const n = S.loops[u.loop.id] = (S.loops[u.loop.id] || 0) + 1;
+            u.loop.f(S);
+            log(u.loop.say[Math.min(n-1, u.loop.say.length-1)], "noise");
+          } else {
+            S.bought.add(u.id); u.f(S); after(u);
+          }
+          sfx("buy"); sig.ups=null; paint();
+        };
       }
       card.appendChild(d);
     });
@@ -2049,13 +2133,32 @@ function paintUps(){
       '<div class="rd">Всё куплено. Работать быстрее уже не выйдет.</div></div></div></div>';
   }
 }
+/* Три числа отчёта работают только если по ним видно состояние дел.
+   Само по себе «ФОТ 3.5 млн» не говорит ничего: много это или мало,
+   зависит от выручки. Показываем долю и подсвечиваем порог. */
+function share(part, whole){ return whole > 0 ? part/whole : 0; }
+function level(x, ok, warn){ return x <= ok ? "ok" : x <= warn ? "mid" : "bad"; }
 function paintCo(){
   const rev=revenue(), pay=payroll(), ovh=overhead(), pr=rev-pay-ovh;
+  const sPay = share(pay, rev), sOvh = share(ovh, rev);
+  const lPay = level(sPay, .55, .75), lOvh = level(sOvh, .15, .25);
   $("rev").textContent = fmt(rev);
   $("pay").textContent = fmt(pay);
   $("ovh").textContent = fmt(ovh);
+  $("payShare").textContent = rev ? Math.round(sPay*100)+"% выручки" : "нет выручки";
+  $("ovhShare").textContent = rev ? Math.round(sOvh*100)+"% выручки" : "—";
+  $("payShare").className = "sub2 " + lPay;
+  $("ovhShare").className = "sub2 " + lOvh;
   $("profit").textContent = (pr>=0?"":"−")+rub(Math.abs(pr));
   $("pnlCard").className = "card hero " + (pr>=0?"up":"down");
+  // Одна строка вместо трёх цифр: что именно сейчас не так.
+  $("coHint").textContent =
+    !S.llc            ? "Компания не зарегистрирована" :
+    pr < 0            ? "Расходы больше выручки. Скоро придётся увольнять" :
+    lPay === "bad"    ? "Компания работает на зарплаты" :
+    lOvh === "bad"    ? "Накладные съедают прибыль. Их платят за каждого" :
+    sPay < .35 && rev ? "Запас большой. Можно нанимать" :
+                        "Сходится";
   // Раньше здесь были четыре шкалы выручки, из которых две — «Персонал»
   // и «Управление» — стояли на нуле всегда: ни одна роль не имеет
   // dept mgmt, а в people только рекрутёр с out:0. Инфографика выглядела
@@ -2078,7 +2181,7 @@ function paintCo(){
     '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div>';
   // Отделы поддержки не производят выручку — они меняют её условия.
   const heads = S.staff.filter(p=>p.bonus && p.scope==="all").length;
-  const seats = heads*SPAN;
+  const seats = heads*span();
   const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
   const eff = (name,val,col,tip) =>
     '<div class="bar tap" data-tip="'+(tip||"")+'"><div class="bt"><span class="bn">'+name+'</span>'+
@@ -2122,13 +2225,18 @@ function checkEra(){
   // и первый экран должен быть игрой, а не окном про игру.
   if(!first) showEra(i);
 }
+// Один экран на два случая: смена эпохи и разовое объяснение механики.
+// Второй отличается только тем, что заголовок не год, а событие.
+function showEraLike(name, stamp, note, what){
+  $("eraYears").textContent = stamp;
+  $("eraName").textContent  = name;
+  $("eraNote").textContent  = note;
+  $("eraWhat").textContent  = what;
+  $("eraSheet").classList.add("on"); $("eraScrim").classList.add("on");
+}
 function showEra(i){
   const e = C.eras[i], next = C.eras[i+1];
-  $("eraYears").textContent = e.y + "–" + (next ? next.y-1 : 2026);
-  $("eraName").textContent  = e.brand;
-  $("eraNote").textContent  = e.note;
-  $("eraWhat").textContent  = eraChanges(i);
-  $("eraSheet").classList.add("on"); $("eraScrim").classList.add("on");
+  showEraLike(e.brand, e.y + "–" + (next ? next.y-1 : 2026), e.note, eraChanges(i));
 }
 $("eraOk").onclick = () => {
   $("eraSheet").classList.remove("on"); $("eraScrim").classList.remove("on");
@@ -2164,8 +2272,14 @@ $("llcYes").onclick = () => {
   if(S.cash < LLC_COST){ snack("не хватает на регистрацию"); return; }
   S.cash -= LLC_COST; S.llc = true; closeLlc();
   sfx("promote"); buzz([20,60,20]);
-  log("<b>ООО зарегистрировано.</b> Теперь у вас есть выручка, ФОТ и бухгалтер, "+
-      "который будет стоить денег даже в месяцы без заказов.", "lore");
+  log("<b>ООО зарегистрировано.</b> Появились выручка, ФОТ и бухгалтер, "+
+      "который стоит денег и в месяцы без заказов.", "lore");
+  // Три новых числа надо объяснить один раз и по делу. Иначе вкладка
+  // «Компания» останется формой, в которую не смотрят.
+  showEraLike("Появился отчёт", "2007", "Компания теперь считает деньги. Три числа, за которыми стоит следить.",
+    "Выручка — сколько приносят люди. ФОТ — сколько им платите. "+
+    "Накладные — 42 тысячи на человека: офис, техника, ДМС. "+
+    "Прибыль — то, что осталось. Держите ФОТ ниже 55% выручки: выше 75% — компания работает на зарплаты.");
   paint();
 };
 $("llcNo").onclick = () => {
@@ -2423,7 +2537,11 @@ setInterval(() => {
   // Штраф за отсутствие теперь целиком внутри revenue() через absenceHit():
   // он масштабируется управленческим слоем, а расходы на время больничного
   // никуда не деваются — поэтому прибыль проседает резче выручки.
-  if(p>0){ S.cash += p*(dt/MONTH); S.earned += p*(dt/MONTH); }
+  // Первые годы компания зарабатывает вполсилы и выходит на полную за
+  // три игровых года. Без этого второй сотрудник окупался раньше, чем
+  // игрок успевал понять, зачем нужен был первый.
+  const ramp = Math.min(1, 0.45 + S.month/64);
+  if(p>0){ S.cash += p*ramp*(dt/MONTH); S.earned += p*ramp*(dt/MONTH); }
 
   // Вопрос про юрлицо задаём, когда вас уже несколько. Ответ «потом»
   // откладывает его на год — и весь этот год компания не зарабатывает.
@@ -2711,6 +2829,7 @@ window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,lo
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
+               loopCost,loopsOpen,span,share,level,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
