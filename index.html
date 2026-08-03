@@ -853,6 +853,20 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   </div>
 </div>
 
+<!-- Собеседование. Три вопроса, и ни один не про работу, которую
+     предстоит делать. Ворота инвертированы — это и есть шутка. -->
+<div class="scrim" id="ivScrim"></div>
+<div class="sheet" id="ivSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <div class="erayear n" id="ivStep">ЭТАП 1 ИЗ 3</div>
+    <h2 id="ivQ">Вопрос</h2>
+    <p id="ivHint"></p>
+    <button class="go" id="ivA" style="width:100%;margin-top:18px"></button>
+    <button class="later" id="ivB" style="width:100%;margin-top:9px"></button>
+  </div>
+</div>
+
 <!-- Дерево улучшений. Ветки идут лесенкой, как треки карьеры: видно,
      что куплено, что доступно и что за чем открывается. -->
 <div class="scrim" id="upsScrim"></div>
@@ -954,7 +968,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "0.8.0";
+const VERSION = "0.9.0";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -1343,6 +1357,14 @@ const C = {
           "Перешли на канбан. Доска та же, колонок больше.",
           "Внедрили OKR. Цели квартала написали в последнюю неделю квартала.",
           "Вернулись к скраму. Теперь правильному."]},
+    {id:"lp6", grp:"Делегирование", t:2, cost:6000000, mul:1.8,
+     name:"Поручить задачи",
+     desc:"Часть задач закрывается без вас. Платят за них 40%",
+     f:s=>{ s.deleg=(s.deleg||0)+1 },
+     say:["Отдали первый тикет. Сделали не так, но сделали.",
+          "Теперь вы согласовываете, а не делаете. Освободившееся время ушло на согласования.",
+          "Вы не помните, кто закрыл последнюю задачу. В отчёте написано, что команда.",
+          "Руками вы больше не работаете. В резюме это называется «стратегическое управление»."]},
     {id:"lp5", grp:"Команда", t:1, cost:5000000, mul:1.55,
      name:"Индексация зарплат",
      desc:"Люди уходят вдвое реже. ФОТ растёт на 8% навсегда",
@@ -1401,11 +1423,15 @@ const S = {
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
   jobs:0, jobAt:undefined,
+  deleg:0, delegAcc:0, legacy:1, lifetime:0, runs:0,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
 };
 C.roles.forEach(r => S.hired[r.id] = 0);
+// Снимок чистого состояния: престиж собирает новую жизнь из него,
+// а не пытается по одному откатить три десятка полей.
+const S0 = JSON.stringify({...S, bought:[], done:[]});
 
 const $ = id => document.getElementById(id);
 // Замок у закрытого пункта. Интерфейс показывает ровно один следующий:
@@ -1529,7 +1555,7 @@ function clearSave(){
 // Всё состояние — одним generic-снимком S, а не ручным списком полей:
 // новое поле в S попадает в сохранение само, без риска забыть его здесь.
 function serialize(){
-  return JSON.stringify({v:1, ver:VERSION, at:Date.now(),
+  return JSON.stringify({v:SAVE_V, ver:VERSION, at:Date.now(),
     S:{...S, bought:[...S.bought], done:[...S.done]},
     theme: document.documentElement.getAttribute("data-theme") || null});
 }
@@ -1552,9 +1578,25 @@ function savedAgo(){
   if(s < 3600) return Math.round(s/60)+" мин назад · "+hhmm;
   return hhmm+", "+d.getDate()+"."+String(d.getMonth()+1).padStart(2,"0");
 }
+/* Миграции сейвов. Поле v писалось с самого начала, но не читалось:
+   сохранение, сделанное до появления ООО, загружалось с llc:false, и
+   игрок с готовой компанией терял весь пассивный доход, не понимая
+   почему. Каждая миграция чинит ровно один такой разрыв. */
+const SAVE_V = 2;
+function migrate(d){
+  const v = d.v || 1;
+  if(v < 2){
+    // До версии 2 компании не существовало как отдельного шага: если люди
+    // уже наняты, значит игрок играл по старым правилам и ООО у него было.
+    if(d.S.llc === undefined) d.S.llc = (d.S.staff||[]).length > 0;
+  }
+  d.v = SAVE_V;
+  return d;
+}
 function restore(raw){
   let data; try{ data = JSON.parse(raw); }catch(e){ return null; }
   if(!data || !data.S) return null;
+  data = migrate(data);
   Object.assign(S, data.S);
   S.bought = new Set(data.S.bought||[]);
   S.done = new Set(data.S.done||[]);
@@ -1604,7 +1646,7 @@ function revenueRaw(){
     if(p.dept==="ops") v*=mO;
     r+=v;
   });
-  r*=mA*bd*(S.teamMul||1);
+  r*=mA*bd*(S.teamMul||1)*(S.legacy||1);
   // Возврат в офис действительно поднимает выработку — это не вранье
   // и не ловушка. Цена приходит отдельно и позже: людьми.
   if(S.rto) r *= S.rtoSoft ? 1.06 : 1.18;
@@ -1773,7 +1815,7 @@ const callPenalty = () => onCall() ? S.callMul : 1;
 // чем открывать компанию.
 const crewBoost = () => 1 + Math.min(1.2, 0.16*S.staff.length);
 function clickVal(){
-  return S.click * C.diffPay[task.diff] * (1 + .55*S.flow) * crewBoost()
+  return S.click * (S.legacy||1) * C.diffPay[task.diff] * (1 + .55*S.flow) * crewBoost()
        * (1 - Math.min(.4, S.hired.intern*.08)) * callPenalty();
 }
 
@@ -1968,6 +2010,78 @@ function startMusic(){
     musTimer = setTimeout(ping, 6000 + Math.random()*8000);
   };
   musTimer = setTimeout(ping, 3000);
+}
+
+/* ══════════════════════════════════════════════════════════════
+   УВОЛИТЬСЯ · престиж
+   Компания остаётся позади целиком. С собой — только опыт, и он
+   считается по всему, что вы заработали за все жизни. Ради этого
+   механика и существует: второй заход быстрее не потому, что вы
+   что-то сохранили, а потому что уже знаете, куда идти.
+   ══════════════════════════════════════════════════════════════ */
+const legacyOf = lt => 1 + Math.sqrt(lt / 5e10);
+const canQuit  = () => S.llc && S.earned >= 2e10 && !S.ended;
+// Три вопроса, и ни один не про работу, которую предстоит делать.
+const IV = [
+  {q:"Разверните двоичное дерево на доске",
+   hint:"Работать вы будете с формами и выгрузками в Excel.",
+   a:"Развернуть", b:"Спросить, зачем"},
+  {q:"Кем вы видите себя через пять лет?",
+   hint:"Средний срок жизни отдела — полтора года.",
+   a:"Расту внутри компании", b:"Честно: не знаю"},
+  {q:"Почему вы ушли с прошлого места?",
+   hint:"Настоящий ответ — «мне предложили вдвое больше» — говорить нельзя.",
+   a:"Хочу новых задач", b:"Мне предложили вдвое больше"}
+];
+let ivStep = 0, ivScore = 0;
+function showIv(){
+  const it = IV[ivStep];
+  $("ivStep").textContent = "ЭТАП " + (ivStep+1) + " ИЗ " + IV.length;
+  $("ivQ").textContent = it.q;
+  $("ivHint").textContent = it.hint;
+  $("ivA").textContent = it.a;
+  $("ivB").textContent = it.b;
+  $("ivSheet").classList.add("on"); $("ivScrim").classList.add("on");
+}
+function ivAnswer(honest){
+  // Честные ответы стоят оффера. Это не мораль, это статистика.
+  ivScore += honest ? 0 : 1;
+  ivStep++;
+  if(ivStep < IV.length){ showIv(); return; }
+  $("ivSheet").classList.remove("on"); $("ivScrim").classList.remove("on");
+  doQuit();
+}
+$("ivA").onclick = () => { sfx("tap"); ivAnswer(false); };
+$("ivB").onclick = () => { sfx("tap"); ivAnswer(true); };
+
+function startQuit(){
+  if(!canQuit()) return;
+  ivStep = 0; ivScore = 0; showIv();
+}
+function doQuit(){
+  const lifetime = (S.lifetime||0) + S.earned;
+  // За каждый «правильный» ответ — небольшая надбавка к офферу.
+  const offer = 1 + ivScore * 0.06;
+  const keep = {
+    lifetime, legacy: legacyOf(lifetime) * offer, runs: (S.runs||0)+1,
+    volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, savedAt:S.savedAt,
+    unmissed:S.unmissed
+  };
+  const fresh = JSON.parse(S0);
+  Object.keys(S).forEach(k => delete S[k]);
+  Object.assign(S, fresh, keep);
+  S.bought = new Set(); S.done = new Set();
+  C.roles.forEach(r => S.hired[r.id] = 0);
+  bumpEcon();
+  $("log").innerHTML = "";
+  S.logHistory = [];
+  applyTheme(S.theme || "auto");
+  document.querySelector('nav button[data-tab=work]').click();
+  rollTask(); showTask();
+  sfx("era"); buzz([25,70,25]);
+  log("Вы уволились. Компанию оставили тем, кто останется. Опыт множит всё "+
+      "в " + S.legacy.toFixed(2) + " раза — и это единственное, что переехало с вами.", "lore");
+  paint();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2324,15 +2438,25 @@ function paintTracks(){
   // набирались к 2011 году, и ветка «покупателя не нашлось» переставала
   // существовать. Обе концовки должны оставаться достижимыми.
   const rich = S.earned>50e9;
-  ex.innerHTML = can
+  // Два выхода. Уволиться можно раньше и не один раз: компания остаётся
+  // позади, опыт переезжает. Продать — один раз и в конце.
+  const quitRow = canQuit()
+    ? '<div class="row tap" id="quit"><div class="rl"><div class="rn2">Уволиться</div>'+
+      '<div class="rd">Начать заново. Опыт множит всё в '+
+      legacyOf((S.lifetime||0)+S.earned).toFixed(2)+' раза</div></div>'+
+      '<div class="rp">Жизнь '+((S.runs||0)+2)+'</div></div>'
+    : (S.llc ? '<div class="row"><div class="rl"><div class="rd">Уволиться можно, заработав 20 млрд. '+
+        'Сейчас '+rub(S.earned)+'.</div></div></div>' : '');
+  ex.innerHTML = quitRow + (can
     ? '<div class="row tap" id="sell"><div class="rl"><div class="rn2">'+
       (rich ? 'Продать компанию' : 'Закрыть компанию')+'</div><div class="rd">'+
       (rich ? 'Забрать деньги и уехать. Обратно не возвращаются'
             : 'Покупателя не нашлось. Раздать долги и уехать')+'</div></div>'+
       '<div class="rp">'+rub(S.earned*(rich?0.2:0.05))+'</div></div>'
     : '<div class="row"><div class="rl"><div class="rd">Выход откроется в 2026 году. '+
-      'Сейчас '+year()+', заработано '+rub(S.earned)+'.</div></div></div>';
+      'Сейчас '+year()+', заработано '+rub(S.earned)+'.</div></div></div>');
   if(can) $("sell").onclick = finish;
+  if(canQuit()) $("quit").onclick = startQuit;
 }
 const upLocked = u => (u.era||0) > S.era || (u.req && !S.bought.has(u.req)) ||
   u.cost > Math.max(40000, S.earned);
@@ -2871,6 +2995,20 @@ setInterval(() => {
   const ramp = Math.min(1, 0.45 + S.month/64);
   if(p>0){ S.cash += p*ramp*(dt/MONTH); S.earned += p*ramp*(dt/MONTH); }
 
+  // Делегированные задачи. Ни потока, ни комбо: это закрываете не вы,
+  // и ритм тут ни при чём. Выгорание всё равно капает — согласовывать
+  // тоже работа.
+  if(S.deleg){
+    S.delegAcc = (S.delegAcc||0) + dt * S.deleg * 0.30;
+    while(S.delegAcc >= 1){
+      S.delegAcc -= 1;
+      const v = clickVal() * 0.4;
+      S.cash += v; S.earned += v;
+      S.burn += 0.12 * S.burnRate * burnMul();
+      S.taskCount = (S.taskCount||0) + 1;
+    }
+  }
+
   // Вопрос про юрлицо задаём, когда вас уже несколько. Ответ «потом»
   // откладывает его на год — и весь этот год компания не зарабатывает.
   if(!S.llc) llcOffer();
@@ -3159,7 +3297,7 @@ showTask(); paint(); measure();
 addEventListener("pagehide", saveGame);
 addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 
-window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
+window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
@@ -3168,6 +3306,7 @@ window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,lo
                stepReady,stepPrev,anyPromo,
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
+               startQuit,doQuit,canQuit,legacyOf,migrate,SAVE_V,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
