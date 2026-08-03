@@ -196,6 +196,9 @@ main{max-width:520px;margin:0 auto;
 
 /* ── выгорание ── */
 .gauge{padding:16px 18px}
+/* Внутри карточки задачи: без боковых отступов, чтобы полоса выгорания
+   встала ровно по ширине кнопки «Выполнить» — они про одно и то же. */
+.gauge.tight{padding:14px 0 0;margin-top:2px;border-top:.5px solid var(--hair2)}
 .gt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px}
 .gn{font-size:14px;font-weight:600}
 .gv{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
@@ -533,6 +536,10 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <span class="delta n" id="rate">+0 ₽ в месяц</span>
     </div>
 
+    <!-- Задача и выгорание — один блок. Волна на кнопке снижает прирост
+         выгорания, и увидеть эту связь можно, только когда полоса стоит
+         прямо под кнопкой: раздельными карточками они читались как две
+         независимые механики, каковыми не являются. -->
     <div class="card" style="margin-top:12px">
       <div class="task" id="taskCard">
         <div class="thead">
@@ -545,13 +552,10 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
           <button class="later" id="skip">Отложить</button>
         </div>
         <div class="note" id="donote">+5 000 ₽</div>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="gauge" data-tip="растёт от задач и созвонов">
-        <div class="gt"><span class="gn" id="burnName">Выгорание</span><span class="gv n" id="burnVal">0%</span></div>
-        <div class="bl"><i id="burnBar"></i></div>
+        <div class="gauge tight" data-tip="ровный ритм задач замедляет вдвое">
+          <div class="gt"><span class="gn" id="burnName">Выгорание</span><span class="gv n" id="burnVal">0%</span></div>
+          <div class="bl"><i id="burnBar"></i></div>
+        </div>
       </div>
       <div class="row tap" id="vac">
         <div class="rl"><div class="rn2">Взять отпуск</div>
@@ -770,7 +774,7 @@ const C = {
     [2,"Объяснить бизнесу, почему модель не заменит четверых",5],
     [2,"Разгрести legacy, который прошлым летом сгенерировали за неделю",5]
   ],
-  diffName:["мелочь","задача","разбирательство"],
+  diffName:["мелочь","задача","сложно"],
   diffPay:[0.35, 1, 2.8],     // множитель награды
   diffBurn:[0.3, 1, 3.1],     // множитель выгорания — растёт быстрее награды
 
@@ -1295,6 +1299,7 @@ function loseStaff(why){
   const boss = S.staff.find(x=>x.danger);
   const by = boss ? " Решение подписал "+boss.name+"." : "";
   log(why+": <b>"+p.name+"</b>, "+p.title.toLowerCase()+", больше здесь не работает."+by, "bad");
+  sfx("lose");
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1376,6 +1381,8 @@ function doTask(){
   S.flow = Math.max(0, Math.min(1, S.flow + (hit ? (onCall() ? .03 : .11) : -.07)));
   btn.classList.remove("hit","miss"); void btn.offsetWidth;
   btn.classList.add(hit ? "hit" : "miss");
+  sfx(hit ? "hit" : "miss");
+  if(hit) buzz(8);
 
   const v = clickVal();
   S.cash += v; S.earned += v;
@@ -1413,6 +1420,7 @@ $("vac").onclick = () => {
   // Выплата за выращенный управленческий слой: сначала твой отпуск стоит
   // компании половины выручки, под конец — десятой части. Ты добился того,
   // что тебя можно не заметить.
+  sfx("good");
   if(absenceHit() <= 0.16 && !S.unmissed){
     S.unmissed = true;
     log("Ты был в отпуске две недели. Никто не заметил.", "lore");
@@ -1452,6 +1460,111 @@ $("blockbar").onclick = () => {
 };
 
 /* ══════════════════════════════════════════════════════════════
+   ЗВУК
+   Всё синтезируется в браузере. Никаких файлов и base64: игра — один
+   HTML без зависимостей, и аудиофайлы раздули бы её на сотни килобайт
+   ради секунды звука. Осциллятор с огибающей стоит ноль байт.
+
+   Регистр подобран под тон игры: не мультяшные «пиу», а короткие сухие
+   щелчки и низкие удары. Тяжёлые события говорят телом, а не мелодией —
+   80→40 Гц с быстрым спадом ощущается животом, а не ухом.
+   ══════════════════════════════════════════════════════════════ */
+let AC = null, sfxBus = null, musBus = null, musicOn = false;
+function audio(){
+  // Контекст создаётся только по первому касанию: браузеры не дают
+  // играть до жеста пользователя, и попытка до него ломает весь звук.
+  if(AC) return AC;
+  try{ AC = new (window.AudioContext||window.webkitAudioContext)(); }catch(e){ return null; }
+  sfxBus = AC.createGain(); musBus = AC.createGain();
+  sfxBus.connect(AC.destination); musBus.connect(AC.destination);
+  applyVolume();
+  return AC;
+}
+function applyVolume(){
+  if(!AC) return;
+  sfxBus.gain.value = (S.volSfx ?? .7);
+  musBus.gain.value = (S.volMus ?? .35) * .22;   // музыка тише по умолчанию: она фон
+}
+// Одна нота: тип волны, частота (со спадом), длительность, громкость.
+function tone(type, f0, f1, dur, vol, bus){
+  const ac = audio(); if(!ac) return;
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f0, ac.currentTime);
+  if(f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(1,f1), ac.currentTime+dur);
+  g.gain.setValueAtTime(0, ac.currentTime);
+  g.gain.linearRampToValueAtTime(vol, ac.currentTime+0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, ac.currentTime+dur);
+  o.connect(g); g.connect(bus||sfxBus);
+  o.start(); o.stop(ac.currentTime+dur+0.02);
+}
+// Короткий шумовой щелчок — «сухая» составляющая, без неё всё звучит мультяшно.
+function noise(dur, vol, freq){
+  const ac = audio(); if(!ac) return;
+  const n = Math.floor(ac.sampleRate*dur);
+  const buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+  for(let i=0;i<n;i++) d[i] = (Math.random()*2-1) * Math.pow(1-i/n, 3);
+  const src = ac.createBufferSource(); src.buffer = buf;
+  const bp = ac.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value = freq||1800;
+  const g = ac.createGain(); g.gain.value = vol;
+  src.connect(bp); bp.connect(g); g.connect(sfxBus);
+  src.start();
+}
+// Низкий удар: то самое «вибро», которым говорят тяжёлые события.
+function thump(vol, from, to){
+  tone("sine", from||85, to||38, .34, vol ?? .55);
+  noise(.05, (vol ?? .55)*.25, 260);
+}
+function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+
+const SFX = {
+  tap:    () => noise(.03, .10, 2600),
+  hit:    () => { tone("triangle", 660, 880, .09, .16); noise(.02,.06,3200); },
+  miss:   () => { tone("sine", 190, 120, .10, .13); },
+  buy:    () => { tone("triangle", 520, 780, .10, .17); tone("triangle", 780, 1040, .12, .11); },
+  hire:   () => { tone("triangle", 420, 620, .12, .17); },
+  promote:() => { tone("triangle", 520, 700, .13, .17); setTimeout(()=>tone("triangle",700,940,.16,.14),90); },
+  // тяжёлое — телом
+  lose:   () => { thump(.6, 90, 34); buzz(38); },
+  gap:    () => { thump(.55, 70, 30); buzz([26,60,26]); },
+  block:  () => { thump(.6, 100, 42); tone("sine",300,180,.22,.12); buzz(45); },
+  sick:   () => { thump(.5, 60, 26); tone("sine",150,80,.6,.10); buzz([50,80,50]); },
+  era:    () => { tone("sine", 220, 330, .5, .12); setTimeout(()=>tone("sine",330,440,.6,.09),140); },
+  call:   () => { tone("square", 480, 480, .1, .07); setTimeout(()=>tone("square",480,480,.1,.07),160); },
+  good:   () => { tone("triangle", 600, 900, .14, .15); }
+};
+function sfx(name){
+  if(!(S.volSfx ?? .7)) return;
+  const f = SFX[name]; if(!f) return;
+  try{ audio(); applyVolume(); f(); }catch(e){}
+}
+
+/* Фоновая музыка — тоже синтез. Медленный минорный дрон с редкими
+   нотами сверху: не мелодия, а гул опенспейса, под который можно
+   не отвлекаясь работать. Ровно то, чем притворяется вся игра. */
+const SCALE = [220, 261.63, 293.66, 349.23, 392];
+let musTimer = 0;
+function startMusic(){
+  const ac = audio(); if(!ac || musicOn) return;
+  musicOn = true;
+  // дрон: две расстроенные пилы через фильтр
+  [110, 110.4].forEach(f => {
+    const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
+    o.type = "sawtooth"; o.frequency.value = f;
+    lp.type = "lowpass"; lp.frequency.value = 380;
+    g.gain.value = .05;
+    o.connect(lp); lp.connect(g); g.connect(musBus); o.start();
+  });
+  // редкие ноты: раз в 6–14 секунд, чтобы не превратиться в мелодию
+  const ping = () => {
+    if(!musicOn) return;
+    if((S.volMus ?? .35) > 0 && !S.ended)
+      tone("sine", pick(SCALE)*2, pick(SCALE)*2, 2.2, .05, musBus);
+    musTimer = setTimeout(ping, 6000 + Math.random()*8000);
+  };
+  musTimer = setTimeout(ping, 3000);
+}
+
+/* ══════════════════════════════════════════════════════════════
    НАСТРОЙКИ
    ══════════════════════════════════════════════════════════════ */
 function applyTheme(mode){
@@ -1483,8 +1596,21 @@ $("setClose").onclick = closeSet;
 $("setScrim").onclick = closeSet;
 document.querySelectorAll("#themeSeg button").forEach(b =>
   b.onclick = () => applyTheme(b.dataset.theme));
-$("volSfx").oninput = e => { S.volSfx = e.target.value/100; $("volSfxV").textContent = e.target.value; };
-$("volMus").oninput = e => { S.volMus = e.target.value/100; $("volMusV").textContent = e.target.value; };
+$("volSfx").oninput = e => {
+  S.volSfx = e.target.value/100; $("volSfxV").textContent = e.target.value;
+  applyVolume(); sfx("tap");           // слышно, что именно крутишь
+};
+$("volMus").oninput = e => {
+  S.volMus = e.target.value/100; $("volMusV").textContent = e.target.value;
+  applyVolume(); if(S.volMus > 0) startMusic();
+};
+
+// Звук просыпается от первого касания экрана — раньше браузер не позволит.
+addEventListener("pointerdown", function wake(){
+  removeEventListener("pointerdown", wake);
+  audio();
+  if((S.volMus ?? .35) > 0) startMusic();
+}, {once:false});
 // Скролл запоминается по вкладке: ушёл посмотреть кассу — вернулся туда,
 // где читал список найма, а не в начало.
 const scrollAt = {};
@@ -1544,7 +1670,7 @@ function paintHire(){
       // Только ФОТ. Будущая цена найма на 393 пикселях стоила больше, чем
       // давала: она разгоняла колонку и зажимала описание в три строки.
       '<div class="rp">'+rub(c)+'<small>ФОТ '+fmt(r.pay)+'</small></div>';
-    if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sig.hire=sig.staff=null; paint(); };
+    if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sfx("hire"); sig.hire=sig.staff=null; paint(); };
     box.appendChild(d);
   });
   if(next){
@@ -1654,7 +1780,7 @@ function paintTracks(){
       who.bonus = st.bonus||0; who.scope = st.scope||"all";
       if(st.dangerous){ who.danger=true; S.demoteReady=true; }
       if(st.eff) st.eff(S);
-      S.done.add(st.id);
+      S.done.add(st.id); sfx("promote");
       log("<b>"+who.name+"</b> — теперь "+st.title.toLowerCase()+". "+
           (st.dangerous ? "Все поздравили." : "Команда порадовалась."), "good");
       after(st);
@@ -1730,7 +1856,7 @@ function paintUps(){
         d.innerHTML = '<div class="rl"><div class="rn2">'+u.name+'</div>'+
           '<div class="rd">'+u.desc+'</div></div>'+
           '<div class="rp">'+rub(u.cost)+'</div>';
-        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S);
+        if(ok) d.onclick = () => { S.cash -= u.cost; S.bought.add(u.id); u.f(S); sfx("buy");
                                    after(u); sig.ups=null; paint(); };
       }
       card.appendChild(d);
@@ -1797,6 +1923,7 @@ function checkEra(){
   S.era = i;
   $("brand").textContent = C.eras[i].brand;
   log(C.eras[i].note, "lore");
+  sfx("era"); buzz([18,50,18]);
 }
 function paint(){
   if(S.ended) return;
@@ -1808,10 +1935,9 @@ function paint(){
   dl.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+" в месяц";
   dl.className = "delta n" + (pr>=0?"":" w");
 
-  // Шапка: те же числа, но доступные с любой вкладки. На «Работе» их
-  // прячем — там за кассу отвечает крупная цифра, и одно и то же число
-  // дважды на экране разным весом читается как ошибка, а не как забота.
-  document.querySelector(".hcash").style.visibility = S.tab==="work" ? "hidden" : "visible";
+  // Шапка: те же числа, доступные с любой вкладки, включая «Работу».
+  // Дублирование с крупной цифрой сознательное: касса — предмет игры,
+  // и она должна быть на месте всегда, даже когда экран уехал вниз.
   $("hCash").textContent = rub(S.cash);
   const hr = $("hRate");
   hr.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+"/мес";
@@ -2052,6 +2178,7 @@ setInterval(() => {
       const worst = S.staff.reduce((a,b)=> b.pay>a.pay?b:a);
       S.staff = S.staff.filter(x=>x.uid!==worst.uid);
       S.hired[worst.role] = Math.max(0,S.hired[worst.role]-1);
+      sfx("gap");
       log("Смета не сходится. <b>"+worst.name+"</b> ("+worst.title.toLowerCase()+
           ") получил расчёт. Формально — по соглашению сторон.", "bad");
     }
@@ -2070,7 +2197,7 @@ setInterval(() => {
   else if(S.vacLeft<=0){
     S.burn += (0.15 + S.staff.length*0.012) * S.burnRate * burnMul() * dt;
     if(S.burn>=100){
-      S.burn=100; S.sick=18;
+      S.burn=100; S.sick=18; sfx("sick");
       log("Выгорание. Ты не встаёшь с кровати. Компания работает без тебя, и это отдельно неприятно.","bad");
       loseStaff("Пока ты болел");
     }
@@ -2104,6 +2231,7 @@ setInterval(() => {
       // становится невыполнимым по кругу. Проиграть в этой игре нельзя.
       if(next && S.staff.length && p > 0){
         S.blocker = next.id;
+        sfx("block");
         $("bTitle").textContent = next.title;
         $("bText").textContent  = next.text;
         $("bNeed").textContent  = next.need;
@@ -2205,6 +2333,7 @@ setInterval(() => {
         $("mHandNote").textContent = "Участников: 9. Говорят двое.";
         $("sheet").classList.add("on"); $("scrim").classList.add("on");
       }
+      sfx("call"); buzz(20);
       S.meetIn = meetGapNow()*(0.75+Math.random()*0.5);
     }
   }
@@ -2250,7 +2379,10 @@ addEventListener("resize", measure);
 addEventListener("orientationchange", measure);
 if(window.ResizeObserver) new ResizeObserver(measure).observe(chron);
 
-$("chToggle").onclick = () => {
+// Переключатель висит и на заголовке, и на свёрнутой строке: в свёрнутом
+// виде заголовок скрыт, и обработчик на нём одном означал, что открыть
+// хронику физически нечем.
+const toggleChron = () => {
   const open = chron.classList.toggle("open");
   // фон под раскрытой хроникой не должен уезжать под пальцем
   document.body.style.overflow = open ? "hidden" : "";
@@ -2258,8 +2390,11 @@ $("chToggle").onclick = () => {
     // Открыл — значит прочитал: счётчик и висящий сигнал больше не нужны.
     S.unread = 0; paintBadge();
     $("sig").hidden = true; clearTimeout(sigTimer);
+    sfx("tap");
   } else measure();
 };
+$("chToggle").onclick = toggleChron;
+$("chPeek").onclick = toggleChron;
 
 // Восстановление сохранения. Раньше игра не переживала закрытие вкладки —
 // весь смысл эпох в длинной дистанции, а без сейва дистанция обнулялась
@@ -2308,7 +2443,9 @@ addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
-               snack,ending,finish,godMode,
+               snack,sfx,SFX,startMusic,applyVolume,
+               audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
+               ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
 </script>
 </body>
