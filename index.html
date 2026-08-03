@@ -281,12 +281,30 @@ main{max-width:520px;margin:0 auto;
 #chron.open .chh{padding:14px 14px 10px}
 .chh span{transition:transform .3s var(--e)}
 #chron.open .chh span{transform:rotate(180deg)}
-.log{flex:1 1 auto;min-height:0;max-height:64px;overflow-y:auto;overflow-x:hidden;
-  overscroll-behavior:contain;padding-bottom:8px;
-  scrollbar-width:none;-ms-overflow-style:none;
-  -webkit-mask-image:linear-gradient(180deg,#000 78%,transparent)}
+/* Свёрнутая хроника — одна строка, а не обрезанный маской список.
+   Раньше она занимала под сто пикселей и при этом не показывала целиком
+   даже одно сообщение: много места и нечего читать. Теперь последнее
+   событие видно полностью, а читать остальное — по тапу. */
+.peek{display:flex;align-items:center;gap:9px;padding:11px 14px;
+  cursor:pointer;user-select:none;min-width:0}
+.peek i{width:3px;align-self:stretch;border-radius:2px;flex:none;background:var(--faint)}
+.peek time{font:600 10px/1 ui-monospace,Menlo,monospace;color:var(--mut);
+  letter-spacing:.4px;text-transform:uppercase;flex:none;align-self:flex-start;padding-top:3px}
+/* Две строки, а не одна: в них помещается почти любая запись целиком.
+   Обрезаем только самые длинные — и то ради высоты, которая всё равно
+   вдвое меньше прежней. */
+.peek p{flex:1;min-width:0;font-size:14px;line-height:1.32;color:var(--ink2);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.peek>span{color:var(--mut);font-size:12px;flex:none}
+.peek.bad i{background:var(--wrn)} .peek.good i{background:var(--acc)}
+.peek.lore i{background:var(--wrn)} .peek.lore p{color:var(--ink);font-weight:500}
+#chron:not(.open) .chh{display:none}
+#chron.open .peek{display:none}
+.log{flex:1 1 auto;min-height:0;overflow-y:auto;overflow-x:hidden;
+  overscroll-behavior:contain;padding-bottom:8px;display:none;
+  scrollbar-width:none;-ms-overflow-style:none}
 .log::-webkit-scrollbar{display:none}
-#chron.open .log{max-height:none;-webkit-mask-image:none;
+#chron.open .log{display:block;max-height:none;
   padding-bottom:calc(12px + env(safe-area-inset-bottom))}
 .le{display:flex;gap:10px;padding:8px 14px;border-bottom:.5px solid var(--hair2);
   animation:slidein .4s var(--e)}
@@ -337,11 +355,13 @@ nav .dot.on{opacity:1}
   border-radius:14px;padding:11px 14px;font-size:14px;line-height:1.35;
   color:var(--ink);box-shadow:var(--sh);animation:sigin .35s var(--e)}
 #sig div.lore{border-color:var(--acc);border-left-color:var(--acc)}
+#sig div.tip{border-color:var(--hair);border-left-color:var(--mut);
+  color:var(--ink2);font-size:13px;text-align:center}
 #sig b{font-weight:600}
 @keyframes sigin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* Счётчик непрочитанного: подсказка, что заглянуть стоит именно сейчас. */
 .chl{display:inline-flex;align-items:center;gap:7px}
-#chBadge{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 5px;
+#chBadge{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 5px;flex:none;
   border-radius:8px;background:var(--wrn);color:#fff;font-size:10px;font-weight:700;
   letter-spacing:0;font-variant-numeric:tabular-nums}
 :root[data-theme=dark] #chBadge,:root:not([data-theme=light]) #chBadge{color:#241a05}
@@ -395,7 +415,21 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .cbline{height:2px;background:rgba(0,0,0,.06)}
 .cbline i{display:block;height:100%;background:var(--wrn);width:100%;transition:width .1s linear}
 
-/* режим тестировщика *//* режим тестировщика */
+/* ── блокер ──────────────────────────────────────────────────────
+   Полоса живёт над строкой созвона: они независимы и могут висеть
+   одновременно — созвон отнимает время, блокер требует человека. */
+.bneed{margin-top:18px;padding:13px 16px;border-radius:14px;
+  background:var(--wrn-soft);color:var(--wrn-ink);font-weight:600;font-size:15px}
+#blockbar{position:fixed;left:0;right:0;z-index:46;
+  bottom:calc(var(--navH) + var(--chH));
+  background:var(--wrn-soft);border-top:.5px solid var(--wrn);
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  animation:slidein .3s var(--e);cursor:pointer}
+#blockbar[hidden]{display:none}
+/* Когда висят оба, строку созвона поднимаем над блокером. */
+#callbar.stacked{bottom:calc(var(--navH) + var(--chH) + 52px)}
+
+/* режим тестировщика */
 #godbar{position:fixed;left:0;right:0;bottom:var(--navH);z-index:72;
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 16px 12px}
@@ -411,6 +445,11 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .fin h2{font-size:27px;font-weight:700;letter-spacing:-.9px;margin-bottom:14px}
 .fin p{font-size:16px;color:var(--ink2);margin-bottom:12px}
 .fin .stat{font-size:14px;color:var(--mut);margin:18px 0}
+/* Точки-шаги: видно, что финал не бесконечный, и сколько осталось. */
+.finstep{display:flex;gap:6px;margin-bottom:18px}
+.finstep i{width:22px;height:3px;border-radius:2px;background:var(--hair);transition:background .3s}
+.finstep i.on{background:var(--acc)}
+.fin p{margin-bottom:20px}
 </style>
 </head>
 <body>
@@ -453,7 +492,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
     </div>
 
     <div class="card">
-      <div class="gauge">
+      <div class="gauge" data-tip="растёт от задач и созвонов">
         <div class="gt"><span class="gn" id="burnName">Выгорание</span><span class="gv n" id="burnVal">0%</span></div>
         <div class="bl"><i id="burnBar"></i></div>
       </div>
@@ -515,6 +554,26 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   </div>
 </div>
 
+<!-- Блокер: отдельный шит, потому что он не про время, а про требование.
+     Закрыть можно — штраф останется, пока требование не выполнено. -->
+<div class="scrim" id="bScrim"></div>
+<div class="sheet" id="bSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <h2 id="bTitle">Проект встал</h2>
+    <p id="bText"></p>
+    <div class="bneed" id="bNeed"></div>
+    <button class="later" id="bClose" style="width:100%;margin-top:18px">Понятно</button>
+  </div>
+</div>
+
+<div id="blockbar" hidden>
+  <div class="cbw">
+    <span class="cbdot"></span>
+    <div class="cbt"><b id="blTitle"></b><small id="blNeed"></small></div>
+  </div>
+</div>
+
 <div id="callbar" hidden>
   <div class="cbw">
     <span class="cbdot"></span>
@@ -528,7 +587,10 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 
 <div id="chron">
   <div class="chw">
-    <div class="chh" id="chToggle"><span class="chl">Хроника<b id="chBadge" hidden></b></span><span>⌃</span></div>
+    <div class="chh" id="chToggle"><span class="chl">Хроника</span><span>⌃</span></div>
+    <div class="peek" id="chPeek">
+      <i></i><time></time><p></p><b id="chBadge" hidden></b><span>⌃</span>
+    </div>
     <div class="log" id="log"></div>
   </div>
 </div>
@@ -616,6 +678,56 @@ const C = {
   diffName:["мелочь","задача","разбирательство"],
   diffPay:[0.35, 1, 2.8],     // множитель награды
   diffBurn:[0.3, 1, 3.1],     // множитель выгорания — растёт быстрее награды
+
+  /* ── БЛОКЕРЫ ──────────────────────────────────────────────────
+     Вторая ось прогресса. Деньги здесь не помогают: проект встал не
+     потому, что их нет, а потому что нет человека нужного типа, года
+     или подтверждённого оборота. Это и заставляет нанимать разное,
+     а не покупать самое дорогое.
+     Гейты: role+count · step · cash · year · staff. Все — комбинируемые.
+     hit — доля выручки, которую теряешь, пока не решено.            */
+  blockers:[
+    {id:"b1", era:0, hit:.30, title:"Проект не подошёл заказчику",
+     text:"«Вы сделали не то, что мы просили». Просили устно, в аське.",
+     gate:{role:"analyst"}, need:"Нужен аналитик",
+     done:"Требования наконец записали. Оказалось, их четырнадцать."},
+    {id:"b2", era:0, hit:.25, title:"Заказчику не нравится, как это выглядит",
+     text:"«Сделайте красиво». На вопрос «как именно» — «ну красиво».",
+     gate:{role:"design"}, need:"Нужен дизайнер",
+     done:"Показали макет. Заказчик сказал «вот теперь другое дело». Макет тот же."},
+    {id:"b3", era:1, hit:.35, title:"У заказчика на проде упал сайт",
+     text:"Упал ночью. Заметил заказчик, а не вы.",
+     gate:{role:"qa"}, need:"Нужен тестировщик",
+     done:"Завели регресс. Падать стало реже, чинить — дольше."},
+    {id:"b4", era:1, hit:.30, title:"Тендер. Требуется подтверждение оборота",
+     text:"Деньги никто не заберёт. Их надо просто иметь на счету в нужный день.",
+     gate:{cash:4000000}, need:"Нужно 4 млн на счету",
+     done:"Справку приняли. Тендер выиграл тот, кто её не носил."},
+    {id:"b5", era:2, hit:.30, title:"У заказчика ТЗ на тридцать листов",
+     text:"Двадцать восемь из них — про совместимость с 1Ы.",
+     gate:{role:"analyst", count:2}, need:"Нужны двое аналитиков",
+     done:"ТЗ разобрали. Тридцать листов ужались до четырёх экранов."},
+    {id:"b6", era:2, hit:.28, title:"Заказчик просит SLA 99,99%",
+     text:"Это пятьдесят две минуты простоя в год. У вас нет дежурных.",
+     gate:{role:"support", count:2}, need:"Нужны двое в поддержке",
+     done:"Дежурство расписали. Первым в графике оказался ты."},
+    {id:"b7", era:2, hit:.35, title:"Заказчик хочет встречу с директором",
+     text:"«А кто у вас принимает решения?» Раньше этот вопрос не задавали.",
+     gate:{step:"m1"}, need:"Нужен хоть один руководитель",
+     done:"Директор приехал, кивал сорок минут. Контракт продлили."},
+    {id:"b8", era:3, hit:.32, title:"Пришла проверка. Документы за три года",
+     text:"Выяснилось, что регламент писали, но не согласовывали.",
+     gate:{role:"analyst", cash:20000000}, need:"Нужен аналитик и 20 млн на счету",
+     done:"Проверка ушла. Половину регламентов написали задним числом."},
+    {id:"b9", era:4, hit:.30, title:"Заказчик требует отечественный стек",
+     text:"«Импортозамещение». Сроки прежние.",
+     gate:{year:2022, staff:12}, need:"Нужен 2022 год и штат от 12",
+     done:"Переехали. Работает так же, называется иначе."},
+    {id:"b10", era:5, hit:.28, title:"Клиенту нужен брендбук",
+     text:"«Ну вы же дизайн делаете». Это другой дизайн.",
+     gate:{role:"design", count:2}, need:"Нужны двое дизайнеров",
+     done:"Брендбук сдали. Логотип в нём тот же, но теперь на 40 страницах."}
+  ],
 
   // [название, описание, минимальная эпоха]
   meets:[
@@ -716,6 +828,13 @@ const C = {
      desc:"+15% разработке, дальше отдача падает"},
     {id:"support",dept:"ops",   tier:0, name:"Оператор поддержки",pay:65000,  out:140000,
      desc:"Первая линия. Слышит о продукте больше всех"},
+    // Две роли, без которых блокеры были бы требованием невозможного.
+    // Они же — мост к разделению труда: сначала «все делают всё», потом
+    // выясняется, что дизайн и аналитика — это отдельная работа.
+    {id:"analyst",dept:"eng",   tier:0, name:"Аналитик",          pay:190000, out:300000,
+     desc:"Переводит «хочу как у конкурентов» в требования"},
+    {id:"design", dept:"eng",   tier:0, name:"Дизайнер",          pay:180000, out:280000,
+     desc:"Рисует то, на что потом смотрят все и молча"},
     {id:"recruit",dept:"people",tier:1, name:"Рекрутер",          pay:130000, out:0,
      desc:"Найм дешевле на 20%. Сам не приносит ничего"},
     {id:"buddy",  dept:"eng",   tier:2, name:"Тот самый коллега", pay:350000, out:520000,
@@ -810,6 +929,7 @@ const S = {
   rto:false, opt:false, review:false, surveys:false,
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
+  blocker:null, blockersDone:[], blockIn:75,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
   ended:false, god:false, speed:1
@@ -852,6 +972,16 @@ function log(text, type){
   // Важное выталкиваем на экран. Шум — нет: если сигналить обо всём,
   // сигнал перестаёт быть сигналом, и его будут листать так же, как ленту.
   if(type==="bad" || type==="lore" || type==="good") signal(text, type);
+  paintPeek();
+}
+// Свёрнутая хроника показывает последнее событие целиком, одной строкой.
+function paintPeek(){
+  const e = (S.logHistory||[])[0];
+  const box = $("chPeek");
+  if(!box || !e) return;
+  box.className = "peek " + (e.type||"");
+  box.querySelector("time").textContent = e.time;
+  box.querySelector("p").innerHTML = e.text;
 }
 let sigTimer = 0;
 function signal(text, type){
@@ -875,6 +1005,21 @@ function paintBadge(){
   b.textContent = S.unread > 9 ? "9+" : String(S.unread||0);
   b.hidden = !S.unread;
 }
+// Снэкбар: короткое пояснение механики по тапу. Три-пять слов — ровно
+// столько, сколько читают. Длиннее никто читать не станет, и это уже
+// проверено на хронике.
+function snack(text){
+  const box = $("sig");
+  if(!box || !text) return;
+  box.innerHTML = '<div class="tip">'+text+'</div>';
+  box.hidden = false;
+  clearTimeout(sigTimer);
+  sigTimer = setTimeout(() => { box.hidden = true; }, 2600);
+}
+document.addEventListener("click", e => {
+  const el = e.target.closest && e.target.closest("[data-tip]");
+  if(el) snack(el.dataset.tip);
+});
 function renderLogHistory(){
   const box = $("log"); box.innerHTML = "";
   (S.logHistory||[]).forEach(e => {
@@ -975,8 +1120,26 @@ function revenue(){
   // Созвон отнимает не только твоё время. Пока он идёт, на нём сидишь
   // не ты один, и компания это чувствует.
   if(onCall()) r *= S.minimize ? 0.94 : 0.82;
+  // Проект встал. Деньги тут не помогают — помогает только нужный человек.
+  const bl = activeBlocker();
+  if(bl) r *= 1 - bl.hit;
   return r;
 }
+/* ── БЛОКЕРЫ: проверка требований ────────────────────────────────
+   Гейт может требовать роль (с количеством), купленную ступень, деньги
+   на счету, год или размер штата. Всё, что указано, должно выполниться
+   одновременно. Деньги при этом не тратятся — их надо просто иметь,
+   как справку об оборотах. */
+function gateOk(g){
+  if(!g) return true;
+  if(g.role  && (S.hired[g.role]||0) < (g.count||1)) return false;
+  if(g.step  && !S.done.has(g.step))                 return false;
+  if(g.cash  && S.cash < g.cash)                     return false;
+  if(g.year  && year() < g.year)                     return false;
+  if(g.staff && S.staff.length < g.staff)            return false;
+  return true;
+}
+const activeBlocker = () => S.blocker ? C.blockers.find(b=>b.id===S.blocker) : null;
 // Доля выручки, теряемая на время твоего отсутствия: 50% без управления,
 // 10% когда руководителей хватает на весь штат.
 function absenceHit(){
@@ -1160,6 +1323,22 @@ $("mHand").onclick = () => {
   if(S.hands === 3) log("Ты третий раз за карьеру поднял руку на созвоне. Ни разу не помогло.", "noise");
 };
 
+// Шит блокера закрывается — в отличие от созвона. Штраф остаётся:
+// закрыть окно и решить проблему это разные вещи, и игра это знает.
+const closeBlockSheet = () => {
+  $("bSheet").classList.remove("on"); $("bScrim").classList.remove("on");
+};
+$("bClose").onclick = closeBlockSheet;
+$("bScrim").onclick = closeBlockSheet;
+// По тапу на полосу можно перечитать, чего от тебя хотят.
+$("blockbar").onclick = () => {
+  const b = activeBlocker();
+  if(!b) return;
+  $("bTitle").textContent = b.title; $("bText").textContent = b.text;
+  $("bNeed").textContent = b.need;
+  $("bSheet").classList.add("on"); $("bScrim").classList.add("on");
+};
+
 $("theme").onclick = () => {
   const r = document.documentElement;
   const sys = matchMedia("(prefers-color-scheme:dark)").matches;
@@ -1248,6 +1427,7 @@ function paintStaff(){
     const cov = Math.min(1, seats/S.staff.length);
     const g = document.createElement("div");
     g.className = "gauge";
+    g.dataset.tip = "один руководитель — восемь человек";
     g.innerHTML = '<div class="gt"><span class="gn">Под руководителем</span>'+
       '<span class="gv n">'+Math.min(seats,S.staff.length)+' из '+S.staff.length+'</span></div>'+
       '<div class="bl"><i style="width:'+(cov*100).toFixed(0)+'%"></i></div>'+
@@ -1450,19 +1630,22 @@ function paintCo(){
   const heads = S.staff.filter(p=>p.bonus && p.scope==="all").length;
   const seats = heads*SPAN;
   const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
-  const eff = (name,val,ok) =>
-    '<div class="bar"><div class="bt"><span class="bn">'+name+'</span>'+
-    '<span class="bv" style="color:'+(ok?'var(--acc-ink)':'var(--mut)')+'">'+val+'</span></div></div>';
+  const eff = (name,val,col,tip) =>
+    '<div class="bar tap" data-tip="'+(tip||"")+'"><div class="bt"><span class="bn">'+name+'</span>'+
+    '<span class="bv" style="color:'+col+'">'+val+'</span></div></div>';
+  const A = "var(--acc-ink)", W = "var(--wrn-ink)", M = "var(--mut)";
   $("depts").innerHTML =
     bar("Разработка", d.eng) + bar("Поддержка", d.ops) +
     eff("Управление", heads
-      ? "+"+Math.round((mA-1)*100)+"% выручки · "+Math.round(cover*100)+"% штата"
-      : "нет руководителей", heads>0) +
+      ? "+"+Math.round((mA-1)*100)+"% скорости · "+Math.round(cover*100)+"% штата"
+      : "нет руководителей", heads?A:M, "ускоряет всех исполнителей") +
     eff("Персонал", S.hired.recruit
       ? "найм дешевле на "+Math.round((1-S.hireTax*(1-.2))*100)+"%"
-      : "нет рекрутёров", S.hired.recruit>0) +
-    eff("Твоё отсутствие", Math.round(absenceHit()*100)+"% выручки",
-      absenceHit()<=0.2);
+      : "нет рекрутёров", S.hired.recruit?A:M, "рекрутёр удешевляет найм") +
+    // Отсутствие — это потеря, а не достижение: знак и охра, даже когда
+    // потеря мала. Управление её уменьшает, но не превращает в плюс.
+    eff("Твоё отсутствие", "−"+Math.round(absenceHit()*100)+"% выручки", W,
+      "меньше при сильном управлении");
 }
 function checkEra(){
   let i=0;
@@ -1623,19 +1806,31 @@ function ending(){
   if(rested && sickShare < .03) return "balanced";
   return "grey";
 }
+// Три слайда вместо простыни: уход, тишина, что было дальше. Каждый со
+// своим заголовком — иначе финал читается как один длинный абзац, который
+// пролистывают, не дочитав. Ровно та же болезнь, что и у хроники.
 const ENDINGS = {
-  burnt:{t:"Деревня",p:[
-    "Ты продал компанию через две недели после того, как второй раз не смог встать с кровати. Дом взял первый попавшийся, восемнадцать соток, куры.",
-    "Первый месяц ты просто спал. Просыпался в одиннадцать и не понимал, зачем. Тишина оказалась громче, чем ты рассчитывал.",
-    "К весне стало легче. Ты завёл таблицу с расходом корма — руки сами. К апрелю там появилась вкладка «прогноз», и ты поймал себя на том, что рад ей больше, чем курам."]},
-  balanced:{t:"Деревня",p:[
-    "Ты продал компанию вовремя и без драмы. Дом выбирал полгода, приехал смотреть трижды. Восемнадцать соток, куры.",
-    "Через месяц ты завёл таблицу. Расход корма, надой, себестоимость яйца. К марту там появились формулы, к апрелю — вкладка «прогноз».",
-    "А в мае ты подумал: для фермеров ведь нет нормального софта. Совсем. Ты знаешь двоих, кто зайдёт деньгами. И одного джуна, которого не жалко."]},
-  grey:{t:"Деревня",p:[
-    "Ты продал компанию, потому что подошёл срок, а не потому, что решил. Дом, восемнадцать соток, куры.",
-    "Ты не сгорел. Но и не отдохнул — просто двадцать лет шли ровно, и в какой-то момент кончились.",
-    "В мае ты открыл ноутбук посмотреть погоду и закрыл его через четыре часа. Ты не помнишь, что делал. Завтра, наверное, тоже посмотришь погоду."]}
+  burnt:{t:"Деревня", s:[
+    {h:"Ты уехал",
+     p:"Продал компанию через две недели после того, как второй раз не смог встать с кровати. Дом взял первый попавшийся: восемнадцать соток, куры."},
+    {h:"Первый месяц",
+     p:"Ты просто спал. Просыпался в одиннадцать и не понимал зачем. Тишина оказалась громче, чем ты рассчитывал."},
+    {h:"К весне",
+     p:"Стало легче. Ты завёл таблицу с расходом корма — руки сами. К апрелю там появилась вкладка «прогноз», и ты поймал себя на том, что рад ей больше, чем курам."}]},
+  balanced:{t:"Деревня", s:[
+    {h:"Ты уехал",
+     p:"Продал компанию вовремя и без драмы. Дом выбирал полгода, приезжал смотреть трижды. Восемнадцать соток, куры."},
+    {h:"Через месяц",
+     p:"Ты завёл таблицу: расход корма, надой, себестоимость яйца. К марту там появились формулы, к апрелю — вкладка «прогноз»."},
+    {h:"А в мае",
+     p:"Ты подумал: для фермеров ведь нет нормального софта. Совсем. Ты знаешь двоих, кто зайдёт деньгами. И одного джуна, которого не жалко."}]},
+  grey:{t:"Деревня", s:[
+    {h:"Ты уехал",
+     p:"Продал компанию, потому что подошёл срок, а не потому, что решил. Дом, восемнадцать соток, куры."},
+    {h:"Двадцать лет",
+     p:"Ты не сгорел. Но и не отдохнул — просто они шли ровно, и в какой-то момент кончились."},
+    {h:"А в мае",
+     p:"Ты открыл ноутбук посмотреть погоду и закрыл его через четыре часа. Ты не помнишь, что делал. Завтра, наверное, тоже посмотришь погоду."}]}
 };
 function finish(){
   S.ended = true;
@@ -1644,14 +1839,23 @@ function finish(){
   clearSave();
   const e = ENDINGS[ending()];
   $("chron").style.display = "none";
-  document.querySelector("main").innerHTML =
-    '<div class="card fin"><h2>'+e.t+'</h2>'+
-    e.p.map(x=>'<p>'+x+'</p>').join("")+
-    '<div class="stat">Заработано за карьеру: <b class="n">'+rub(S.earned)+'</b><br>'+
-    'Людей прошло через компанию: '+S.nid+' · отпусков: '+S.vacTaken+
-    ' · на больничном: '+Math.round(S.sickTime)+' сек</div>'+
-    '<button class="go" id="again" style="width:100%">Написать первым двоим</button></div>';
-  $("again").onclick = () => location.reload();
+  $("sig").hidden = true;
+  document.querySelector("nav").style.display = "none";
+  let i = 0;
+  const draw = () => {
+    const last = i === e.s.length-1;
+    document.querySelector("main").innerHTML =
+      '<div class="card fin">'+
+      '<div class="finstep">'+e.s.map((_,k)=>'<i class="'+(k===i?"on":"")+'"></i>').join("")+'</div>'+
+      '<h2>'+e.s[i].h+'</h2><p>'+e.s[i].p+'</p>'+
+      (last ? '<div class="stat">Заработано за карьеру: <b class="n">'+rub(S.earned)+'</b><br>'+
+              'Людей прошло через компанию: '+S.nid+' · отпусков: '+S.vacTaken+
+              ' · на больничном: '+Math.round(S.sickTime)+' сек</div>' : '')+
+      '<button class="go" id="finNext" style="width:100%">'+
+      (last ? "Написать первым двоим" : "Дальше")+'</button></div>';
+    $("finNext").onclick = last ? () => location.reload() : () => { i++; draw(); };
+  };
+  draw();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1715,6 +1919,47 @@ setInterval(() => {
       loseStaff("Пока ты болел");
     }
   }
+
+  /* ── БЛОКЕРЫ ──────────────────────────────────────────────────
+     Один за раз. Пока висит — режет выручку и ждёт не денег, а нужного
+     человека, года или подтверждённого оборота. Снимается сам, как
+     только требование выполнено: отдельной кнопки «решить» нет,
+     потому что решение — это найм, а не подтверждение. */
+  const bl = activeBlocker();
+  if(bl){
+    if(gateOk(bl.gate)){
+      S.blockersDone = [...(S.blockersDone||[]), bl.id];
+      S.blocker = null;
+      $("blockbar").hidden = true;
+      $("bSheet").classList.remove("on"); $("bScrim").classList.remove("on");
+      log(bl.done, "good");
+    }
+  } else {
+    S.blockIn -= dt;
+    if(S.blockIn<=0){
+      S.blockIn = 80 + Math.random()*40;
+      const done = S.blockersDone||[];
+      // берём первый по порядку, который уместен по эпохе и ещё не решён,
+      // и требование которого прямо сейчас НЕ выполнено — иначе блокер
+      // снимется в тот же тик и станет просто строкой в хронике
+      const next = C.blockers.find(b => (b.era||0)<=S.era && !done.includes(b.id) && !gateOk(b.gate));
+      // Не добиваем того, кто уже в убытке: иначе блокер режет выручку,
+      // из-за этого нечем платить, из-за этого некого нанять — и требование
+      // становится невыполнимым по кругу. Проиграть в этой игре нельзя.
+      if(next && S.staff.length && p > 0){
+        S.blocker = next.id;
+        $("bTitle").textContent = next.title;
+        $("bText").textContent  = next.text;
+        $("bNeed").textContent  = next.need;
+        $("blTitle").textContent = next.title;
+        $("blNeed").textContent  = next.need;
+        $("blockbar").hidden = false;
+        $("bSheet").classList.add("on"); $("bScrim").classList.add("on");
+        log("<b>"+next.title+".</b> "+next.need+".", "bad");
+      }
+    }
+  }
+  $("callbar").classList.toggle("stacked", !$("blockbar").hidden);
 
   if(S.opt){ S.optIn-=dt; if(S.optIn<=0){ S.optIn=70*S.retain; loseStaff("Оптимизация штата"); } }
   // Возврат в офис оплачивается людьми, а не деньгами. Гибрид останавливает.
@@ -1868,6 +2113,7 @@ const restored = saved && restore(saved);
 if(restored){
   renderLogHistory();
   paintBadge();
+  paintPeek();
   // Бренд эпохи выставляется напрямую: checkEra() внутри paint() обновляет
   // его только по ИЗМЕНЕНИЮ S.era, а era уже восстановлена той же самой —
   // повторный лог заметки эпохи при обычном перезапуске был бы лишним.
@@ -1879,6 +2125,14 @@ if(restored){
   if(S.meetLeft>0){
     if(S.minimize) $("callbar").hidden = false;
     else { $("sheet").classList.add("on"); $("scrim").classList.add("on"); }
+  }
+  // Блокер переживает перезагрузку: он висит, пока не выполнено требование,
+  // а не пока открыт экран. Полосу возвращаем, модалку — нет: её уже читали.
+  const bl0 = activeBlocker();
+  if(bl0){
+    $("blTitle").textContent = bl0.title;
+    $("blNeed").textContent  = bl0.need;
+    $("blockbar").hidden = false;
   }
   if(S.task) task = S.task; else rollTask();
 } else {
@@ -1896,7 +2150,8 @@ addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 
 window.GAME = {S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
-               log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,ending,finish,godMode,
+               log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
+               snack,ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
 </script>
 </body>
