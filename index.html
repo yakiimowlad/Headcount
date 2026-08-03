@@ -15,6 +15,68 @@
 
 <!--
 ================================================================================
+  КАРТА ФАЙЛА. Обновлять при добавлении разделов.
+  Номера строк плывут — ищите по заголовкам в кавычках.
+
+  РАЗМЕТКА
+    "<style>"          стили: переменные тем, компоненты, экраны
+    "<header>"         шапка: бренд, дата, касса, полоса времени, настройки
+    "<main>"           четыре вкладки: t-work, t-team, t-career, t-co
+    "sheet" id=...     модалки: sheet созвон · bSheet блокер · llcSheet ООО
+                       eraSheet эпоха и разовые пояснения · setSheet настройки
+    "<nav>"            таб-бар с замками
+
+  ДАННЫЕ — весь контент в объекте C, менять можно без риска для логики
+    "eras:"            шесть эпох: год, бренд, заметка
+    "tasks:"           задачи [сложность, текст, минимальная эпоха]
+    "blockers:"        десять требований заказчика, гейты role/step/cash/year/staff
+    "meets:"           созвоны [название, описание, эпоха]
+    "noise:"           фоновые строки хроники [эпоха, текст]
+    "roles:"           роли найма: dept, tier грейд, pay, out, viaBlock
+    "tracks:"          пять треков карьеры, ступени с eff и after
+    "loops:"           пять зацикленных улучшений: cost, mul, say по заходам
+    "ups:"             разовые улучшения: grp, t грейд, era, req, f, after
+
+  СОСТОЯНИЕ
+    "const S = {"      всё состояние игры, сериализуется целиком
+
+  ЭКОНОМИКА
+    "function revenue" выручка со всеми множителями
+    "payroll"          ФОТ с индексацией · "overhead" накладные + бухгалтерия
+    "function absenceHit"  цена отпуска и больничного, гасится управлением
+    "function mult"    норма управляемости · "span()" покрытие руководителя
+    "hireCost"         цена найма · "vacCost" цена отпуска
+
+  МЕХАНИКИ
+    "РИТМ"             loadBal, comboMul: одно сложное = одно среднее или три мелких
+    "function doTask"  клик по задаче: деньги, выгорание, поток
+    "gateOk"           проверка требований блокера
+    "БЛОКЕРЫ"          в тике: выдача и снятие
+    "ООО"              llcOffer, регистрация, экономика до и после
+    "checkEra"         смена эпохи · "showEraLike" экран объяснения
+
+  ИНТЕРФЕЙС
+    "function paint()" общая отрисовка, вызывается из тика
+    "paintHire"        найм · "paintStaff" штат командами и чипами
+    "paintTracks"      треки карьеры · "paintUps" улучшения и циклы
+    "paintCo"          отчёт: выручка, ФОТ, накладные, диагноз
+    "paintLocks"       замки на вкладках
+    "function log"     хроника · "signal" плашка важного · "snack" подсказка
+
+  ЗВУК
+    "ЗВУК"             синтез на WebAudio: tone, noise, thump, SFX, startMusic
+
+  СОХРАНЕНИЕ
+    "СОХРАНЕНИЕ"       serialize, saveGame, restore, localStorage и куки
+
+  ЦИКЛ
+    "ЦИКЛ"             setInterval 100 мс: экономика, события, отрисовка
+    "function pulse"   rAF: фаза волны на кнопке
+
+  РЕЖИМ ТЕСТИРОВЩИКА
+    "godMode"          вход: вкладка «Компания», тапы ФОТ → накладные →
+                       выручка → прибыль за четыре секунды
+================================================================================
   КОРЕНЬ ФИЛОСОФИИ. Проверять об него каждое решение.
   «Никто не злодей. Все решения локально верные. Результат — узнаваемый.»
    · У любой механики есть честная выгода, иначе игрок её не возьмёт.
@@ -38,7 +100,7 @@
   --g0:#b9b9be; --g1:#5fa83a; --g2:#4a7fa5; --g3:#8a6bb8; --g4:#c9a227;
   --sh:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
   --e:cubic-bezier(.32,.72,0,1);
-  --beat:900ms; --flow:0;
+  --flow:0;
   /* Высоты фиксированных этажей. Меряются в JS: угаданные числа
      давали щель между хроникой и таб-баром на устройствах с чёлкой. */
   --navH:70px; --chH:96px;
@@ -82,7 +144,7 @@ button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
 
 /* ── шапка ── */
 header{position:sticky;top:0;z-index:40;background:var(--glass);
-  backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-bottom:.5px solid var(--hair);padding:9px 20px 0}
 .hw{max-width:520px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .hleft{min-width:0;flex:1}
@@ -167,9 +229,11 @@ main{max-width:520px;margin:0 auto;
 
 /* кнопка с ритмом */
 .acts{display:flex;gap:10px}
+/* --heat идёт от полосы выгорания: кнопка и шкала — один прибор.
+   На нуле она зелёная, к сотне уходит в охру. */
 .go{flex:1;padding:15px 14px;border-radius:16px;color:#fff;font-weight:600;font-size:16px;
   letter-spacing:-.2px;position:relative;overflow:hidden;
-  background:var(--acc);
+  background:color-mix(in srgb, var(--wrn) calc(var(--heat,0) * 72%), var(--acc));
   transition:transform .09s var(--e),box-shadow .3s ease,opacity .3s;
   box-shadow:0 0 0 rgba(128,186,39,0), var(--sh)}
 :root[data-theme=dark] .go,:root:not([data-theme=light]) .go{color:#10210a}
@@ -196,7 +260,13 @@ main{max-width:520px;margin:0 auto;
   transition:transform .09s var(--e)}
 .later:active{transform:scale(.96)}
 .later[disabled]{opacity:.4}
-.note{margin-top:11px;font-size:13px;color:var(--mut);text-align:center;min-height:18px}
+/* Две цены клика в одной строке: слева деньги, справа здоровье.
+   Полоса выгорания стоит прямо под ними — связь читается без объяснений. */
+.note{margin-top:10px;font-size:13px;color:var(--mut);min-height:18px;
+  display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+.note i{font-style:normal;font-variant-numeric:tabular-nums}
+.note .pay{color:var(--acc-ink);font-weight:600}
+.note .cost{color:var(--wrn-ink);font-weight:600}
 
 /* штамп состояния */
 .task.off{filter:grayscale(1);opacity:.5}
@@ -311,8 +381,8 @@ main{max-width:520px;margin:0 auto;
       по тапу разворачивается на весь экран ── */
 #chron{position:fixed;left:0;right:0;bottom:var(--navH);top:auto;z-index:45;
   display:flex;flex-direction:column;
-  background:var(--glass);backdrop-filter:blur(30px) saturate(160%);
-  -webkit-backdrop-filter:blur(30px) saturate(160%);
+  background:var(--glass);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);
   border-top:.5px solid var(--hair);transition:top .4s var(--e)}
 #chron.open{top:0;z-index:47;background:var(--bg);backdrop-filter:none;
   -webkit-backdrop-filter:none;padding-top:env(safe-area-inset-top)}
@@ -374,7 +444,7 @@ main{max-width:520px;margin:0 auto;
 
 /* таб-бар */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--glass);
-  backdrop-filter:blur(30px) saturate(160%);-webkit-backdrop-filter:blur(30px) saturate(160%);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
   border-top:.5px solid var(--hair);padding:8px 0 calc(8px + env(safe-area-inset-bottom))}
 .nw{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
 nav button{display:grid;justify-items:center;gap:3px;padding:4px 0;color:var(--mut);
@@ -452,7 +522,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 #callbar{position:fixed;left:0;right:0;z-index:46;
   bottom:calc(var(--navH) + var(--chH));
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   animation:slidein .3s var(--e)}
 #callbar[hidden]{display:none}
 .cbw{max-width:520px;margin:0 auto;padding:9px 20px;display:flex;align-items:center;gap:11px}
@@ -540,7 +610,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 #blockbar{position:fixed;left:0;right:0;z-index:46;
   bottom:calc(var(--navH) + var(--chH));
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
-  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
   animation:slidein .3s var(--e);cursor:pointer}
 #blockbar[hidden]{display:none}
 /* Когда висят оба, строку созвона поднимаем над блокером. */
@@ -549,7 +619,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 /* режим тестировщика */
 #godbar{position:fixed;left:0;right:0;bottom:var(--navH);z-index:72;
   background:var(--wrn-soft);border-top:.5px solid var(--wrn);
-  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);padding:10px 16px 12px}
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);padding:10px 16px 12px}
 .gb-h{font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:1px;color:var(--wrn-ink);
   display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
 #gb-x{font-size:22px;line-height:1;color:var(--wrn-ink);padding:0 4px}
@@ -815,7 +885,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "0.6.0";
+const VERSION = "0.6.1";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -885,8 +955,12 @@ const C = {
     [2,"Разгрести legacy, который прошлым летом сгенерировали за неделю",5]
   ],
   diffName:["мелочь","задача","сложно"],
-  diffPay:[0.35, 1, 2.8],     // множитель награды
-  diffBurn:[0.3, 1, 3.1],     // множитель выгорания — растёт быстрее награды
+  // Руками зарабатывать стало невыгодно, и это цель. Мелочь и задача
+  // приносят в 2,5 раза меньше и жгут в 2,5 раза быстрее. Сложное платит
+  // как раньше, но жжёт впятеро. Клики — это разгон, а не бизнес:
+  // компанию строят люди, а не ваш палец.
+  diffPay:[0.14, 0.4, 2.8],
+  diffBurn:[0.75, 2.5, 15.5],
 
   /* ── БЛОКЕРЫ ──────────────────────────────────────────────────
      Вторая ось прогресса. Деньги здесь не помогают: проект встал не
@@ -1376,7 +1450,16 @@ function mult(scope){
   S.staff.forEach(p => { if(p.bonus && p.scope===scope){ bonus+=p.bonus; seats+=span(); } });
   return bonus ? 1 + bonus*Math.min(1, seats/pool) : 1;
 }
+let econTick = 0, revCache = {id:-1, v:0};
+// Любое изменение штата или множителей сбрасывает кэш.
+function bumpEcon(){ econTick++; }
 function revenue(){
+  if(revCache.id === econTick) return revCache.v;
+  const v = revenueRaw();
+  revCache = {id:econTick, v};
+  return v;
+}
+function revenueRaw(){
   let r=0;
   const qa=soft(S.hired.qa,.15,.45), bd=soft(S.hired.buddy,.20,.35);
   const mE=mult("eng"), mO=mult("ops"), mA=mult("all");
@@ -1449,6 +1532,7 @@ function hireCost(r, extra){
   return Math.round(r.pay*1.5*Math.pow(1.15,n)*S.hireTax*(1-.2*(S.hired.recruit>0)));
 }
 function addStaff(r){
+  bumpEcon();
   S.staff.push({uid:++S.nid,name:newName(),role:r.id,dept:r.dept,title:r.name,
                 pay:r.pay,out:r.out,perk:null});
   S.hired[r.id]++;
@@ -1462,6 +1546,7 @@ const meetLenNow = () => S.meetLen * Math.max(.45, 1 - .18*S.hired.assist);
 // тем меньше остаётся от живых инженеров — присмотр никуда не девается.
 const agentDrag   = () => Math.max(.2, 1 - .035*S.hired.agent);
 function loseStaff(why){
+  bumpEcon();
   if(!S.staff.length) return;
   const bd = S.staff.find(p=>p.role==="buddy" && !p.perk);
   const plain = S.staff.filter(p=>!p.perk);
@@ -2316,8 +2401,7 @@ function paint(){
 
   // ритм влияет на скорость волны: в потоке дышится ровнее
   S.beat = 900 + S.flow*420;
-  document.documentElement.style.setProperty("--beat", Math.round(S.beat)+"ms");
-  document.documentElement.style.setProperty("--flow", S.flow.toFixed(2));
+  $("taskCard").style.setProperty("--flow", S.flow.toFixed(2));
   const go = $("do");
   go.style.boxShadow = "0 0 "+(6+S.flow*26).toFixed(0)+"px rgba(128,186,39,"+(S.flow*.5).toFixed(2)+"), var(--sh)";
 
@@ -2326,12 +2410,20 @@ function paint(){
   card.className = "task" + (stamp?" off":"");
   card.dataset.stamp = stamp;
   go.disabled = !canWork(); $("skip").disabled = !canWork();
-  $("donote").textContent =
+  // У клика две цены, и обе видны рядом: деньги слева, выгорание справа.
+  // Раньше вторая была невидимой, и связь между кнопкой и полосой под ней
+  // приходилось выводить самому.
+  const burnPer = 0.5 * C.diffBurn[task.diff] * S.burnRate * burnMul() * (onCall() ? 1.5 : 1);
+  $("donote").innerHTML =
     S.sick>0 ? "Ты не в состоянии" :
     S.vacLeft>0 ? "Ты в отпуске, осталось "+Math.ceil(S.vacLeft)+" дн." :
     blocked() ? "Идёт созвон" :
-    onCall() ? "+"+rub(clickVal())+" · вполуха, "+Math.round((1-S.callMul)*100)+"% мимо" :
-    "+"+rub(clickVal());
+    '<i class="pay">+'+rub(clickVal())+'</i>'+
+    '<i class="cost">+'+burnPer.toFixed(1)+'% выгорания</i>'+
+    (onCall() ? '<i class="cost">вполуха, '+Math.round((1-S.callMul)*100)+'% мимо</i>' : '');
+  // Кнопка темнеет к охре вместе с полосой: чем ближе к больничному,
+  // тем очевиднее, что жать её — уже не бесплатно.
+  go.style.setProperty("--heat", (Math.min(100,S.burn)/100).toFixed(2));
 
   if(S.tab==="team"){
     $("segStaffN").textContent = S.staff.length;
@@ -2339,7 +2431,7 @@ function paint(){
   }
   if(S.tab==="career") { paintTracks(); }
   if(S.tab==="work")   { paintUps(); }
-  paintCo();
+  if(S.tab==="co") paintCo();
   paintLocks();
   $("dotCareer").classList.toggle("on", anyPromo() && S.tab!=="career");
 }
@@ -2520,6 +2612,7 @@ setInterval(() => {
   if(S.ended || chron.classList.contains("open") ||
      $("llcSheet").classList.contains("on") ||
      $("eraSheet").classList.contains("on")) return;
+  bumpEcon();
   const dt = 0.1 * S.speed;
   S.playTime += dt;
 
@@ -2735,13 +2828,19 @@ setInterval(() => {
 
 // Пульс кнопки: пик колокола совпадает с окном попадания.
 // Подсветка едва заметна — это подсказка, а не светомузыка.
+/* Волна считается в rAF, но не всегда и не в корне документа.
+   Раньше цикл писал две переменные в <html> шестьдесят раз в секунду:
+   браузер пересчитывал стили всего дерева на каждый кадр, и телефон
+   грелся ровно от этого. Теперь пишем в карточку задачи — инвалидация
+   ограничена ею — и не считаем вовсе, когда волну никто не видит. */
 (function pulse(){
+  requestAnimationFrame(pulse);
+  const card = $("taskCard");
+  if(!card || document.hidden || S.tab !== "work" || S.ended) return;
   const ph = (performance.now() % S.beat) / S.beat;
   const x = Math.max(0, 1 - Math.abs(ph - .52) / .22);
-  const r = document.documentElement.style;
-  r.setProperty("--phase", ph.toFixed(3));
-  r.setProperty("--pulse", (x*x*(3-2*x)).toFixed(3));
-  requestAnimationFrame(pulse);
+  card.style.setProperty("--phase", ph.toFixed(3));
+  card.style.setProperty("--pulse", (x*x*(3-2*x)).toFixed(2));
 })();
 
 /* ── этажи внизу экрана ──────────────────────────────────────────
