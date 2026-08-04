@@ -60,6 +60,18 @@ await page.click("#chToggle");
 await page.waitForTimeout(400);
 ok("сворачивается обратно",
    await page.evaluate(() => !document.getElementById("chron").classList.contains("open")));
+ok("кнопка и счётчик — один элемент", await page.evaluate(async () => {
+  const G = window.GAME;
+  G.S.unread = 3; G.paintBadge();
+  const b = document.getElementById("chBadge");
+  const withN = { t: b.textContent, orange: b.classList.contains("unread"), w: b.offsetWidth };
+  G.S.unread = 0; G.paintBadge();
+  const без = { t: b.textContent, orange: b.classList.contains("unread") };
+  // Стрелка есть всегда — это кнопка. Цифра и оранжевый приходят вместе.
+  return withN.t.includes("3") && withN.orange && withN.t.startsWith("⌃") &&
+         без.t.trim() === "⌃" && !без.orange &&
+         document.querySelectorAll("#chPeek .chx").length === 1;
+}), await page.evaluate(() => document.getElementById("chBadge").textContent));
 ok("у кнопки раскрытия тап не меньше 44 пикселей", await page.evaluate(() => {
   // Видимый кружок меньше, но ::after расширяет площадь до рекомендованных
   // сорока четырёх: палец попадает туда, куда целился.
@@ -229,6 +241,66 @@ ok("кнопка улучшений видна без скролла даже н
 })));
 ok("касса показана один раз, а не двумя карточками", await page.evaluate(() =>
   document.getElementById("cash") === null && document.getElementById("hCash") !== null));
+console.log("\nУлучшения");
+ok("редкость растёт вместе с силой эффекта", await page.evaluate(() => {
+  const G = window.GAME;
+  const all = [...G.C.ups, ...G.C.loops.map(l => ({ loop: l }))]
+    .map(o => ({ g: G.upsGrade(o), p: G.upsPower(o) }))
+    .sort((a, b) => a.p - b.p);
+  // Грейд обязан быть неубывающим по измеренной силе, иначе тег врёт.
+  return all.every((x, i) => i === 0 || x.g >= all[i - 1].g);
+}));
+ok("заняты все пять грейдов, и легендарных меньше всего", await page.evaluate(() => {
+  const G = window.GAME;
+  const n = [0, 0, 0, 0, 0];
+  [...G.C.ups, ...G.C.loops.map(l => ({ loop: l }))].forEach(o => n[G.upsGrade(o)]++);
+  return n.every(x => x > 0) && n[4] === Math.min(...n);
+}), await page.evaluate(() => {
+  const G = window.GAME, n = [0, 0, 0, 0, 0];
+  [...G.C.ups, ...G.C.loops.map(l => ({ loop: l }))].forEach(o => n[G.upsGrade(o)]++);
+  return n;
+}));
+ok("цвет несёт только тег редкости", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; S.cash = 3e6; S.earned = 6e7;
+  S.bought.add("u1");
+  G.paintUpsTree();
+  document.getElementById("upsSheet").classList.add("on");
+  await new Promise(r => setTimeout(r, 150));
+  const css = s => getComputedStyle(document.querySelector(s));
+  const ink = css(":root").getPropertyValue("--ink").trim();
+  const mut = css(":root").getPropertyValue("--mut").trim();
+  const paint = c => { const d = document.createElement("i"); d.style.color = c;
+                       document.body.appendChild(d); const v = getComputedStyle(d).color;
+                       d.remove(); return v; };
+  const done = document.querySelector("#upsTree .ub.done .un");
+  const other = document.querySelector("#upsTree .ub:not(.done) .un");
+  document.getElementById("upsSheet").classList.remove("on");
+  // Купленное — в полный цвет текста, некупленное — серым. В тёмной теме
+  // это белое против серого, в светлой чёрное против серого: обе величины
+  // берутся из переменных, поэтому проверка одна на обе темы.
+  return done && other &&
+         getComputedStyle(done).color === paint(ink) &&
+         getComputedStyle(other).color === paint(mut);
+}));
+ok("шапка шита прилипает при скролле", await page.evaluate(async () => {
+  const G = window.GAME;
+  G.paintUpsTree();
+  document.getElementById("upsSheet").classList.add("on");
+  await new Promise(r => setTimeout(r, 200));
+  const box = document.querySelector("#upsSheet .sh-in");
+  box.scrollTop = 700;
+  await new Promise(r => setTimeout(r, 200));
+  const h = document.querySelector("#upsSheet .shead").getBoundingClientRect();
+  const b = box.getBoundingClientRect();
+  const x = document.getElementById("upsClose").getBoundingClientRect();
+  box.scrollTop = 0;
+  document.getElementById("upsSheet").classList.remove("on");
+  // Ровно у края: щель над прилипшей шапкой означала бы, что в неё
+  // просвечивает уезжающий список.
+  return Math.abs(h.top - b.top) < 2 && x.top >= b.top && x.bottom <= b.bottom;
+}));
+
 ok("на экране улучшений видна касса", await page.evaluate(async () => {
   const G = window.GAME, S = G.S;
   S.cash = 111000;
