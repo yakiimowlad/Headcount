@@ -437,9 +437,24 @@ main{max-width:520px;margin:0 auto;
 .chh{flex:none;display:flex;justify-content:space-between;align-items:center;
   padding:8px 14px 6px;font-size:11px;font-weight:600;letter-spacing:.5px;
   text-transform:uppercase;color:var(--mut);cursor:pointer;user-select:none}
-#chron.open .chh{padding:14px 14px 10px}
-.chh span{transition:transform .3s var(--e)}
-#chron.open .chh span{transform:rotate(180deg)}
+/* Раскрытая хроника — отдельный экран, и закрывать его должно быть так же
+   очевидно, как закрыть любую модалку в игре. Поэтому здесь не полоска
+   с галочкой на восемь пикселей, а полноценная панель: крупный заголовок
+   и круглая кнопка того же вида, что [×] у шитов. Высота в раскрытом
+   состоянии ничего не стоит — экран и так во весь рост. */
+#chron.open .chh{padding:10px 12px 10px 16px;min-height:56px;
+  font-size:13px;letter-spacing:.4px;color:var(--ink2);
+  border-bottom:.5px solid var(--hair2)}
+/* Кнопка-стрелка. Видимый кружок 34 пикселя, но тап ловится с 44:
+   палец попадает туда, куда целился, а не на полпикселя мимо. */
+.chx{position:relative;flex:none;width:34px;height:34px;border-radius:17px;
+  background:var(--hair2);color:var(--ink2);font-size:15px;line-height:1;
+  display:grid;place-items:center;
+  transition:transform .18s var(--e),background-color .2s var(--e)}
+.chx::after{content:"";position:absolute;left:50%;top:50%;width:44px;height:44px;
+  transform:translate(-50%,-50%)}
+.peek:active .chx,.chh:active .chx{transform:scale(.88);background:var(--hair)}
+#chron.open .chx{width:38px;height:38px;border-radius:19px;font-size:17px}
 /* Свёрнутая хроника — одна строка, а не обрезанный маской список.
    Раньше она занимала под сто пикселей и при этом не показывала целиком
    даже одно сообщение: много места и нечего читать. Теперь последнее
@@ -454,7 +469,6 @@ main{max-width:520px;margin:0 auto;
    ничего пересчитывать руками не нужно. */
 .peek p{flex:1;min-width:0;font-size:14px;line-height:1.32;color:var(--ink2);
   display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
-.peek>span{color:var(--mut);font-size:12px;flex:none}
 .peek.bad i{background:var(--wrn)} .peek.good i{background:var(--acc)}
 .peek.lore i{background:var(--wrn)} .peek.lore p{color:var(--ink);font-weight:500}
 #chron:not(.open) .chh{display:none}
@@ -597,6 +611,9 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   color:var(--ink2);font-size:20px;line-height:1;display:grid;place-items:center;
   transition:transform .15s var(--e)}
 .xbtn:active{transform:scale(.9)}
+/* Тот же кегль, что у заголовка, но приглушённый цвет: это деньги,
+   а не название экрана. Переносится целиком, если не влезло. */
+.hcash2{color:var(--mut);font-weight:600;white-space:nowrap}
 .srow{display:flex;align-items:center;gap:13px;margin-top:20px}
 .srow label{font-size:15px;font-weight:600;width:76px;flex:none}
 .srow input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:5px;
@@ -945,7 +962,12 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 <div class="sheet tall" id="upsSheet">
   <div class="sh-in">
     <div class="grab"></div>
-    <div class="shead"><h2>Улучшения</h2><button class="xbtn" id="upsClose" aria-label="Закрыть">×</button></div>
+    <!-- Касса в заголовке: экран улучшений закрывает собой всё, включая
+         шапку с деньгами, и решение «брать или копить» приходилось
+         принимать вслепую. Сумма набрана тем же кеглем, что и заголовок:
+         это второе число экрана, а не сноска. -->
+    <div class="shead"><h2>Улучшения <span class="hcash2 n" id="upsCash"></span></h2>
+      <button class="xbtn" id="upsClose" aria-label="Закрыть">×</button></div>
     <div class="upstree" id="upsTree"></div>
   </div>
 </div>
@@ -1015,10 +1037,14 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 
 <div id="chron">
   <div class="chw">
-    <div class="chh" id="chToggle"><span class="chl">Хроника</span><span>⌃</span></div>
+    <div class="chh" id="chToggle">
+      <span class="chl">Хроника</span>
+      <span class="chx" aria-hidden="true">⌄</span>
+    </div>
     <div class="peek" id="chPeek">
       <i></i><time><span class="m"></span><span class="y"></span></time>
-      <p></p><b id="chBadge" hidden></b><span>⌃</span>
+      <p></p><b id="chBadge" hidden></b>
+      <span class="chx" aria-hidden="true">⌃</span>
     </div>
     <div class="log" id="log"></div>
   </div>
@@ -1041,7 +1067,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.0.3";
+const VERSION = "1.0.4";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -2955,6 +2981,7 @@ function paintUpsBadge(){
     : "Инструменты, созвоны, здоровье";
 }
 function paintUpsTree(){
+  $("upsCash").textContent = "(" + rub(S.cash) + ")";
   const box = $("upsTree"); box.innerHTML = "";
   const grps = {};
   C.ups.forEach(u => {
@@ -3243,6 +3270,10 @@ function paint(){
   }
   if(S.tab==="co") paintCo();
   paintLocks();
+  // Пока экран улучшений открыт, деньги в его заголовке продолжают идти.
+  // Перерисовываем только строку с суммой: полная перерисовка дерева
+  // на каждом такте съела бы тап между нажатием и отпусканием.
+  if($("upsSheet").classList.contains("on")) $("upsCash").textContent = "(" + rub(S.cash) + ")";
   paintDots();
 }
 
