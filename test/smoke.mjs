@@ -60,6 +60,32 @@ await page.click("#chToggle");
 await page.waitForTimeout(400);
 ok("сворачивается обратно",
    await page.evaluate(() => !document.getElementById("chron").classList.contains("open")));
+ok("дата — три буквы месяца и две цифры года", await page.evaluate(() => {
+  const G = window.GAME;
+  G.S.month = 214;                       // ноябрь 2024
+  const t = G.stamp();
+  return t.m.length === 3 && t.y === "24";
+}), await page.evaluate(() => window.GAME.stamp()));
+ok("сейв со старой датой одной строкой не теряет её", await page.evaluate(() => {
+  const t = window.GAME.stampOf({ time: "январь 2007" });
+  return t.m === "янв" && t.y === "07";
+}), await page.evaluate(() => window.GAME.stampOf({ time: "январь 2007" })));
+ok("в свёрнутой строке помещается четыре строки текста", await page.evaluate(() => {
+  const G = window.GAME;
+  G.log("Письмо про возврат в офис назвали «культурой сотрудничества». В нём четыре " +
+        "абзаца, и ни в одном не сказано, с какого числа это начинается и кого касается.", "bad");
+  document.querySelectorAll(".sheet,.scrim").forEach(s => s.classList.remove("on"));
+  const p = document.querySelector("#chPeek p"), cs = getComputedStyle(p);
+  const lines = Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight));
+  return cs.webkitLineClamp === "4" && lines === 4;
+}), await page.evaluate(() => {
+  const p = document.querySelector("#chPeek p"), cs = getComputedStyle(p);
+  return { клемп: cs.webkitLineClamp,
+           строк: Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight)) };
+}));
+ok("столбик даты занимает не больше 28 пикселей", await page.evaluate(() =>
+  document.querySelector("#chPeek time").getBoundingClientRect().width <= 28),
+  await page.evaluate(() => document.querySelector("#chPeek time").getBoundingClientRect().width));
 
 console.log("\nМеханики");
 ok("задача приносит деньги", await page.evaluate(() => {

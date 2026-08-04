@@ -434,13 +434,13 @@ main{max-width:520px;margin:0 auto;
 .peek{display:flex;align-items:center;gap:9px;padding:11px 14px;
   cursor:pointer;user-select:none;min-width:0}
 .peek i{width:3px;align-self:stretch;border-radius:2px;flex:none;background:var(--faint)}
-.peek time{font:600 10px/1 ui-monospace,Menlo,monospace;color:var(--mut);
-  letter-spacing:.4px;text-transform:uppercase;flex:none;align-self:flex-start;padding-top:3px}
-/* Две строки, а не одна: в них помещается почти любая запись целиком.
-   Обрезаем только самые длинные — и то ради высоты, которая всё равно
-   вдвое меньше прежней. */
+/* Четыре строки, а не две: почти любая запись помещается целиком, и
+   обрезать приходится только самые длинные. Высота выросла, но её отдаёт
+   не текст, а дата — она ужалась с «ЯНВАРЬ 2007» до столбика в две
+   короткие строки. Высоту этажа меряет measure() по факту, поэтому
+   ничего пересчитывать руками не нужно. */
 .peek p{flex:1;min-width:0;font-size:14px;line-height:1.32;color:var(--ink2);
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden}
 .peek>span{color:var(--mut);font-size:12px;flex:none}
 .peek.bad i{background:var(--wrn)} .peek.good i{background:var(--acc)}
 .peek.lore i{background:var(--wrn)} .peek.lore p{color:var(--ink);font-weight:500}
@@ -458,8 +458,15 @@ main{max-width:520px;margin:0 auto;
 @keyframes slidein{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
 .le i{width:3px;border-radius:2px;flex:none;background:var(--faint)}
 .le div{flex:1;min-width:0}
-.le time{display:block;font:600 10px/1 ui-monospace,Menlo,monospace;color:var(--mut);
-  letter-spacing:.5px;margin-bottom:4px;text-transform:uppercase}
+/* Дата — общий столбик для развёрнутой хроники и свёрнутой строки.
+   Месяц тремя буквами, под ним две цифры года. Ширина фиксированная,
+   чтобы колонка текста не прыгала от «мар» к «сен», и tabular-nums —
+   чтобы не прыгал сам год. */
+.le time,.peek time{flex:none;display:flex;flex-direction:column;align-items:center;
+  justify-content:flex-start;width:24px;gap:2px;padding-top:2px;
+  font:600 10px/1 ui-monospace,Menlo,monospace;color:var(--mut);
+  letter-spacing:.4px;text-transform:uppercase}
+.le time .y,.peek time .y{font-size:11px;font-variant-numeric:tabular-nums;opacity:.75}
 .le p{font-size:14px;line-height:1.35;color:var(--ink2);overflow-wrap:anywhere}
 .le b{font-weight:600;color:var(--ink)}
 .le.noise p{color:var(--mut);font-size:13px}
@@ -472,6 +479,7 @@ main{max-width:520px;margin:0 auto;
   border-radius:14px;border-bottom:none}
 .le.lore p{font-size:15px;line-height:1.4;color:var(--ink);font-weight:500}
 .le.lore time{color:var(--wrn-ink);font-weight:700}
+.le.lore{align-items:flex-start}
 
 /* таб-бар */
 nav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:var(--glass);
@@ -995,7 +1003,8 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   <div class="chw">
     <div class="chh" id="chToggle"><span class="chl">Хроника</span><span>⌃</span></div>
     <div class="peek" id="chPeek">
-      <i></i><time></time><p></p><b id="chBadge" hidden></b><span>⌃</span>
+      <i></i><time><span class="m"></span><span class="y"></span></time>
+      <p></p><b id="chBadge" hidden></b><span>⌃</span>
     </div>
     <div class="log" id="log"></div>
   </div>
@@ -1018,7 +1027,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.0.0";
+const VERSION = "1.0.1";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -1679,17 +1688,34 @@ const pick = a => a[Math.floor(Math.random()*a.length)];
 // Цена, которая приходит после покупки. Плюс написан на карточке, минус
 // игрок узнаёт из хроники — уже потратив деньги. Так это и работает.
 function after(o){ if(o.after) setTimeout(() => { if(!S.ended) log(o.after, "bad"); }, 2500); }
+/* Дата в хронике — узкий столбик из двух строк: «ЯНВ» и под ним «07».
+   Раньше она шла одной строкой «ЯНВАРЬ 2007» и в свёрнутом виде отъедала
+   треть ширины у текста. Три буквы и две цифры занимают вчетверо меньше,
+   и освободившееся место уходит туда, где от него есть польза. */
+const MON3 = ["янв","фев","мар","апр","май","июн","июл","авг","сен","окт","ноя","дек"];
+const stamp = () => ({m: MON3[S.month%12], y: String(year()).slice(-2)});
+// Сейвы, сделанные до этой версии, хранят дату одной строкой «январь 2007».
+// Разбираем её на месте, чтобы старая хроника не осталась без даты.
+function stampOf(e){
+  if(e.m) return e;
+  const p = String(e.time||"").split(" ");
+  return {m:(p[0]||"").slice(0,3), y:(p[1]||"").slice(-2)};
+}
+function timeHTML(e){
+  const t = stampOf(e);
+  return '<time><span class="m">'+t.m+'</span><span class="y">'+t.y+'</span></time>';
+}
 function log(text, type){
-  const time = MON[S.month%12]+' '+year();
+  const t = stamp();
   const d = document.createElement("div");
   d.className = "le " + (type || "");
-  d.innerHTML = '<i></i><div><time>'+time+'</time><p>'+text+'</p></div>';
+  d.innerHTML = '<i></i>'+timeHTML(t)+'<div><p>'+text+'</p></div>';
   $("log").prepend(d);
   while($("log").children.length > 40) $("log").lastChild.remove();
   // Хроника — часть прогресса не меньше кассы: живёт внутри S, поэтому
   // сохраняется и восстанавливается тем же общим механизмом, без второго
   // отдельного пути персистентности.
-  (S.logHistory = S.logHistory || []).unshift({time, text, type: type||""});
+  (S.logHistory = S.logHistory || []).unshift({m:t.m, y:t.y, text, type: type||""});
   if(S.logHistory.length > 40) S.logHistory.pop();
   // Важное выталкиваем на экран. Шум — нет: если сигналить обо всём,
   // сигнал перестаёт быть сигналом, и его будут листать так же, как ленту.
@@ -1701,8 +1727,10 @@ function paintPeek(){
   const e = (S.logHistory||[])[0];
   const box = $("chPeek");
   if(!box || !e) return;
+  const t = stampOf(e);
   box.className = "peek " + (e.type||"");
-  box.querySelector("time").textContent = e.time;
+  box.querySelector("time .m").textContent = t.m;
+  box.querySelector("time .y").textContent = t.y;
   box.querySelector("p").innerHTML = e.text;
 }
 let sigTimer = 0;
@@ -1747,7 +1775,7 @@ function renderLogHistory(){
   (S.logHistory||[]).forEach(e => {
     const d = document.createElement("div");
     d.className = "le " + (e.type||"");
-    d.innerHTML = '<i></i><div><time>'+e.time+'</time><p>'+e.text+'</p></div>';
+    d.innerHTML = '<i></i>'+timeHTML(e)+'<div><p>'+e.text+'</p></div>';
     box.appendChild(d);
   });
 }
@@ -3707,6 +3735,7 @@ addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
+               stamp,stampOf,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                loopCost,loopsOpen,span,share,level,
