@@ -1110,7 +1110,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.1.1";
+const VERSION = "1.1.2";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -1933,11 +1933,30 @@ function migrate(d){
   d.v = SAVE_V;
   return d;
 }
+/* Счётчики штата пересчитываются из самого штата при каждой загрузке.
+   Причина: Object.assign подменяет S.hired целиком тем объектом, который
+   лежит в сохранении, а в нём есть ключи только для тех ролей, которые
+   существовали на момент сохранения. Роль, добавленная позже, приходила
+   как undefined, и цена найма считалась как 1,20^undefined — на экране
+   это выглядело как «NaN млрд ₽» у аналитика, айтишника и восьми ролей
+   из 1.0.0. Версией сохранения такое не лечится: каждая новая роль
+   ломала бы старые сейвы заново. Поэтому не миграция, а пересчёт.
+
+   Штат — единственный источник правды: addStaff кладёт человека в S.staff
+   и увеличивает счётчик, увольнение убирает и уменьшает. Значит счётчик
+   всегда выводится из списка людей, и вывести его дешевле, чем чинить. */
+function countHired(){
+  const n = {};
+  C.roles.forEach(r => n[r.id] = 0);
+  (S.staff||[]).forEach(p => { if(p && p.role in n) n[p.role]++; });
+  S.hired = n;
+}
 function restore(raw){
   let data; try{ data = JSON.parse(raw); }catch(e){ return null; }
   if(!data || !data.S) return null;
   data = migrate(data);
   Object.assign(S, data.S);
+  countHired();
   S.bought = new Set(data.S.bought||[]);
   S.done = new Set(data.S.done||[]);
   // Режим тестировщика, ускорение и экран финала никогда не переживают
@@ -2049,7 +2068,7 @@ const vacFull  = () => Math.max(80000, revenue()*0.4 + S.earned*0.004);
 // не в деньгах — выручка встанет вдвое, и месяц пройдёт мимо.
 const vacCost  = () => Math.min(vacFull(), S.cash*0.55);
 function hireCost(r, extra){
-  const n = S.hired[r.id] + (extra||0);
+  const n = (S.hired[r.id]||0) + (extra||0);
   // Пока юрлица нет, вы нанимаете на честном слове: без договора, без
   // трудовой, деньгами в конверте. За это доплачивают — человек рискует
   // ровно тем же, чем вы. Отсюда двойная цена до ООО: первые две эпохи
@@ -2070,7 +2089,7 @@ function addStaff(r){
   bumpEcon();
   S.staff.push({uid:++S.nid,name:newName(),role:r.id,dept:r.dept,title:r.name,
                 pay:r.pay,out:r.out,perk:null});
-  S.hired[r.id]++;
+  S.hired[r.id] = (S.hired[r.id]||0) + 1;
 }
 // Ассистенты берут встречи на себя, ИИ-агенты требуют присмотра:
 // каждые двое отнимают у людей часть выработки на ревью за ними.
@@ -2091,7 +2110,7 @@ function loseStaff(why){
   const plain = S.staff.filter(p=>!p.perk);
   const p = bd || (plain.length ? pick(plain) : S.staff[S.staff.length-1]);
   S.staff = S.staff.filter(x=>x.uid!==p.uid);
-  S.hired[p.role] = Math.max(0, S.hired[p.role]-1);
+  S.hired[p.role] = Math.max(0, (S.hired[p.role]||0)-1);
   const boss = S.staff.find(x=>x.danger);
   const by = boss ? " Решение подписал "+boss.name+"." : "";
   log(why+": <b>"+p.name+"</b>, "+p.title.toLowerCase()+", больше здесь не работает."+by, "bad");
@@ -3623,7 +3642,7 @@ setInterval(() => {
       S.gapIn = 6;
       const worst = S.staff.reduce((a,b)=> b.pay>a.pay?b:a);
       S.staff = S.staff.filter(x=>x.uid!==worst.uid);
-      S.hired[worst.role] = Math.max(0,S.hired[worst.role]-1);
+      S.hired[worst.role] = Math.max(0,(S.hired[worst.role]||0)-1);
       sfx("gap");
       log("Смета не сходится. <b>"+worst.name+"</b> ("+worst.title.toLowerCase()+
           ") получил расчёт. Формально — по соглашению сторон.", "bad");
@@ -3744,7 +3763,7 @@ setInterval(() => {
         const plain = S.staff.filter(p=>!p.perk);
         const p2 = bd || (plain.length ? pick(plain) : S.staff[S.staff.length-1]);
         S.staff = S.staff.filter(x=>x.uid!==p2.uid);
-        S.hired[p2.role] = Math.max(0, S.hired[p2.role]-1);
+        S.hired[p2.role] = Math.max(0, (S.hired[p2.role]||0)-1);
         gone.push(p2.name);
       }
       if(gone.length) log("Вслед за руководителем ушли: <b>"+gone.join(", ")+"</b>.", "bad");
@@ -3919,7 +3938,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                stepReady,stepPrev,anyPromo,promoCost,paintDots,hireReady,promoReady,
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
-               startQuit,doQuit,canQuit,legacyOf,migrate,SAVE_V,
+               startQuit,doQuit,canQuit,legacyOf,migrate,countHired,SAVE_V,
                MG,mgOpen,mgDue,mgPrize,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
