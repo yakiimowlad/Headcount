@@ -87,6 +87,50 @@ ok("все звуковые эффекты отрабатывают", await page
   });
   return bad.length === 0;
 }));
+ok("повышение стоит денег", await page.evaluate(() => {
+  const G = window.GAME;
+  const st = G.C.tracks.find(t => t.id === "mgmt").steps[0];
+  return G.promoCost(st) > 0;
+}));
+ok("без юрлица найм дороже", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, r = G.C.roles.find(x => x.id === "crew");
+  const was = S.llc;
+  S.llc = false; const grey = G.hireCost(r);
+  S.llc = true;  const white = G.hireCost(r);
+  // Флаг обязательно вернуть: с включённым ООО бухгалтерия начинает
+  // есть кассу, и следующая проверка про перезагрузку падает не по делу.
+  S.llc = was;
+  return grey > white;
+}));
+
+console.log("\nМини-игры");
+ok("эпоха выбирает игру", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.mgDone = []; S.era = 0; const early = G.mgDue();
+  S.mgDone = []; S.era = 5; const late = G.mgDue();
+  S.mgDone = []; S.era = 3; const none = G.mgDue();
+  return early === "dial" && late === "prompt" && none === undefined;
+}));
+ok("время внутри мини-игры стоит", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; G.mgOpen("prompt");
+  const t = S.playTime;
+  await new Promise(r => setTimeout(r, 400));
+  const stopped = S.playTime === t;
+  document.getElementById("mgSheet").classList.remove("on");
+  return stopped;
+}));
+ok("верные ответы платят", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; S.mgDone = []; G.mgOpen("prompt");
+  const before = S.cash;
+  for (let i = 0; i < 3; i++) {
+    const right = G.MG.prompt.qs[i].right;
+    document.querySelector('#mgPick .mgo[data-i="' + right + '"]').click();
+  }
+  document.getElementById("mgSheet").classList.remove("on");
+  return S.cash > before;
+}));
 
 console.log("\nСохранение");
 ok("старый сейв мигрирует", await page.evaluate(() => {
