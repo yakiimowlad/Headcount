@@ -158,6 +158,61 @@ ok("верные ответы платят", await page.evaluate(() => {
   return S.cash > before;
 }));
 
+console.log("\nЭкран «Работа»");
+ok("кнопка улучшений видна без скролла даже на самой длинной задаче", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; S.cash = 9e6; S.earned = 4e7;
+  // Берём самый длинный заголовок из всех, что игра вообще может показать.
+  const longest = G.C.tasks.map(t => t[1]).sort((a, b) => b.length - a.length)[0];
+  document.getElementById("ttl").textContent = longest;
+  document.querySelectorAll(".sheet,.scrim").forEach(s => s.classList.remove("on"));
+  G.paint();
+  const btn = document.getElementById("upsBtn").getBoundingClientRect();
+  const chron = document.getElementById("chron").getBoundingClientRect();
+  return btn.bottom <= chron.top;
+}), await page.evaluate(() => ({
+  низКнопки: Math.round(document.getElementById("upsBtn").getBoundingClientRect().bottom),
+  верхХроники: Math.round(document.getElementById("chron").getBoundingClientRect().top)
+})));
+ok("касса показана один раз, а не двумя карточками", await page.evaluate(() =>
+  document.getElementById("cash") === null && document.getElementById("hCash") !== null));
+
+console.log("\nТочки на вкладках");
+ok("точка «Команда» загорается, когда найм по карману", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.tab = "work"; S.cash = 0; G.paintDots();
+  const off = document.getElementById("dotTeam").classList.contains("on");
+  S.cash = 5e7; G.paintDots();
+  const on = document.getElementById("dotTeam").classList.contains("on");
+  return !off && on;
+}));
+ok("точка не горит на вкладке, где игрок уже стоит", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.cash = 5e7; S.tab = "team"; G.paintDots();
+  return !document.getElementById("dotTeam").classList.contains("on");
+}));
+ok("точка «Карьера» ждёт денег на повышение", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.tab = "work"; S.era = 2;
+  // Вкладка открывается двумя свободными людьми одной роли — без этого
+  // повышать некого, и точке неоткуда взяться.
+  const mid = G.C.roles.find(r => r.id === "middle");
+  G.addStaff(mid); G.addStaff(mid); G.bumpEcon();
+  if (!G.careerOpen()) return false;
+  S.cash = 0; G.paintDots();
+  const off = document.getElementById("dotCareer").classList.contains("on");
+  S.cash = 5e7; G.paintDots();
+  const on = document.getElementById("dotCareer").classList.contains("on");
+  return !off && on;
+}));
+ok("на закрытой вкладке точки нет", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.tab = "work"; S.cash = 5e7; S.month = 0; S.era = 0;
+  G.paintDots();
+  // «Карьера» в 2007-м закрыта — значит и звать туда нечем.
+  return G.careerOpen() ? true : !document.getElementById("dotCareer").classList.contains("on");
+}));
+
 console.log("\nСохранение");
 ok("старый сейв мигрирует", await page.evaluate(() => {
   const m = window.GAME.migrate({ v: 1, S: { staff: [{ uid: 1, role: "middle" }] } });

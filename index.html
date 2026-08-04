@@ -740,11 +740,11 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 <main>
   <!-- РАБОТА -->
   <div class="tab on" id="t-work">
-    <div class="card hero">
-      <b class="n" id="cash">0 ₽</b>
-      <div class="cap">на счету компании</div>
-      <span class="delta n" id="rate">+0 ₽ в месяц</span>
-    </div>
+    <!-- Карточки кассы здесь больше нет. Шапка показывает ровно те же
+         два числа — деньги и прибыль в месяц — и показывает их на любой
+         вкладке. Дубль занимал полтора сантиметра экрана и выталкивал
+         улучшения за нижний край: чтобы дойти до кнопки, приходилось
+         скроллить мимо суммы, которая и так висит над головой. -->
 
     <!-- Задача и выгорание — один блок. Волна на кнопке снижает прирост
          выгорания, и увидеть эту связь можно, только когда полоса стоит
@@ -786,10 +786,11 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       </div>
     </div>
 
-    <div class="k">Инструменты</div>
     <!-- Кнопка вместо списка: список улучшений вырос, и на экране задачи
-         ему больше не место. Счётчик доступных виден, не заходя внутрь. -->
-    <div class="card">
+         ему больше не место. Счётчик доступных виден, не заходя внутрь.
+         Заголовка секции над одной строкой нет: он занимал высоту, но
+         не сообщал ничего сверх самой строки. -->
+    <div class="card" style="margin-top:12px">
       <div class="row tap" id="upsBtn">
         <div class="rl">
           <div class="rn2">Улучшения<span class="upsn" id="upsN" hidden>0</span></div>
@@ -1012,8 +1013,8 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 
 <nav>
   <div class="nw">
-    <button class="on" data-tab="work"><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM9 7V4h6v3"/></svg><span>Работа</span></button>
-    <button data-tab="team"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 14.6c2 .7 3.3 2.4 3.3 4.9"/></svg><span>Команда</span></button>
+    <button class="on" data-tab="work"><i class="dot" id="dotWork"></i><svg viewBox="0 0 24 24"><path d="M4 7h16v13H4zM9 7V4h6v3"/></svg><span>Работа</span></button>
+    <button data-tab="team"><i class="dot" id="dotTeam"></i><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c0-3 2.5-5 5.5-5s5.5 2 5.5 5"/><path d="M16 5.5a3 3 0 0 1 0 5.5M17.5 14.6c2 .7 3.3 2.4 3.3 4.9"/></svg><span>Команда</span></button>
     <button data-tab="career"><i class="dot" id="dotCareer"></i><svg viewBox="0 0 24 24"><path d="M4 20V9M10 20V4M16 20v-7M22 20H2"/></svg><span>Карьера</span></button>
     <button data-tab="co"><svg viewBox="0 0 24 24"><path d="M3 21V7l7-4v18M10 21h11V11l-6-3"/><path d="M14 13h.01M14 17h.01M18 13h.01M18 17h.01M6 11h.01M6 15h.01"/></svg><span>Компания</span></button>
   </div>
@@ -1027,7 +1028,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.0.1";
+const VERSION = "1.0.2";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -2912,6 +2913,26 @@ function upsReady(){
   const lps = loopsOpen().filter(l => S.cash >= l.cost).length;
   return ups + lps;
 }
+/* ── ТОЧКИ НА ВКЛАДКАХ ────────────────────────────────────────────
+   Одна точка — один смысл: «здесь прямо сейчас есть что купить».
+   Не «что-то открылось» и не «посмотри сюда»: если денег не хватает,
+   точки нет, иначе она горит постоянно и перестаёт значить хоть что-то.
+   На открытой вкладке точку не показываем — игрок уже смотрит туда. */
+const hireReady = () => C.roles.some(r =>
+  (r.era||0) <= S.era && !roleLocked(r) && hireCost(r) <= S.cash);
+// Повышение теперь стоит денег, поэтому «есть кого повысить» — половина
+// правды. Точка загорается, только когда повышение действительно по карману.
+const promoReady = () => C.tracks.some(tr => tr.steps.some((st,i) =>
+  !S.done.has(st.id) && stepPrev(tr,i) && stepReady(st) && S.cash >= promoCost(st)));
+function paintDots(){
+  // На закрытой вкладке точки нет: звать туда, куда ещё нельзя, — обман.
+  const open = {work:true, team:true, career:careerOpen()};
+  const on = (id, tab, cond) =>
+    $(id).classList.toggle("on", cond && open[tab] && S.tab !== tab);
+  on("dotWork",   "work",   upsReady() > 0);
+  on("dotTeam",   "team",   hireReady());
+  on("dotCareer", "career", promoReady());
+}
 function paintUpsBadge(){
   const n = upsReady();
   const b = $("upsN");
@@ -3143,15 +3164,11 @@ function paint(){
   if(S.ended) return;
   checkEra();
   $("sub").textContent = MON[S.month%12]+" "+year();
-  $("cash").textContent = rub(S.cash);
   const pr = profit();
-  const dl = $("rate");
-  dl.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+" в месяц";
-  dl.className = "delta n" + (pr>=0?"":" w");
 
-  // Шапка: те же числа, доступные с любой вкладки, включая «Работу».
-  // Дублирование с крупной цифрой сознательное: касса — предмет игры,
-  // и она должна быть на месте всегда, даже когда экран уехал вниз.
+  // Единственное место, где живут касса и прибыль. Крупная карточка на
+  // «Работе» показывала ровно эти же два числа — и выталкивала кнопку
+  // улучшений за нижний край экрана.
   $("hCash").textContent = rub(S.cash);
   const hr = $("hRate");
   hr.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+"/мес";
@@ -3213,7 +3230,7 @@ function paint(){
   }
   if(S.tab==="co") paintCo();
   paintLocks();
-  $("dotCareer").classList.toggle("on", anyPromo() && S.tab!=="career");
+  paintDots();
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3739,7 +3756,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                loopCost,loopsOpen,span,share,level,
-               stepReady,stepPrev,anyPromo,promoCost,
+               stepReady,stepPrev,anyPromo,promoCost,paintDots,hireReady,promoReady,
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
                startQuit,doQuit,canQuit,legacyOf,migrate,SAVE_V,
