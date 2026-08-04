@@ -60,6 +60,32 @@ await page.click("#chToggle");
 await page.waitForTimeout(400);
 ok("сворачивается обратно",
    await page.evaluate(() => !document.getElementById("chron").classList.contains("open")));
+ok("дата — три буквы месяца и две цифры года", await page.evaluate(() => {
+  const G = window.GAME;
+  G.S.month = 214;                       // ноябрь 2024
+  const t = G.stamp();
+  return t.m.length === 3 && t.y === "24";
+}), await page.evaluate(() => window.GAME.stamp()));
+ok("сейв со старой датой одной строкой не теряет её", await page.evaluate(() => {
+  const t = window.GAME.stampOf({ time: "январь 2007" });
+  return t.m === "янв" && t.y === "07";
+}), await page.evaluate(() => window.GAME.stampOf({ time: "январь 2007" })));
+ok("в свёрнутой строке помещается четыре строки текста", await page.evaluate(() => {
+  const G = window.GAME;
+  G.log("Письмо про возврат в офис назвали «культурой сотрудничества». В нём четыре " +
+        "абзаца, и ни в одном не сказано, с какого числа это начинается и кого касается.", "bad");
+  document.querySelectorAll(".sheet,.scrim").forEach(s => s.classList.remove("on"));
+  const p = document.querySelector("#chPeek p"), cs = getComputedStyle(p);
+  const lines = Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight));
+  return cs.webkitLineClamp === "4" && lines === 4;
+}), await page.evaluate(() => {
+  const p = document.querySelector("#chPeek p"), cs = getComputedStyle(p);
+  return { клемп: cs.webkitLineClamp,
+           строк: Math.round(p.getBoundingClientRect().height / parseFloat(cs.lineHeight)) };
+}));
+ok("столбик даты занимает не больше 28 пикселей", await page.evaluate(() =>
+  document.querySelector("#chPeek time").getBoundingClientRect().width <= 28),
+  await page.evaluate(() => document.querySelector("#chPeek time").getBoundingClientRect().width));
 
 console.log("\nМеханики");
 ok("задача приносит деньги", await page.evaluate(() => {
@@ -86,6 +112,105 @@ ok("все звуковые эффекты отрабатывают", await page
     try { window.GAME.sfx(n); } catch (e) { bad.push(n); }
   });
   return bad.length === 0;
+}));
+ok("повышение стоит денег", await page.evaluate(() => {
+  const G = window.GAME;
+  const st = G.C.tracks.find(t => t.id === "mgmt").steps[0];
+  return G.promoCost(st) > 0;
+}));
+ok("без юрлица найм дороже", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, r = G.C.roles.find(x => x.id === "crew");
+  const was = S.llc;
+  S.llc = false; const grey = G.hireCost(r);
+  S.llc = true;  const white = G.hireCost(r);
+  // Флаг обязательно вернуть: с включённым ООО бухгалтерия начинает
+  // есть кассу, и следующая проверка про перезагрузку падает не по делу.
+  S.llc = was;
+  return grey > white;
+}));
+
+console.log("\nМини-игры");
+ok("эпоха выбирает игру", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.mgDone = []; S.era = 0; const early = G.mgDue();
+  S.mgDone = []; S.era = 5; const late = G.mgDue();
+  S.mgDone = []; S.era = 3; const none = G.mgDue();
+  return early === "dial" && late === "prompt" && none === undefined;
+}));
+ok("время внутри мини-игры стоит", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; G.mgOpen("prompt");
+  const t = S.playTime;
+  await new Promise(r => setTimeout(r, 400));
+  const stopped = S.playTime === t;
+  document.getElementById("mgSheet").classList.remove("on");
+  return stopped;
+}));
+ok("верные ответы платят", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; S.mgDone = []; G.mgOpen("prompt");
+  const before = S.cash;
+  for (let i = 0; i < 3; i++) {
+    const right = G.MG.prompt.qs[i].right;
+    document.querySelector('#mgPick .mgo[data-i="' + right + '"]').click();
+  }
+  document.getElementById("mgSheet").classList.remove("on");
+  return S.cash > before;
+}));
+
+console.log("\nЭкран «Работа»");
+ok("кнопка улучшений видна без скролла даже на самой длинной задаче", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.era = 5; S.cash = 9e6; S.earned = 4e7;
+  // Берём самый длинный заголовок из всех, что игра вообще может показать.
+  const longest = G.C.tasks.map(t => t[1]).sort((a, b) => b.length - a.length)[0];
+  document.getElementById("ttl").textContent = longest;
+  document.querySelectorAll(".sheet,.scrim").forEach(s => s.classList.remove("on"));
+  G.paint();
+  const btn = document.getElementById("upsBtn").getBoundingClientRect();
+  const chron = document.getElementById("chron").getBoundingClientRect();
+  return btn.bottom <= chron.top;
+}), await page.evaluate(() => ({
+  низКнопки: Math.round(document.getElementById("upsBtn").getBoundingClientRect().bottom),
+  верхХроники: Math.round(document.getElementById("chron").getBoundingClientRect().top)
+})));
+ok("касса показана один раз, а не двумя карточками", await page.evaluate(() =>
+  document.getElementById("cash") === null && document.getElementById("hCash") !== null));
+
+console.log("\nТочки на вкладках");
+ok("точка «Команда» загорается, когда найм по карману", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.tab = "work"; S.cash = 0; G.paintDots();
+  const off = document.getElementById("dotTeam").classList.contains("on");
+  S.cash = 5e7; G.paintDots();
+  const on = document.getElementById("dotTeam").classList.contains("on");
+  return !off && on;
+}));
+ok("точка не горит на вкладке, где игрок уже стоит", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.cash = 5e7; S.tab = "team"; G.paintDots();
+  return !document.getElementById("dotTeam").classList.contains("on");
+}));
+ok("точка «Карьера» ждёт денег на повышение", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.tab = "work"; S.era = 2;
+  // Вкладка открывается двумя свободными людьми одной роли — без этого
+  // повышать некого, и точке неоткуда взяться.
+  const mid = G.C.roles.find(r => r.id === "middle");
+  G.addStaff(mid); G.addStaff(mid); G.bumpEcon();
+  if (!G.careerOpen()) return false;
+  S.cash = 0; G.paintDots();
+  const off = document.getElementById("dotCareer").classList.contains("on");
+  S.cash = 5e7; G.paintDots();
+  const on = document.getElementById("dotCareer").classList.contains("on");
+  return !off && on;
+}));
+ok("на закрытой вкладке точки нет", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.tab = "work"; S.cash = 5e7; S.month = 0; S.era = 0;
+  G.paintDots();
+  // «Карьера» в 2007-м закрыта — значит и звать туда нечем.
+  return G.careerOpen() ? true : !document.getElementById("dotCareer").classList.contains("on");
 }));
 
 console.log("\nСохранение");
