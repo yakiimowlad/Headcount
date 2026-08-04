@@ -60,6 +60,29 @@ await page.click("#chToggle");
 await page.waitForTimeout(400);
 ok("сворачивается обратно",
    await page.evaluate(() => !document.getElementById("chron").classList.contains("open")));
+ok("у кнопки раскрытия тап не меньше 44 пикселей", await page.evaluate(() => {
+  // Видимый кружок меньше, но ::after расширяет площадь до рекомендованных
+  // сорока четырёх: палец попадает туда, куда целился.
+  const el = document.querySelector("#chPeek .chx");
+  const after = getComputedStyle(el, "::after");
+  return parseFloat(after.width) >= 44 && parseFloat(after.height) >= 44;
+}), await page.evaluate(() => {
+  const a = getComputedStyle(document.querySelector("#chPeek .chx"), "::after");
+  return { ширина: a.width, высота: a.height };
+}));
+ok("шапка раскрытой хроники — полноценная панель, а не полоска", await page.evaluate(async () => {
+  document.getElementById("chPeek").click();
+  await new Promise(r => setTimeout(r, 450));
+  const bar = document.getElementById("chToggle").getBoundingClientRect();
+  const btn = document.querySelector("#chToggle .chx").getBoundingClientRect();
+  const closes = () => {
+    document.getElementById("chToggle").click();
+    return new Promise(r => setTimeout(r, 450));
+  };
+  await closes();
+  return bar.height >= 52 && btn.width >= 36 &&
+         !document.getElementById("chron").classList.contains("open");
+}));
 ok("дата — три буквы месяца и две цифры года", await page.evaluate(() => {
   const G = window.GAME;
   G.S.month = 214;                       // ноябрь 2024
@@ -206,6 +229,20 @@ ok("кнопка улучшений видна без скролла даже н
 })));
 ok("касса показана один раз, а не двумя карточками", await page.evaluate(() =>
   document.getElementById("cash") === null && document.getElementById("hCash") !== null));
+ok("на экране улучшений видна касса", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  S.cash = 111000;
+  document.getElementById("upsBtn").click();
+  await new Promise(r => setTimeout(r, 300));
+  const h = document.querySelector("#upsSheet h2").textContent;
+  // Сумма идёт тем же кеглем, что и заголовок: это второе число экрана.
+  const sizes = ["#upsSheet h2", "#upsCash"].map(s => getComputedStyle(document.querySelector(s)).fontSize);
+  S.cash = 222000; G.paint();                 // цифра живая, пока экран открыт
+  const grew = document.getElementById("upsCash").textContent !== "(" + G.rub(111000) + ")";
+  document.getElementById("upsClose").click();
+  await new Promise(r => setTimeout(r, 300));
+  return h.includes("(") && h.includes(")") && sizes[0] === sizes[1] && grew;
+}), await page.evaluate(() => document.querySelector("#upsSheet h2").textContent.trim()));
 
 console.log("\nТочки на вкладках");
 ok("точка «Команда» загорается, когда найм по карману", await page.evaluate(() => {
