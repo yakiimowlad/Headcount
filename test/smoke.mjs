@@ -402,6 +402,22 @@ ok("старый сейв мигрирует", await page.evaluate(() => {
   const m = window.GAME.migrate({ v: 1, S: { staff: [{ uid: 1, role: "middle" }] } });
   return m.v === window.GAME.SAVE_V && m.S.llc === true;
 }));
+// Сейв, сделанный старой версией, знает не про все роли. Раньше такой
+// сейв подменял счётчики штата целиком, роль из следующей версии приходила
+// как undefined, и цена найма показывалась как «NaN млрд ₽». Пересчёт из
+// самого штата чинит это на любой глубине старости сохранения.
+ok("роль из новой версии не ломает цену найма", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const штат = S.staff, счёт = S.hired;
+  S.hired = { middle: 2 };                      // сейв «из прошлого»
+  S.staff = [{ uid: 901, role: "middle" }, { uid: 902, role: "middle" }];
+  G.countHired();
+  const все = G.C.roles.every(r => Number.isFinite(G.hireCost(r)));
+  const мидлы = S.hired.middle === 2;
+  S.staff = штат; S.hired = счёт;                // вернуть как было
+  return все && мидлы;
+}));
+
 const saved = await page.evaluate(() => {
   const S = window.GAME.S;
   S.cash = 1234567; S.month = 60;
