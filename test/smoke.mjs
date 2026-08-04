@@ -61,17 +61,32 @@ await page.waitForTimeout(400);
 ok("сворачивается обратно",
    await page.evaluate(() => !document.getElementById("chron").classList.contains("open")));
 ok("кнопка и счётчик — один элемент", await page.evaluate(async () => {
-  const G = window.GAME;
+  const G = window.GAME, b = document.getElementById("chBadge");
   G.S.unread = 3; G.paintBadge();
-  const b = document.getElementById("chBadge");
-  const withN = { t: b.textContent, orange: b.classList.contains("unread"), w: b.offsetWidth };
+  const есть = { n: b.querySelector(".chn"), arrow: !!b.querySelector(".chv"),
+                 orange: b.classList.contains("unread") };
   G.S.unread = 0; G.paintBadge();
-  const без = { t: b.textContent, orange: b.classList.contains("unread") };
+  const нет = { n: b.querySelector(".chn"), arrow: !!b.querySelector(".chv"),
+                orange: b.classList.contains("unread") };
   // Стрелка есть всегда — это кнопка. Цифра и оранжевый приходят вместе.
-  return withN.t.includes("3") && withN.orange && withN.t.startsWith("⌃") &&
-         без.t.trim() === "⌃" && !без.orange &&
+  return есть.arrow && есть.n && есть.n.textContent === "3" && есть.orange &&
+         нет.arrow && !нет.n && !нет.orange &&
          document.querySelectorAll("#chPeek .chx").length === 1;
-}), await page.evaluate(() => document.getElementById("chBadge").textContent));
+}));
+ok("стрелка и цифра выровнены по центру", await page.evaluate(() => {
+  const G = window.GAME, b = document.getElementById("chBadge");
+  G.S.unread = 3; G.paintBadge();
+  const mid = e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
+  const dv = Math.abs(mid(b.querySelector(".chv")) - mid(b.querySelector(".chn")));
+  // Глиф ⌃ висел выше базовой линии почти на треть кегля. У svg центр
+  // там, где написано, поэтому расхождение обязано быть нулевым.
+  return dv < 1 && b.getBoundingClientRect().height <= 30;
+}), await page.evaluate(() => {
+  const b = document.getElementById("chBadge");
+  const mid = e => { const r = e.getBoundingClientRect(); return r.top + r.height / 2; };
+  return { расхождение: +(Math.abs(mid(b.querySelector(".chv")) - mid(b.querySelector(".chn")))).toFixed(2),
+           высота: Math.round(b.getBoundingClientRect().height) };
+}));
 ok("у кнопки раскрытия тап не меньше 44 пикселей", await page.evaluate(() => {
   // Видимый кружок меньше, но ::after расширяет площадь до рекомендованных
   // сорока четырёх: палец попадает туда, куда целился.
@@ -283,23 +298,30 @@ ok("цвет несёт только тег редкости", await page.evalua
          getComputedStyle(done).color === paint(ink) &&
          getComputedStyle(other).color === paint(mut);
 }));
-ok("шапка шита прилипает при скролле", await page.evaluate(async () => {
-  const G = window.GAME;
+ok("крестик остаётся на месте при скролле списка", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  // Список должен быть заведомо длиннее экрана, иначе прокручивать нечего
+  // и проверка сойдётся сама с собой.
+  S.era = 5; S.cash = 3e6; S.earned = 6e7;
   G.paintUpsTree();
   document.getElementById("upsSheet").classList.add("on");
+  await new Promise(r => setTimeout(r, 500));
+  const tree = document.querySelector("#upsSheet .upstree");
+  const before = document.getElementById("upsClose").getBoundingClientRect().top;
+  tree.scrollTop = 700;
   await new Promise(r => setTimeout(r, 200));
-  const box = document.querySelector("#upsSheet .sh-in");
-  box.scrollTop = 700;
-  await new Promise(r => setTimeout(r, 200));
-  const h = document.querySelector("#upsSheet .shead").getBoundingClientRect();
-  const b = box.getBoundingClientRect();
-  const x = document.getElementById("upsClose").getBoundingClientRect();
-  box.scrollTop = 0;
+  const scrolled = tree.scrollTop;
+  const after = document.getElementById("upsClose").getBoundingClientRect().top;
+  tree.scrollTop = 0;
   document.getElementById("upsSheet").classList.remove("on");
-  // Ровно у края: щель над прилипшей шапкой означала бы, что в неё
-  // просвечивает уезжающий список.
-  return Math.abs(h.top - b.top) < 2 && x.top >= b.top && x.bottom <= b.bottom;
+  // Прокручивается список, а не шит: крестик не двигается ни на пиксель.
+  // Проверяем и сам факт прокрутки — иначе тест сойдётся на пустом списке.
+  return scrolled > 0 && Math.abs(after - before) < 1;
 }));
+ok("шапка шита не полагается на position:sticky", await page.evaluate(() =>
+  // На iOS Safari sticky внутри предка с transform перестаёт
+  // перерисовываться, а у шита transform есть — им он выезжает снизу.
+  getComputedStyle(document.querySelector("#upsSheet .shead")).position !== "sticky"));
 
 ok("на экране улучшений видна касса", await page.evaluate(async () => {
   const G = window.GAME, S = G.S;
@@ -351,6 +373,29 @@ ok("на закрытой вкладке точки нет", await page.evaluate
   // «Карьера» в 2007-м закрыта — значит и звать туда нечем.
   return G.careerOpen() ? true : !document.getElementById("dotCareer").classList.contains("on");
 }));
+
+console.log("\nПотолок ранней задачи");
+ok("до 2014-го задача не приносит больше ста тысяч", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  // Разгоняем всё, что множит клик: две смены работы, оба множителя
+  // к задаче, полный поток и десять человек в штате.
+  S.month = 6 * 12; S.click = 5000;
+  S.jobAt = undefined; G.changeJob(); S.jobAt = undefined; G.changeJob();
+  ["u1", "u2"].forEach(id => { const u = G.C.ups.find(x => x.id === id);
+                               if (!S.bought.has(id)) { S.bought.add(id); u.f(S); } });
+  for (let i = 0; i < 10; i++) G.addStaff(G.C.roles.find(r => r.id === "crew"));
+  S.flow = 1; G.bumpEcon();
+  return G.year() < G.CAP_YEAR && G.clickVal() <= G.EARLY_CAP + 1;
+}), await page.evaluate(() => ({ год: window.GAME.year(), клик: Math.round(window.GAME.clickVal()) })));
+ok("после 2014-го потолка нет", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  // Ставка заведомо выше потолка при любой сложности задачи: проверяем
+  // сам факт снятия ограничения, а не то, что выпало в этот момент.
+  S.click = 5e6;
+  S.month = 6 * 12;  const до = G.clickVal();
+  S.month = 8 * 12;  const после = G.clickVal();
+  return до <= G.EARLY_CAP + 1 && после > G.EARLY_CAP;
+}), await page.evaluate(() => ({ год: window.GAME.year(), клик: Math.round(window.GAME.clickVal()) })));
 
 console.log("\nСохранение");
 ok("старый сейв мигрирует", await page.evaluate(() => {
