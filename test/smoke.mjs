@@ -158,10 +158,40 @@ ok("верные ответы платят", await page.evaluate(() => {
   return S.cash > before;
 }));
 
+console.log("\nЧёлка");
+// На айфоне в режиме приложения статус-бар лежит поверх страницы:
+// viewport-fit=cover и black-translucent отдают игре весь экран. Всё,
+// что липнет к верху, обязано отступать на высоту чёлки — иначе шапка
+// уезжает под часы, и это видно только на устройстве. Подставляем 47
+// пикселей и проверяем здесь.
+await page.evaluate(() => document.documentElement.style.setProperty("--sat", "47px"));
+await page.waitForTimeout(200);
+ok("шапка не залезает под часы", await page.evaluate(() =>
+  document.getElementById("brand").getBoundingClientRect().top >= 47),
+  await page.evaluate(() => Math.round(document.getElementById("brand").getBoundingClientRect().top)));
+ok("и не уезжает под них при скролле", await page.evaluate(async () => {
+  window.scrollTo(0, 500);
+  await new Promise(r => setTimeout(r, 200));
+  const top = document.getElementById("brand").getBoundingClientRect().top;
+  window.scrollTo(0, 0);
+  return top >= 47;
+}));
+ok("раскрытая хроника тоже отступает", await page.evaluate(async () => {
+  document.getElementById("chPeek").click();
+  await new Promise(r => setTimeout(r, 450));
+  const top = document.querySelector("#chron .chh").getBoundingClientRect().top;
+  document.getElementById("chToggle").click();
+  await new Promise(r => setTimeout(r, 450));
+  return top >= 47;
+}));
+
 console.log("\nЭкран «Работа»");
+// Проверяем в самых тяжёлых условиях: чёлка 47 пикселей всё ещё
+// подставлена, задача — самая длинная из существующих.
 ok("кнопка улучшений видна без скролла даже на самой длинной задаче", await page.evaluate(() => {
   const G = window.GAME, S = G.S;
   S.era = 5; S.cash = 9e6; S.earned = 4e7;
+  document.getElementById("sig").hidden = true;
   // Берём самый длинный заголовок из всех, что игра вообще может показать.
   const longest = G.C.tasks.map(t => t[1]).sort((a, b) => b.length - a.length)[0];
   document.getElementById("ttl").textContent = longest;

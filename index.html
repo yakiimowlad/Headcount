@@ -116,6 +116,11 @@
   /* Высоты фиксированных этажей. Меряются в JS: угаданные числа
      давали щель между хроникой и таб-баром на устройствах с чёлкой. */
   --navH:70px; --chH:96px;
+  /* Высота чёлки одной переменной. env() внутри calc() не подменить из
+     теста, а переменную — можно: прогон подставляет 47 пикселей и
+     проверяет, что шапка не залезает под часы. На устройстве значение
+     приходит из системы, здесь только имя. */
+  --sat:env(safe-area-inset-top);
   /* Единственный синий во всей игре — и он у кнопки, которую жать не надо. */
   --blue:#0a84ff;
   color-scheme:light;
@@ -145,7 +150,7 @@ body{
   background:var(--bg); color:var(--ink);
   font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;
   font-size:17px; line-height:1.45; -webkit-font-smoothing:antialiased;
-  padding-top:env(safe-area-inset-top); min-height:100dvh;
+  min-height:100dvh;
   -webkit-tap-highlight-color:transparent;
   transition:background-color .5s var(--e),color .5s var(--e);
 }
@@ -154,10 +159,18 @@ body{
 button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
   touch-action:manipulation;user-select:none;-webkit-user-select:none}
 
-/* ── шапка ── */
+/* ── шапка ──
+   Отступ под чёлку живёт здесь, а не на body. Шапка прилипающая, и
+   в standalone-режиме на айфоне она прилипает к нулю вьюпорта — то есть
+   под часы и батарею, потому что viewport-fit=cover и чёрно-прозрачный
+   статус-бар отдают приложению весь экран. Отступ на body спасал только
+   до первого скролла: он сдвигал шапку в потоке, но не в прилипшем
+   состоянии. Собственный padding-top держит текст ниже строки состояния
+   всегда, а стекло шапки заодно закрашивает саму чёлку. */
 header{position:sticky;top:0;z-index:40;background:var(--glass);
   backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
-  border-bottom:.5px solid var(--hair);padding:9px 20px 0}
+  border-bottom:.5px solid var(--hair);
+  padding:calc(9px + var(--sat)) 20px 0}
 .hw{max-width:520px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;gap:10px}
 .hleft{min-width:0;flex:1}
 h1{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1.1;
@@ -416,7 +429,7 @@ main{max-width:520px;margin:0 auto;
   -webkit-backdrop-filter:blur(14px);
   border-top:.5px solid var(--hair);transition:top .4s var(--e)}
 #chron.open{top:0;z-index:47;background:var(--bg);backdrop-filter:none;
-  -webkit-backdrop-filter:none;padding-top:env(safe-area-inset-top)}
+  -webkit-backdrop-filter:none;padding-top:var(--sat)}
 /* Боковой отступ живёт на записях, а не на обёртке: плашка эпохи тогда
    обходится без отрицательных полей, и горизонтального скролла нет. */
 .chw{max-width:520px;margin:0 auto;padding:0 6px;width:100%;
@@ -1028,7 +1041,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.0.2";
+const VERSION = "1.0.3";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
