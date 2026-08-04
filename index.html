@@ -542,11 +542,17 @@ nav .dot.on{opacity:1}
 @keyframes sigin{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 /* Счётчик непрочитанного: подсказка, что заглянуть стоит именно сейчас. */
 .chl{display:inline-flex;align-items:center;gap:7px}
-#chBadge{display:inline-grid;place-items:center;min-width:16px;height:16px;padding:0 5px;flex:none;
-  border-radius:8px;background:var(--wrn);color:#fff;font-size:10px;font-weight:700;
-  letter-spacing:0;font-variant-numeric:tabular-nums}
-:root[data-theme=dark] #chBadge,:root:not([data-theme=light]) #chBadge{color:#241a05}
-#chBadge[hidden]{display:none}
+/* Счётчик и кнопка — один элемент, а не два рядом. Раньше кружок со
+   стрелкой и оранжевая плашка с числом стояли бок о бок и вдвоём съедали
+   больше места, чем сама запись. Теперь это один тег: оранжевый со
+   стрелкой и цифрой, пока есть непрочитанное, серый и без цифры — когда
+   всё прочитано. Смысл тот же, ширины вдвое меньше. */
+#chBadge{gap:3px;padding:0 9px;width:auto;min-width:44px;font-size:14px;
+  font-weight:700;letter-spacing:0;font-variant-numeric:tabular-nums;
+  grid-auto-flow:column;display:grid;place-items:center}
+#chBadge.unread{background:var(--wrn);color:#fff}
+:root[data-theme=dark] #chBadge.unread,
+:root:not([data-theme=light]) #chBadge.unread{color:#241a05}
 
 /* Закрытая вкладка. Не спрятана — приглушена: видно, что там что-то есть,
    и видно, что оно пока не про тебя. */
@@ -606,7 +612,15 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 /* ── настройки ───────────────────────────────────────────────────
    Крестик есть у всего, что закрывается. Там, где его нет, — закрыть
    нельзя, и это решение, а не недоделка. */
-.shead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+/* Шапка шита прилипает к верху своего скролла. В длинном списке
+   улучшений крестик уезжал наверх с первым же движением пальца, и
+   закрыть экран можно было, только пролистав обратно. Фон непрозрачный:
+   под шапкой едет содержимое, и просвечивать ему нечего. */
+.shead{position:sticky;top:0;z-index:3;background:var(--sf);
+  display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+  padding:8px 0 10px}
+/* Ручка уезжает под шапку: она про «потянуть», а не про «закрыть»,
+   и держать её на экране незачем. */
 .xbtn{width:32px;height:32px;flex:none;border-radius:16px;background:var(--hair2);
   color:var(--ink2);font-size:20px;line-height:1;display:grid;place-items:center;
   transition:transform .15s var(--e)}
@@ -672,7 +686,11 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   padding:0 6px;border-radius:10px;background:var(--acc);color:#10210a;
   font-size:12px;font-weight:700;vertical-align:1px;font-variant-numeric:tabular-nums}
 .upsn[hidden]{display:none}
-.sheet.tall .sh-in{max-height:86dvh;overflow-y:auto;overscroll-behavior:contain}
+/* Верхний отступ снят с контейнера и отдан ручке: с ним между краем
+   скролла и прилипшей шапкой оставалась щель в десять пикселей, и в неё
+   просвечивал уезжающий список. */
+.sheet.tall .sh-in{max-height:86dvh;overflow-y:auto;overscroll-behavior:contain;padding-top:0}
+.sheet.tall .grab{margin-top:10px}
 .upstree{margin-top:6px}
 .upsgrp{font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
   color:var(--mut);margin:20px 0 2px}
@@ -683,19 +701,31 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .ub::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--hair)}
 .ub:first-of-type::before{top:16px}
 .ub:last-of-type::before{bottom:auto;height:16px}
+/* Цвет на этом экране несёт только тег редкости. Всё остальное — градация
+   серого, и она означает владение, а не доступность: купленное светится
+   в полный цвет текста, некупленное приглушено. В тёмной теме это белое
+   против серого, в светлой — чёрное против серого: обе берутся из --ink
+   и --mut, поэтому инверсия происходит сама и ничего не надо дублировать.
+
+   Раньше доступное к покупке было зелёным, купленное — серым, и экран
+   читался наоборот: ярче всего горело то, чего у тебя нет. */
 .ub::after{content:"";position:absolute;left:0;top:15px;width:12px;height:12px;border-radius:50%;
   background:var(--sf);border:2.5px solid var(--faint);box-sizing:border-box}
-.ub.done::after{background:var(--acc);border-color:var(--acc)}
-.ub.can::after{border-color:var(--acc);box-shadow:0 0 0 5px var(--acc-soft)}
-.ub .un{font-size:15px;font-weight:600;letter-spacing:-.2px}
-.ub.done .un{color:var(--mut)}
-.ub.can .un{color:var(--acc-ink)}
+.ub.done::after{background:var(--ink2);border-color:var(--ink2)}
+.ub.can::after{border-color:var(--ink2)}
+.ub .un{font-size:15px;font-weight:600;letter-spacing:-.2px;color:var(--mut)}
+.ub.done .un{color:var(--ink)}
 .ub .ud{font-size:13px;color:var(--mut);line-height:1.35;margin-top:2px}
-.ub .up{margin-top:7px;font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
-.ub.can .up{color:var(--acc-ink)}
-.ub.no .up{color:var(--mut)}
+.ub.done .ud{color:var(--ink2)}
+.ub .up{margin-top:7px;font-size:14px;font-weight:600;color:var(--mut);
+  font-variant-numeric:tabular-nums}
+/* Некупленная строка серая целиком, включая цену. Подсвеченная цена
+   получалась ярче собственного названия, и строка читалась с конца.
+   Что по карману, видно по кружку слева: у доступного он обведён
+   в цвет текста, у остального — блёклый. */
 .ub.lk{opacity:.55}
 .ub.can{cursor:pointer}
+.ub.can:active{transform:scale(.99)}
 
 /* ── ООО и смена эпохи ───────────────────────────────────────────*/
 .llcnum{margin-top:20px;border-top:.5px solid var(--hair);padding-top:6px}
@@ -1043,8 +1073,8 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
     </div>
     <div class="peek" id="chPeek">
       <i></i><time><span class="m"></span><span class="y"></span></time>
-      <p></p><b id="chBadge" hidden></b>
-      <span class="chx" aria-hidden="true">⌃</span>
+      <p></p>
+      <span class="chx" id="chBadge">⌃</span>
     </div>
     <div class="log" id="log"></div>
   </div>
@@ -1067,7 +1097,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.0.4";
+const VERSION = "1.1.0";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -1792,8 +1822,11 @@ function signal(text, type){
 function paintBadge(){
   const b = $("chBadge");
   if(!b) return;
-  b.textContent = S.unread > 9 ? "9+" : String(S.unread||0);
-  b.hidden = !S.unread;
+  // Стрелка есть всегда — это кнопка. Цифра появляется только вместе
+  // с непрочитанным, и вместе с ней тег становится оранжевым.
+  const n = S.unread || 0;
+  b.textContent = "⌃" + (n ? " " + (n > 9 ? "9+" : n) : "");
+  b.classList.toggle("unread", !!n);
 }
 // Снэкбар: короткое пояснение механики по тапу. Три-пять слов — ровно
 // столько, сколько читают. Длиннее никто читать не станет, и это уже
@@ -2662,6 +2695,64 @@ function changed(key, val){
 // Метка грейда. Обычный не подписываем: подпись «обычный» на каждой
 // второй строке — шум, а не информация. Легендарный получает звёзды.
 const GRADE = ["", "редкий", "очень редкий", "эпический", "легендарный"];
+
+/* ── РЕДКОСТЬ ПО СИЛЕ ЭФФЕКТА ─────────────────────────────────────
+   Грейд улучшения не проставлен рукой, а измерен. Берём чистый стенд,
+   применяем к нему ту же функцию, что и покупка, и смотрим, во сколько
+   раз стало лучше. Плюсы перемножаются, побочные минусы делят.
+
+   Так «легендарное» значит ровно одно: эффект сильнее всех остальных.
+   Раньше грейд был вкусовым, и рядом стояли ×4 к задаче и «найм на 25%
+   дешевле» одного цвета — глядя на тег, нельзя было понять, что берёшь. */
+const PROBE = () => ({
+  click:1, teamMul:1, burnRate:1, meetGap:1, meetLen:1, hireTax:1,
+  retain:1, ovhMul:1, spanUp:0, deleg:0, payMul:1, callMul:.45,
+  dayCap:99, rto:false, rtoSoft:false, minimize:false, noMeets:false, review:false
+});
+function upsPower(o){
+  const a = PROBE(), b = PROBE();
+  try { (o.loop ? o.loop.f : o.f)(b); } catch(e){ return 1; }
+  let p = 1;
+  // Чем больше — тем лучше
+  // Клик считается вполсилы. Это не поблажка, а та же мысль, что во всей
+  // экономике: руками можно разогнаться, но не построить компанию.
+  // Множитель к задаче и такой же множитель к выработке команды — разные
+  // по последствиям вещи, и грейд обязан это различать.
+  p *= Math.pow(b.click/a.click, 0.6);
+  p *= b.teamMul/a.teamMul;
+  p *= b.retain/a.retain;
+  p *= b.meetGap/a.meetGap;
+  // Чем меньше — тем лучше
+  p *= a.burnRate/b.burnRate;
+  p *= a.meetLen/b.meetLen;
+  p *= a.hireTax/b.hireTax;
+  p *= a.ovhMul/b.ovhMul;
+  p *= a.payMul/b.payMul;
+  // Штучное
+  if(b.dayCap < a.dayCap)  p *= 1 + (a.dayCap - b.dayCap)/a.dayCap*0.6;
+  if(b.spanUp > a.spanUp)  p *= 1 + (b.spanUp - a.spanUp)*0.09;
+  if(b.deleg  > a.deleg)   p *= 1 + (b.deleg  - a.deleg )*0.45;
+  if(b.callMul > a.callMul) p *= 1 + (b.callMul - a.callMul);
+  if(b.minimize && !a.minimize) p *= 1.5;
+  // Убрать созвоны совсем — самое сильное, что можно купить: это
+  // последняя ступень лестницы из пяти и единственная, после которой
+  // рабочий день перестаёт делиться на куски.
+  if(b.noMeets  && !a.noMeets)  p *= 2.8;
+  // Возврат в офис платит выработкой, но людьми — это не сила, а сделка
+  if(b.rto && !a.rto) p *= 1.18;
+  return p;
+}
+// Пороги подобраны по фактическому разбросу измеренных сил: от 0,94
+// у «Новой методологии», которая в сумме делает хуже, до 2,8 у полного
+// отключения созвонов. Пять грейдов должны быть заняты все, иначе шкала
+// врёт: если легендарного не существует, слово теряет смысл.
+function upsGrade(o){
+  const p = upsPower(o);
+  return p >= 2.4  ? 4
+       : p >= 1.9  ? 3
+       : p >= 1.5  ? 2
+       : p >= 1.15 ? 1 : 0;
+}
 function gradeTag(t){
   if(!t) return "";
   return ' <span class="gname t'+t+'">'+GRADE[t]+
@@ -3012,7 +3103,7 @@ function paintUpsTree(){
       d.className = "ub " + st;
       const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
       d.innerHTML =
-        '<div class="un">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(u.t||0)+'</div>'+
+        '<div class="un">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(upsGrade(u))+'</div>'+
         '<div class="ud">'+u.desc+'</div>'+
         (st==="done" ? '<div class="up" style="color:var(--mut)">куплено</div>'
          : st==="lk" ? '<div class="need">'+(needs ? "Сначала: "+needs.name.toLowerCase()
@@ -3796,8 +3887,9 @@ addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
-               stamp,stampOf,
+               stamp,stampOf,paintBadge,paintPeek,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
+               upsPower,upsGrade,upsState,
                llcOffer,showEra,eraChanges,crewBoost,LLC_COST,LLC_FIXED,
                loopCost,loopsOpen,span,share,level,
                stepReady,stepPrev,anyPromo,promoCost,paintDots,hireReady,promoReady,
