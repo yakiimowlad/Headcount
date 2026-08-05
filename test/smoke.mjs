@@ -431,11 +431,54 @@ ok("состояние переживает перезагрузку", await pag
   return Math.round(S.cash) >= Math.round(e.cash) && S.month >= e.month;
 }, saved), await page.evaluate(() => ({ cash: window.GAME.S.cash, month: window.GAME.S.month })));
 
+console.log("\nСброс прогресса");
+await page.evaluate(() => {
+  const S = window.GAME.S;
+  S.cash = 5e9; S.earned = 5e9; S.month = 90; S.era = 3; S.volSfx = 0.4; S.theme = "dark";
+  const r = window.GAME.C.roles.find(x => x.id === "middle");
+  window.GAME.addStaff(r);
+  document.getElementById("openSet").click();
+});
+await page.waitForTimeout(150);
+ok("кнопка сброса ждёт первого тапа", await page.evaluate(() =>
+  document.getElementById("resetBtn")?.textContent.includes("Сбросить прогресс")));
+await page.evaluate(() => document.getElementById("resetBtn").click());
+await page.waitForTimeout(100);
+ok("второй тап требует подтверждения, а не сбрасывает сразу", await page.evaluate(() =>
+  !!document.getElementById("resetGo") && !!document.getElementById("resetNo")));
+await page.evaluate(() => document.getElementById("resetNo").click());
+await page.waitForTimeout(100);
+ok("«Отмена» возвращает первый шаг, прогресс цел", await page.evaluate(() =>
+  !document.getElementById("resetGo") && window.GAME.S.cash > 0));
+await page.evaluate(() => { document.getElementById("resetBtn").click(); });
+await page.waitForTimeout(100);
+await page.evaluate(() => document.getElementById("resetGo").click());
+await page.waitForTimeout(150);
+const afterReset = await page.evaluate(() => {
+  const S = window.GAME.S;
+  return { cash: S.cash, earned: S.earned, staff: S.staff.length, era: S.era,
+           volSfx: S.volSfx, theme: S.theme, sheetOpen: document.getElementById("setSheet").classList.contains("on") };
+});
+ok("сброс обнуляет компанию, штат и оборот", afterReset.cash === 0 && afterReset.earned === 0 && afterReset.staff === 0, afterReset);
+ok("настройки звука и темы переживают сброс", afterReset.volSfx === 0.4 && afterReset.theme === "dark", afterReset);
+ok("шит настроек закрылся сам", afterReset.sheetOpen === false);
+ok("сброс пишет в хронику и сохраняет чистое состояние", await page.evaluate(() => {
+  const raw = localStorage.getItem("retro_save_v1");
+  if (!raw) return false;
+  const saved = JSON.parse(raw).S;
+  return saved.cash === 0 && (saved.staff || []).length === 0;
+}));
+
 console.log("\nПрогон");
 const run = await page.evaluate(async () => {
   const G = window.GAME, S = G.S;
+  // Год не зависит от того, что оставили предыдущие тесты: сброс прогресса
+  // выше нарочно зануляет месяц, поэтому ждём не фиксированное время,
+  // а сам переход в 2008-й — так тест не привязан к чужому состоянию.
   S.speed = 25;
-  await new Promise(r => setTimeout(r, 4000));
+  const started = S.month;
+  const t0 = Date.now();
+  while(S.month < started + 13 && Date.now() - t0 < 8000) await new Promise(r => setTimeout(r, 50));
   return { год: G.year(), эпоха: S.era, записей: S.logHistory.length };
 });
 ok("время идёт и эпохи меняются", run.год > 2007, run);
