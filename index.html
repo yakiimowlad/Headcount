@@ -406,6 +406,7 @@ main{max-width:520px;margin:0 auto;
   color:var(--acc-ink);font-weight:600;font-size:14px;transition:transform .1s var(--e)}
 .act:active{transform:scale(.96)}
 .act.dim{background:var(--hair2);color:var(--mut)}
+.act.warn{background:var(--wrn-soft);color:var(--wrn-ink)}
 .co{display:flex;gap:12px;padding:16px 18px;border-radius:20px;
   background:var(--acc-soft);border:.5px solid var(--hair);margin-top:12px}
 .co.w{background:var(--wrn-soft)}
@@ -1044,6 +1045,17 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <div><span>Сохранено</span><b id="setSaved">—</b></div>
       <div><span>Версия</span><b id="setVer">—</b></div>
     </div>
+
+    <!-- Сброс — та же карточка-предупреждение, что и понижение в должности
+         на «Карьере»: охра, иконка, одна строка о необратимости. Тап по
+         кнопке не сбрасывает сразу — подменяет содержимое на второй шаг.
+         Отдельной модалки поверх шита нет специально: шит и так закрыт
+         крестиком, а лишний слой поверх лишнего слоя только путает. -->
+    <div class="co w" id="resetBox" style="margin-top:24px">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+      <p><b>Сбросить прогресс.</b> Удалит компанию, штат и опыт. Отменить нельзя.<br>
+        <button class="act dim" id="resetBtn" style="margin-top:10px">Сбросить прогресс</button></p>
+    </div>
   </div>
 </div>
 
@@ -1110,7 +1122,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.1.2";
+const VERSION = "1.1.3";
 
 // Игровой месяц в секундах. Единственная ручка длины прохождения:
 // 19 лет × 12 месяцев × MONTH. При 9 это ~34 минуты.
@@ -2580,6 +2592,41 @@ function mgDue(){
     return S.era >= a && S.era <= b && (done.filter(x=>x===k).length < 2);
   });
 }
+/* ══════════════════════════════════════════════════════════════
+   СБРОС ПРОГРЕССА
+   В отличие от «Уволиться», сброс не переносит ничего: ни опыт, ни
+   число жизней. Это не следующий заход, а чистый лист — нужен людям,
+   у которых сейв испортился (см. NaN в цене найма на старых версиях),
+   или тем, кто просто хочет начать сначала. Настройки звука, музыки
+   и темы — не прогресс, поэтому переживают сброс, как и подтверждение
+   у самой кнопки «Уволиться» их тоже переживает.
+   ══════════════════════════════════════════════════════════════ */
+function resetProgress(){
+  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme };
+  const fresh = JSON.parse(S0);
+  Object.keys(S).forEach(k => delete S[k]);
+  Object.assign(S, fresh, keep);
+  S.bought = new Set(); S.done = new Set();
+  countHired();
+  clearSave();
+  $("log").innerHTML = "";
+  S.logHistory = [];
+  applyTheme(S.theme || "auto");
+  // Данные уже чистые, но экран — нет: если сброс случился посреди
+  // созвона, блокера или карточки новой эпохи, эти окна ссылаются на
+  // состояние, которого больше нет, и без явного закрытия провисят
+  // поверх нового старта. Закрываем всё, что умеет открываться само.
+  ["setSheet","setScrim","sheet","scrim","bSheet","bScrim",
+   "eraSheet","eraScrim","llcSheet","llcScrim","mgSheet","mgScrim"]
+    .forEach(id => $(id) && $(id).classList.remove("on"));
+  $("blockbar").hidden = true; $("callbar").hidden = true;
+  document.querySelector('nav button[data-tab=work]').click();
+  rollTask(); showTask();
+  sfx("era"); buzz([25,70,25]);
+  log("Прогресс сброшен. Штат, компания и опыт обнулены — дальше как в первый раз.", "lore");
+  saveGame();
+  paint();
+}
 function doQuit(){
   const lifetime = (S.lifetime||0) + S.earned;
   // За каждый «правильный» ответ — небольшая надбавка к офферу.
@@ -2656,6 +2703,25 @@ function applyTheme(mode){
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===mode));
 }
+// Разметка первого шага — снята с самой карточки один раз при загрузке,
+// чтобы paintSettings() могла вернуть кнопку в исходное состояние: сброс
+// не должен молча остаться на «Точно?», если игрок закрыл шит крестиком.
+const RESET_ASK = $("resetBox").innerHTML;
+function wireResetBtn(){
+  const b = $("resetBtn");
+  if(b) b.onclick = () => {
+    // Второй шаг — то же место, без отдельной модалки: делать необратимое
+    // проще, чем понять, что делаешь, и это единственная защита от тапа
+    // не туда. «Отмена» возвращает первый шаг, а не закрывает настройки.
+    $("resetBox").innerHTML =
+      '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'+
+      '<p><b>Стереть компанию, штат и опыт?</b> Это на самом деле всё.<br>'+
+      '<button class="act warn" id="resetGo" style="margin-top:10px">Да, сбросить всё</button> '+
+      '<button class="act dim" id="resetNo" style="margin-top:10px">Отмена</button></p>';
+    $("resetGo").onclick = resetProgress;
+    $("resetNo").onclick = () => { $("resetBox").innerHTML = RESET_ASK; wireResetBtn(); };
+  };
+}
 function paintSettings(){
   $("setSaved").textContent = savedAgo();
   $("setVer").textContent = "v"+VERSION;
@@ -2665,6 +2731,8 @@ function paintSettings(){
   $("volMusV").textContent = $("volMus").value;
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===(S.theme||"auto")));
+  $("resetBox").innerHTML = RESET_ASK;
+  wireResetBtn();
 }
 const closeSet = () => {
   $("setSheet").classList.remove("on"); $("setScrim").classList.remove("on");
@@ -3938,7 +4006,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                stepReady,stepPrev,anyPromo,promoCost,paintDots,hireReady,promoReady,
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
-               startQuit,doQuit,canQuit,legacyOf,migrate,countHired,SAVE_V,
+               startQuit,doQuit,canQuit,legacyOf,migrate,countHired,resetProgress,SAVE_V,
                MG,mgOpen,mgDue,mgPrize,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
