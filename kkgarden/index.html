@@ -509,7 +509,11 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
   .gbtn{font-size:14.5px;min-height:52px;padding:0 12px}
   .scene{height:44dvh}
 }
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+/* `*` не совпадает с псевдоэлементами, а полоса роста анимируется именно
+   в ::after — без этой строки бесконечные полоски переживали бы запрет движения */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
 </style>
 </head>
 <body>
@@ -1077,11 +1081,18 @@ function ghostIcon(sd, size){
 }
 
 /* ════ ЧАСТИЦЫ ════════════════════════════ */
+/* CSS-правило prefers-reduced-motion гасит только CSS-анимации.
+   Частицы живут на Web Animations API, до них !important не достаёт,
+   поэтому спрашиваем систему сами. */
+const calmMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+const calm = () => !!(calmMQ && calmMQ.matches);
+
 function sceneXY(el, dx, dy){
   const r = el.getBoundingClientRect(), sr = $("#scene").getBoundingClientRect();
   return [r.left - sr.left + r.width/2 + (dx||0), r.top - sr.top + r.height/2 + (dy||0)];
 }
 function sparks(x, y, n, colors){
+  if(calm()) return;
   const sc = $("#scene");
   for(let i = 0; i < n; i++){
     const s = document.createElement("span");
@@ -1097,6 +1108,7 @@ function sparks(x, y, n, colors){
   }
 }
 function petalRain(x, y, color){
+  if(calm()) return;
   const sc = $("#scene");
   for(let i = 0; i < 14; i++){
     const p = document.createElement("span");
@@ -1112,6 +1124,8 @@ function petalRain(x, y, color){
   }
 }
 function coinsToPurse(n){
+  const bump = () => { $("#purse").classList.add("bump"); setTimeout(() => $("#purse").classList.remove("bump"), 520); };
+  if(calm()){ bump(); SFX.coin(); return; }   // без полёта, но счёт всё равно отзывается
   const purse = $("#purse").getBoundingClientRect();
   const plant = $("#plantwrap").getBoundingClientRect();
   for(let i = 0; i < n; i++){
@@ -1131,14 +1145,17 @@ function coinsToPurse(n){
         c.style.opacity = "0";
       }, 180 + i * 55);
     });
-    setTimeout(() => { c.remove(); if(i === n-1){ $("#purse").classList.add("bump"); setTimeout(()=>$("#purse").classList.remove("bump"), 520); } }, 1100 + i * 55);
+    setTimeout(() => { c.remove(); if(i === n-1) bump(); }, 1100 + i * 55);
     setTimeout(() => SFX.coin(), 200 + i * 60);
   }
 }
 
 /* ════ РЕНДЕР ═════════════════════════════ */
-let prevStage = -1, prevSeed = "", prevCoins = -1;
+let prevStage = -1, prevSeed = "";
+let lastMainHtml = "", lastStatusHtml = "";
 const RING = 2 * Math.PI * 50;
+const ICO_HARVEST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13c3.5 0 6 2.2 6 6-3.5 0-6-2.2-6-6z"/><path d="M19 8c0 5-3.5 8-8 11"/><path d="M12 4c3 0 5 2 5 5-3 0-5-2-5-5z"/></svg>`;
+const ICO_CAN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10h9v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8z"/><path d="M15 12l5-4"/><path d="M8 10V8a2 2 0 0 1 4 0v2"/></svg>`;
 
 function render(){
   const tod = timeOfDay();
@@ -1178,23 +1195,22 @@ function render(){
 
   const sd = seedOf(S.seed);
   const main = $("#mainbtn");
+  let cls, html, off;
   if(S.stage >= 5){
-    main.className = "gbtn g-gold full";
-    main.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13c3.5 0 6 2.2 6 6-3.5 0-6-2.2-6-6z"/><path d="M19 8c0 5-3.5 8-8 11"/><path d="M12 4c3 0 5 2 5 5-3 0-5-2-5-5z"/></svg>
-      Собрать · +${sd.pay}`;
-    main.disabled = false;
+    cls = "gbtn g-gold full";
+    html = ICO_HARVEST + "Собрать · +" + sd.pay;
+    off = false;
   } else {
     const auto = autoWater();
-    const idle = auto || S.water > 92;
-    main.className = "gbtn full " + (idle ? "g-cream calm" : "g-green");
-    const can = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10h9v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8z"/><path d="M15 12l5-4"/><path d="M8 10V8a2 2 0 0 1 4 0v2"/></svg>`;
-    let label;
-    if(auto) label = "Автополив работает";
-    else if(S.water > 92) label = "Земля влажная";
-    else label = "Полить";
-    main.innerHTML = can + label;
-    main.disabled = idle;
+    off = auto || S.water > 92;
+    cls = "gbtn full " + (off ? "g-cream calm" : "g-green");
+    html = ICO_CAN + (auto ? "Автополив работает" : off ? "Земля влажная" : "Полить");
   }
+  // тик идёт раз в секунду; переписывать разметку кнопки, когда она не менялась,
+  // значит раз в секунду пересобирать SVG на ровном месте
+  if(html !== lastMainHtml){ main.innerHTML = html; lastMainHtml = html; }
+  if(cls !== main.className) main.className = cls;
+  main.disabled = off;
 
   let st, em;
   if(S.stage >= 5){ st = `<b>${sd.nm}</b> распустился. Соберите — и посадите следующее семя.`; em = "🌸"; }
@@ -1202,7 +1218,7 @@ function render(){
   else if(S.water <= 0){ st = "Земля пересохла. Полейте, иначе рост почти встал."; em = "🏜️"; }
   else if(S.taps >= TAP_LIMIT){ st = "Солнце на сегодня отдало всё. Дальше растёт само."; em = "😌"; }
   else { st = `Нажмите на ${night ? "лампу" : "солнце"} — растение потянется к свету.`; em = STAGE_EM[S.stage]; }
-  $("#statustx").innerHTML = st;
+  if(st !== lastStatusHtml){ $("#statustx").innerHTML = st; lastStatusHtml = st; }
   $("#statusem").textContent = em;
 
   renderBadges();
@@ -1281,14 +1297,16 @@ function tapSun(){
 
   const b = $("#burst"); b.classList.remove("go"); void b.offsetWidth; b.classList.add("go");
 
-  const f = document.createElement("div");
-  f.className = "floaty"; f.textContent = "+" + TAP_GAIN;
-  // стартуем от центра солнца: выше по сцене числу некуда лететь, оно обрежется
-  const r = $("#orb").getBoundingClientRect(), sr = $("#scene").getBoundingClientRect();
-  f.style.left = (r.left - sr.left + r.width / 2 - 16) + "px";
-  f.style.top = (r.top - sr.top + r.height / 2 - 10) + "px";
-  $("#scene").appendChild(f);
-  setTimeout(() => f.remove(), 1100);
+  if(!calm()){
+    const f = document.createElement("div");
+    f.className = "floaty"; f.textContent = "+" + TAP_GAIN;
+    // стартуем от центра солнца: выше по сцене числу некуда лететь, оно обрежется
+    const r = $("#orb").getBoundingClientRect(), sr = $("#scene").getBoundingClientRect();
+    f.style.left = (r.left - sr.left + r.width / 2 - 16) + "px";
+    f.style.top = (r.top - sr.top + r.height / 2 - 10) + "px";
+    $("#scene").appendChild(f);
+    setTimeout(() => f.remove(), 1100);
+  }
 
   const [ox,oy] = sceneXY($("#orb"));
   sparks(ox, oy, 5, ["#fff3b0","#ffd76b","#ffffff"]);
@@ -1329,7 +1347,11 @@ function harvest(){
 
   toast(`+${sd.pay} росинок. ${sd.nm} — в альбоме.`);
   save(); render();
-  setTimeout(() => { openSheet("shop"); shopTab("seed"); }, 900);
+  // магазин предлагаем сам, но только если игрок за это время никуда не ушёл
+  setTimeout(() => {
+    if(document.querySelector(".sheet.on")) return;
+    openSheet("shop"); shopTab("seed");
+  }, 900);
 }
 
 /* ════ МАГАЗИН ════════════════════════════ */
@@ -1396,10 +1418,14 @@ function itemList(cat){
     const equipped = (cat === "pot" && S.pot === it.id) || (cat === "can" && S.can === it.id) || (cat === "light" && S.lamp && it.lamp);
     const consumable = !!it.temp;
     const active = consumable && S.fertUntil > Date.now() && S.fertMult === it.fert;
+    // переставлять можно только горшок и лейку; вечная подкормка и лампа
+    // работают сами по себе, и кнопка «Поставить» у них была бы мёртвой
+    const swappable = cat === "pot" || cat === "can";
     let right;
     if(equipped) right = `<span class="owned">${checkSvg()}В деле</span>`;
     else if(active) right = `<span class="owned">${checkSvg()}Действует</span>`;
-    else if(owned && !consumable) right = `<button class="gbtn g-blue sm" data-use="${it.id}" data-cat="${cat}">Поставить</button>`;
+    else if(owned && !consumable && swappable) right = `<button class="gbtn g-blue sm" data-use="${it.id}" data-cat="${cat}">Поставить</button>`;
+    else if(owned && !consumable) right = `<span class="owned">${checkSvg()}Действует</span>`;
     else if(S.coins < it.price) right = `<button class="gbtn sm" disabled><span class="pricetag">${it.price}${coinSvg()}</span></button>`;
     else right = `<button class="gbtn g-gold sm" data-buy="${it.id}" data-cat="${cat}"><span class="pricetag">${it.price}${coinSvg()}</span></button>`;
     return `<div class="card ${(!owned && S.coins < it.price) ? "locked":""}">

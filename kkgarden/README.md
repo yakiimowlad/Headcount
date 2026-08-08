@@ -5,7 +5,7 @@
 Один HTML-файл. Ноль зависимостей. Ноль медиафайлов — звук синтезируется
 в браузере. Открывается двойным кликом.
 
-**Версия 0.3.0** · [План релизов](ROADMAP.md)
+**Версия 0.3.1** · [План релизов](ROADMAP.md)
 
 ```
 open kkgarden/index.html
@@ -69,6 +69,7 @@ open kkgarden/index.html
 npm install
 node kkgarden/test/screens.mjs   # снимки экранов + ошибки в консоли
 node kkgarden/test/audio.mjs     # граф WebAudio: узлы создаются, при выключении — нет
+node kkgarden/test/audit.mjs     # регрессии аудита 0.3.1
 ```
 
 Оба скрипта запускаются из корня репозитория — `playwright` лежит там.
