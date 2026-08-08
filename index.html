@@ -155,6 +155,11 @@ body{
   transition:background-color .5s var(--e),color .5s var(--e);
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* Атрибут hidden сильнее любого display из класса. Без этой строки
+   каждый элемент с display:flex в классе игнорирует hidden и остаётся
+   на экране пустой рамкой — так вылезли плашка паузы и охровая карточка
+   в кризисе. Одно правило вместо перечисления мест. */
+[hidden]{display:none!important}
 /* Своя ручка «меньше движения» рядом с системной. Системную включают
    ради всего телефона, а тут человек может хотеть тише только здесь. */
 .calm *{transition:none!important;animation:none!important}
@@ -763,9 +768,6 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   background:var(--wrn-soft);color:var(--wrn-ink);font-size:12px;font-weight:700;
   letter-spacing:.4px;text-transform:uppercase;
   display:flex;align-items:center;justify-content:space-between;gap:10px}
-/* display по идентификатору перебивает атрибут hidden — без этой строки
-   скрытая плашка продолжает занимать полосу и выталкивает экран вниз. */
-#pauseBar[hidden]{display:none}
 #pauseBar button{font:inherit;text-transform:none;letter-spacing:0;
   color:var(--wrn-ink);text-decoration:underline;padding:4px 2px}
 .tgls{margin-top:22px}
@@ -811,7 +813,8 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .sheet.tall .sh-in{max-height:86dvh;display:flex;flex-direction:column;overflow:hidden}
 .sheet.tall .shead{flex:none}
 .sheet.tall .upstree,
-.sheet.tall .setbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+.sheet.tall .setbody,
+.sheet.tall .krbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
   margin-top:0;padding-bottom:4px}
 /* Отступ снизу: последняя карточка не должна упираться в край экрана,
    иначе кажется, что список обрезан. */
@@ -1110,6 +1113,30 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
      в 2024-м — формулировку. Обе условные: это игра про работу, а не
      про реакцию, поэтому проиграть здесь можно только время. -->
 <div class="scrim" id="mgScrim"></div>
+<!-- Кризис. Свой шит, а не мини-игра: у мини-игры цена — упущенная
+     выгода, у кризиса — деньги со счёта. Крестика нет намеренно, как
+     у созвона: счёт приходит независимо от того, готовы вы его читать. -->
+<div class="scrim" id="krScrim"></div>
+<div class="sheet tall" id="krSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <!-- Прокручивается текст, а не варианты ответа: кризис длиннее
+         экрана, и кнопки, до которых нельзя дотянуться, — это тупик. -->
+    <div class="krbody">
+      <div class="erayear n" id="krCost"></div>
+      <h2 id="krT"></h2>
+      <p id="krD"></p>
+      <div class="co w" id="krSoft" hidden>
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+        <p id="krSoftText"></p>
+      </div>
+      <p id="krQ" style="color:var(--ink);font-weight:600;margin-top:16px"></p>
+      <div id="krPick"></div>
+    </div>
+    <button class="go" id="krOk" hidden style="width:100%;margin-top:16px;flex:none">Дальше</button>
+  </div>
+</div>
+
 <div class="sheet" id="mgSheet">
   <div class="sh-in">
     <div class="grab"></div>
@@ -1296,14 +1323,15 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.3.1";
+const VERSION = "1.4.0";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
-// идёт всегда: 228 месяцев × 90 секунд = 5 часов 42 минуты, если не делать
-// вообще ничего. Оборот ускоряет время до ×3 (см. pace() в цикле): активное
+// идёт всегда: 228 месяцев × 60 секунд = 3 часа 48 минут, если не делать
+// вообще ничего. Было 90 секунд — оказалось слишком медленно: годы
+// сменялись реже, чем игрок успевал заметить, что что-то происходит. Оборот ускоряет время до ×3 (см. pace() в цикле): активное
 // прохождение — 1,5–2 часа. Рост компании ощущается как ускорение времени,
 // а не только как большая цифра.
-const MONTH = 90, OVERHEAD = 42000;
+const MONTH = 60, OVERHEAD = 42000;
 // Норма оборота за месяц по эпохам: доход на уровне нормы даёт +1 месяц
 // к течению времени, вдвое выше нормы — +2 (потолок). Числа — это «компания
 // живёт по средствам своего времени»: фрилансеру хватает ста тысяч,
@@ -1674,6 +1702,10 @@ const C = {
      desc:"Держит сервер, роутер и принтер. Всё это в одной комнате"},
     {id:"sales",  dept:"ops",   tier:1, era:1, viaBlock:"b14", name:"Менеджер по продажам", pay:120000, out:340000,
      desc:"Приносит заказы. И сроки, о которых вас не спросили"},
+    {id:"lawyer", dept:"ops",   tier:2, era:2, viaCrisis:"fine", name:"Юрист", pay:250000, out:120000,
+     desc:"Читает договоры до подписания. Штрафы и неустойки вдвое меньше"},
+    {id:"pr",     dept:"ops",   tier:2, era:3, viaCrisis:"rep", name:"PR-менеджер", pay:210000, out:140000,
+     desc:"Отвечает на отзывы раньше, чем их прочитают. Удар по репутации вдвое короче"},
     {id:"content",dept:"ops",   tier:0, era:1, name:"Контент-менеджер",  pay:95000,  out:160000,
      desc:"Пишет тексты. Заказчик перепишет их сам, но позже"},
     {id:"writer", dept:"eng",   tier:1, era:2, viaBlock:"b17", name:"Технический писатель", pay:170000, out:210000,
@@ -1942,12 +1974,13 @@ const S = {
   cash:0, earned:0, month:0, tab:"work",
   staff:[], nid:0, hired:{}, bought:new Set(), done:new Set(),
   burn:0, sick:0, vacLeft:0, vacTaken:0, sickTime:0, playTime:0,
-  // База клика снижена с 5000 при замедлении календаря в десять раз:
-  // игровой год теперь вмещает больше реальных кликов, и старые 5000
-  // делали миллионером в 2009-м. Мелочь — 56 ₽, задача — 160 ₽,
-  // разбирательство — 1120 ₽: цены фрилансерского 2007-го, когда сайт
-  // «как у Лебедева» стоил пять тысяч.
-  click:400, meetGap:50, meetLen:8, meetFull:8, callMul:.45, noMeets:false, missIn:120,
+  // База клика: мелочь 84 ₽, задача 240 ₽, разбирательство 1680 ₽ —
+  // цены фрилансерского 2007-го, когда сайт «как у Лебедева» стоил
+  // пять тысяч. Число ходит вместе с длиной месяца: пассивный доход
+  // считается на месяц и от неё не зависит, а клики игрок делает в
+  // реальном времени — короткий месяц вмещает их меньше. Календарь
+  // ускорили в полтора раза, значит и цена задачи выросла в полтора.
+  click:600, meetGap:50, meetLen:8, meetFull:8, callMul:.45, noMeets:false, missIn:120,
   minimize:false, hands:0, dayCap:99, callsThisMonth:0,
   hireTax:1, burnRate:1, retain:1, ovhMul:1,
   rto:false, opt:false, review:false, surveys:false,
@@ -1961,6 +1994,8 @@ const S = {
   // Что игре уже разрешено показать. Новое выкладывается по одному,
   // а не всё сразу при смене эпохи — см. revealTick().
   seen:[], revealIn:0,
+  // Кризисы: что уже случалось и сколько ждать следующего.
+  crisesSeen:[], crisisIn:110, repLeft:0,
   jobs:0, jobAt:undefined,
   deleg:0, delegAcc:0, legacy:1, lifetime:0, runs:0,
   // ритм
@@ -2275,6 +2310,9 @@ function revenueRaw(){
   // рынка, дальше ИИ. Это не награда игроку — это прилив, который
   // поднимает все лодки. Отлива в игре нет: он приходит в жизни.
   r *= ERA_WAVE[Math.max(0, Math.min(S.era, ERA_WAVE.length-1))];
+  // Волна отзывов: заказы идут медленнее, пока о вас читают. Бьёт по
+  // выручке, а не по кассе, — и поэтому чувствуется дольше штрафа.
+  if(S.repLeft > 0) r *= 0.75;
   // Возврат в офис действительно поднимает выработку — это не вранье
   // и не ловушка. Цена приходит отдельно и позже: людьми.
   if(S.rto) r *= S.rtoSoft ? 1.06 : 1.18;
@@ -2745,6 +2783,63 @@ function startQuit(){
    реакцию, поэтому цена ошибки — выгорание и упущенная выгода, а не
    откат прогресса. Проиграть в этой игре по-прежнему нельзя.
    ══════════════════════════════════════════════════════════════ */
+/* ── КРИЗИСЫ ───────────────────────────────────────────────────────
+   Беда, у которой есть цена и способ её срезать. Не наказание за
+   ошибку — просто счёт, который приходит любой работающей компании.
+
+   Каждый кризис смягчается дважды. Человек в штате режет потери вдвое
+   сам, без вашего участия: за это его и держат. Верный ответ режет ещё
+   вдвое: разбираться всё равно приходится лично.
+
+   Два кризиса приводят за собой профессию — юриста и пиарщика. Их
+   нет в прайсе, пока беда не случилась: так это и происходит.
+   ── */
+const CRISES = [
+  {id:"deal", era:1, k:1.5, soft:"sales",
+   title:"Контракт расторгнут",
+   text:"Заказчик уходит к тем, кто дешевле. В договоре — неустойка за срыв сроков, и сроки действительно сорваны.",
+   softLine:"Продажник дожал до половины: часть работ приняли актом.",
+   q:"Что делать с неустойкой?",
+   a:["Заплатить сразу и забыть",
+      "Предложить закрыть актом выполненные этапы",
+      "Не отвечать: может, забудут"], right:1,
+   win:"Этапы приняли актом. Заплатили меньше, чем просили.",
+   lose:"Заплатили целиком. В следующий раз читайте раздел про сроки."},
+
+  {id:"bug", era:1, k:1.1, soft:"qa",
+   title:"Ошибка на проде",
+   text:"Форма оплаты не работала одиннадцать часов. Заказчик считает убытки и присылает их вам.",
+   softLine:"Тестировщик нашёл причину за час: простой оказался вдвое короче.",
+   q:"Что писать заказчику?",
+   a:["«Всё работает, проверьте кэш»",
+      "Признать, назвать причину и срок починки",
+      "Молчать до понедельника"], right:1,
+   win:"Признали сразу и починили при них. Счёт урезали вдвое.",
+   lose:"Пока искали виноватого, счёт вырос. Заплатили полностью."},
+
+  {id:"fine", era:2, k:1.8, soft:"lawyer", brings:"Юрист",
+   title:"Проверка по 152-ФЗ",
+   text:"Персональные данные хранились не там, где положено. Пришло предписание и штраф.",
+   softLine:"Юрист отбил половину: часть претензий сняли на месте.",
+   q:"Как отвечать на предписание?",
+   a:["Обжаловать всё целиком",
+      "Устранить нарушение и приложить документы к ответу",
+      "Заплатить и не связываться"], right:1,
+   win:"Нарушение устранили до ответа. Штраф снизили.",
+   lose:"Заплатили полностью. Хранилище всё равно пришлось переносить."},
+
+  {id:"rep", era:3, k:0, soft:"pr", brings:"PR-менеджер", months:6,
+   title:"Волна отзывов",
+   text:"Бывший сотрудник написал, как у вас работается. Написал подробно. Заказчики читают.",
+   softLine:"Пиарщик ответил в тот же день: волна улеглась вдвое быстрее.",
+   q:"Что отвечать?",
+   a:["Требовать удалить отзыв",
+      "Ответить по существу и починить то, о чём пишут",
+      "Написать десять хороших отзывов самим"], right:1,
+   win:"Ответили по существу. Через месяц об этом забыли.",
+   lose:"Отзывы разошлись дальше. Заказы идут медленнее."}
+];
+
 const MG = {
   dial: {
     era:[0,1], rounds:3,
@@ -3059,6 +3154,88 @@ function paintSettings(){
   $("resetBox").innerHTML = RESET_ASK;
   wireResetBtn();
 }
+/* ══════════════════════════════════════════════════════════════
+   КРИЗИСЫ
+   Счёт, который приходит любой работающей компании. Потери считаются
+   от месячной выручки, а не от кассы: беда соразмерна размеру бизнеса,
+   а не тому, сколько вы успели накопить. Больше, чем есть на счету,
+   не заберут — проиграть в этой игре по-прежнему нельзя.
+   ══════════════════════════════════════════════════════════════ */
+let krNow = null;
+function krDue(){
+  const done = S.crisesSeen || [];
+  // Сначала те, которых ещё не было: первая встреча важнее повторной,
+  // она приводит профессию и объясняет механику.
+  const ripe = CRISES.filter(c => c.era <= S.era);
+  return ripe.find(c => !done.includes(c.id)) || pick(ripe);
+}
+function krLoss(c){
+  if(c.months) return 0;                       // репутация бьёт не деньгами
+  let base = Math.max(revenue() * c.k, 40000);
+  if(S.hired[c.soft]) base /= 2;
+  // Больше сорока процентов кассы не забирают ни при каком счёте.
+  // Иначе один штраф вычищал осторожного игрока досуха, и следующие
+  // полгода уходили на то, чтобы вернуться туда же, где он был.
+  // Беда должна стоить дорого, но оставлять чем работать дальше.
+  return Math.round(Math.min(base, S.cash * 0.4));
+}
+function krOpen(c){
+  krNow = c;
+  const loss = krLoss(c);
+  $("krCost").textContent = c.months
+    ? "выручка просядет на " + (S.hired[c.soft] ? c.months/2 : c.months) + " мес."
+    : "потери " + rub(loss);
+  $("krT").textContent = c.title;
+  $("krD").textContent = c.text;
+  // Строку про своего человека показываем, только если он есть: иначе
+  // это была бы подсказка «надо было нанять», а игра не подсказывает.
+  $("krSoft").hidden = !S.hired[c.soft];
+  if(S.hired[c.soft]) $("krSoftText").innerHTML = "<b>" + c.softLine + "</b>";
+  $("krQ").textContent = c.q;
+  $("krPick").hidden = false;
+  $("krPick").innerHTML = c.a.map((t,i) =>
+    '<button class="mgo" data-i="'+i+'">'+t+'</button>').join("");
+  $("krPick").querySelectorAll(".mgo").forEach(b =>
+    b.onclick = () => krAnswer(+b.dataset.i));
+  $("krOk").hidden = true;
+  $("krSheet").classList.add("on"); $("krScrim").classList.add("on");
+  sfx("block"); buzz([30,60,30]);
+}
+function krAnswer(i){
+  const c = krNow, ok = i === c.right;
+  $("krPick").hidden = true;
+  $("krQ").textContent = ok ? c.win : c.lose;
+  $("krOk").hidden = false;
+  S.crisesSeen = [...(S.crisesSeen||[]), c.id];
+
+  if(c.months){
+    // Репутация бьёт по выручке, а не по кассе: заказы идут медленнее,
+    // и это чувствуется дольше, чем разовый штраф.
+    let m = S.hired.pr ? c.months/2 : c.months;
+    if(ok) m = m/2;
+    S.repLeft = Math.max(S.repLeft||0, m);
+    log("<b>"+c.title+".</b> "+(ok?c.win:c.lose)+" Выручка просела на "+
+        Math.round(m)+" мес.", ok ? "" : "bad");
+  } else {
+    let loss = krLoss(c);
+    if(ok) loss = Math.round(loss/2);
+    loss = Math.max(0, Math.min(loss, Math.round(S.cash)));
+    S.cash -= loss;
+    log("<b>"+c.title+".</b> "+(ok?c.win:c.lose)+" Списали "+rub(loss)+".",
+        ok ? "" : "bad");
+  }
+  // Профессия появляется вместе с нуждой — и ровно в тот момент, когда
+  // стало понятно, зачем она.
+  if(c.brings) log("В прайсе появилась строка, которой раньше не было: <b>"+
+    c.brings.toLowerCase()+"</b>.", "lore");
+  sfx(ok ? "buy" : "lose");
+  paint();
+}
+$("krOk").onclick = () => {
+  $("krSheet").classList.remove("on"); $("krScrim").classList.remove("on");
+  krNow = null; sig.hire = null; paint();
+};
+
 /* Новое приходит по одному. Раньше смена эпохи вываливала пять кнопок
    разом: игрок пролистывал их не читая, и выбор превращался в список.
    Теперь очередь — примерно одна вещь в два игровых месяца, и каждая
@@ -3364,8 +3541,12 @@ function gradeTag(t){
 // нельзя нанять до того, как проект в них упрётся: иначе игрок наймёт их
 // впрок, блокер отфильтруется как уже выполненный, и момент, ради которого
 // он написан, не случится вообще.
-const roleSeen = r => !r.viaBlock || S.blocker===r.viaBlock ||
-  (S.blockersDone||[]).includes(r.viaBlock);
+/* Профессия появляется вместе с нуждой. Юриста не нанимают заранее —
+   его нанимают после первого штрафа, пиарщика после первой волны отзывов.
+   Пока беды не случилось, этих строк в прайсе нет вообще. */
+const roleSeen = r =>
+  (!r.viaBlock  || S.blocker===r.viaBlock || (S.blockersDone||[]).includes(r.viaBlock)) &&
+  (!r.viaCrisis || (S.crisesSeen||[]).includes(r.viaCrisis));
 // Роль созрела: эпоха подошла, нужда возникла, оборот дорос. Это ещё
 // не значит, что её показали, — показ идёт очередью, по одной вещи.
 const roleRipe = r => (r.era||0) <= S.era && roleSeen(r) &&
@@ -4225,6 +4406,7 @@ setInterval(() => {
   // Время стоит, пока читаешь: раскрытая хроника, развилка про ООО и
   // экран смены эпохи — это моменты чтения и решения, а не игры.
   if(S.ended || S.paused || chron.classList.contains("open") ||
+     $("krSheet").classList.contains("on") ||
      $("llcSheet").classList.contains("on") ||
      $("mgSheet").classList.contains("on") ||
      $("eraSheet").classList.contains("on")) return;
@@ -4468,6 +4650,22 @@ setInterval(() => {
     if(S.chaos<=0) log("Перестройка закончилась. Осталось "+S.staff.length+" человек.","lore");
   }
 
+  /* Кризис. Раз в десять-пятнадцать игровых месяцев, начиная со второй
+     эпохи: у фрилансера без договоров и расторгать нечего. Не лезем
+     поверх созвона, блокера, мини-игры и больничного — у игрока и так
+     занят экран, а кризис требует решения, а не рефлекса. */
+  if(S.repLeft > 0) S.repLeft -= dtM;
+  if(S.era >= 1 && S.llc){
+    S.crisisIn = (S.crisisIn===undefined ? 110 : S.crisisIn) - dtE;
+    if(S.crisisIn <= 0){
+      S.crisisIn = 90 + Math.random()*60;
+      if(!onCall() && !activeBlocker() && S.sick<=0 && !$("mgSheet").classList.contains("on")){
+        const c = krDue();
+        if(c) krOpen(c);
+      }
+    }
+  }
+
   // Очередь показа нового. Пока очередь пуста, таймер стоит на нуле:
   // следующая созревшая вещь появится сразу, а не через два месяца.
   S.revealIn = (S.revealIn||0) - dtE;
@@ -4663,6 +4861,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                EARLY_CAP,CAP_YEAR,MONTH,BURN_TAP,pace,checkEra,paintSpark,loopMath,
                ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,
                ONB,obOpen,obClose,paintTracks,revealNext,roleRipe,upRipe,REVEAL_GAP,
+               CRISES,krOpen,krAnswer,krDue,krLoss,
                restore,serialize,
                stamp,stampOf,paintBadge,paintPeek,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
