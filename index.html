@@ -70,6 +70,8 @@
     "checkEra"         смена эпохи · "showEraLike" экран объяснения
 
   ИНТЕРФЕЙС
+    "СКИН «УЮТНЫЙ»"    второе оформление: [data-skin=cozy], разбор в UI.md
+    "applySkin"        переключатель оформления, живёт рядом с applyTheme
     "function paint()" общая отрисовка, вызывается из тика
     "paintHire"        найм · "paintStaff" штат командами и чипами
     "paintTracks"      треки карьеры · "paintUps" улучшения и циклы
@@ -944,6 +946,137 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .finstep i{width:22px;height:3px;border-radius:2px;background:var(--hair);transition:background .3s}
 .finstep i.on{background:var(--acc)}
 .fin p{margin-bottom:20px}
+/* ══════════════════════════════════════════════════════════════════
+   СКИН «УЮТНЫЙ»
+   Второе оформление той же игры: тёплая бумага вместо белого листа,
+   кнопки-предметы вместо строк, заголовок-плашка вместо надписи.
+   Включается в настройках, ставит на <html> data-skin=cozy — и весь
+   блок ниже перестаёт существовать, когда скин выключен. Ни одно
+   правило выше не тронуто: строгий вид обязан остаться байт в байт
+   тем же, иначе «переключатель» превращается в переписывание игры.
+
+   Правило скина: цвет и объём несут смысл. Зелёное — можно взять,
+   синее — действие в списке, охра — потеря, кремовое — фон и покой.
+   Тень снизу у кнопки — её высота: на нажатии кнопка садится ровно
+   на эту высоту, поэтому палец верит, что нажал предмет.
+   ══════════════════════════════════════════════════════════════════ */
+:root[data-skin=cozy]{
+  --bg:#EBE4D2; --sf:#FFFCF3; --glass:rgba(240,234,218,.86);
+  --ink:#3E3524; --ink2:#5C4F38; --mut:#9C8E75; --faint:#D8CCB2;
+  --hair:rgba(120,96,54,.18); --hair2:rgba(120,96,54,.09);
+  --acc:#7CC03C; --acc-ink:#4E8C1B; --acc-soft:rgba(124,192,60,.18);
+  --wrn:#F2A63A; --wrn-ink:#B06B10; --wrn-soft:rgba(242,166,58,.2);
+  --blue:#3DA0F0;
+  --sh:0 2px 0 rgba(120,96,54,.14), 0 10px 22px rgba(120,96,54,.1);
+  /* Кремовая кнопка и её высота — два цвета, из которых собран весь скин. */
+  --cz:#F6EEDA; --cz-e:#DFCDA5; --cz-r:20px;
+  --blue-e:#1E76C4; --acc-e:#3C7A12;
+  /* Скруглённый системный шрифт. Файл остаётся одним: ничего не грузим,
+     на устройствах без него берётся обычный системный. */
+  font-family:ui-rounded,'SF Pro Rounded',-apple-system,system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root[data-skin=cozy]:not([data-theme=light]){
+  --bg:#241F19; --sf:#332C23; --glass:rgba(36,31,25,.86);
+  --ink:#F4ECD9; --ink2:#DACDB4; --mut:#A0917A; --faint:#5A4E3D;
+  --hair:rgba(255,244,220,.14); --hair2:rgba(255,244,220,.07);
+  --cz:#41382C; --cz-e:#241F19;
+  --sh:0 2px 0 rgba(0,0,0,.4), 0 10px 22px rgba(0,0,0,.45);
+  color-scheme:dark;}}
+:root[data-skin=cozy][data-theme=dark]{
+  --bg:#241F19; --sf:#332C23; --glass:rgba(36,31,25,.86);
+  --ink:#F4ECD9; --ink2:#DACDB4; --mut:#A0917A; --faint:#5A4E3D;
+  --hair:rgba(255,244,220,.14); --hair2:rgba(255,244,220,.07);
+  --cz:#41382C; --cz-e:#241F19;
+  --sh:0 2px 0 rgba(0,0,0,.4), 0 10px 22px rgba(0,0,0,.45);
+  color-scheme:dark;}
+[data-skin=cozy] body{font-family:inherit;font-weight:500}
+
+/* Карточка — лист тёплой бумаги: больше радиус, мягче край. */
+[data-skin=cozy] .card{border-radius:24px;border:0;box-shadow:var(--sh)}
+[data-skin=cozy] .row{border-bottom-color:var(--hair2)}
+
+/* Главная кнопка. Высота 4 пикселя, садится на неё целиком. */
+[data-skin=cozy] .go{border-radius:var(--cz-r);font-weight:700;font-size:17px;
+  box-shadow:0 4px 0 var(--acc-e), 0 8px 16px rgba(120,96,54,.18);
+  transition:transform .08s var(--e),box-shadow .08s var(--e)}
+[data-skin=cozy] .go:active{transform:translateY(4px);
+  box-shadow:0 0 0 var(--acc-e), 0 4px 10px rgba(120,96,54,.15)}
+[data-skin=cozy] .go::after{border-radius:var(--cz-r)}
+[data-skin=cozy] .go[disabled]{box-shadow:0 4px 0 var(--faint)}
+
+/* Кремовая кнопка — вторая по частоте вещь на экране. */
+[data-skin=cozy] .later,[data-skin=cozy] .act,[data-skin=cozy] .gb-r button{
+  border-radius:var(--cz-r);background:var(--cz);border:0;color:var(--ink);
+  font-weight:700;box-shadow:0 4px 0 var(--cz-e);
+  transition:transform .08s var(--e),box-shadow .08s var(--e)}
+[data-skin=cozy] .later:active,[data-skin=cozy] .act:active{
+  transform:translateY(4px);box-shadow:0 0 0 var(--cz-e)}
+
+/* Вариант ответа в мини-игре и опросах — тот же предмет, но во всю ширину.
+   Это единственное место, где игрок читает три строки и выбирает одну:
+   между ними нужен воздух и край, иначе они читаются как абзац текста. */
+[data-skin=cozy] .mgo{border-radius:18px;background:var(--sf);border:0;
+  font-weight:600;padding:15px 17px;margin-top:11px;
+  box-shadow:0 3px 0 var(--cz-e);transition:transform .08s var(--e),box-shadow .08s var(--e)}
+[data-skin=cozy] .mgo:active{transform:translateY(3px);box-shadow:0 0 0 var(--cz-e)}
+
+/* Заголовок шита — плашка, а не надпись: в референсе она и говорит,
+   где ты находишься, раньше текста под ней. */
+[data-skin=cozy] .sheet h2,[data-skin=cozy] .shead h2{
+  display:inline-block;padding:9px 18px 10px;border-radius:17px;color:#fff;
+  background:var(--acc);box-shadow:0 4px 0 var(--acc-e);
+  font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+[data-skin=cozy] #setSheet h2,[data-skin=cozy] #sheet h2{
+  background:#9A7BE0;box-shadow:0 4px 0 #6E4FBC}
+[data-skin=cozy] #upsSheet h2{background:#F0A93C;box-shadow:0 4px 0 #C07B15}
+[data-skin=cozy] #bSheet h2,[data-skin=cozy] #krSheet h2{
+  background:#E8813C;box-shadow:0 4px 0 #B85715}
+[data-skin=cozy] #llcSheet h2,[data-skin=cozy] #eraSheet h2,[data-skin=cozy] #ivSheet h2{
+  background:#4FA6E8;box-shadow:0 4px 0 #2073B8}
+[data-skin=cozy] .shead{align-items:flex-start}
+/* Пояснение под заголовком — кремовая панель, как в референсе: текст
+   лежит НА чём-то, а не висит на фоне. */
+[data-skin=cozy] .sheet>.sh-in>p{background:var(--cz);border-radius:18px;
+  padding:14px 16px;color:var(--ink2);font-weight:500}
+[data-skin=cozy] .mgs{margin:14px 2px 0}
+
+/* Крестик — круглая зелёная кнопка, как в референсе. */
+[data-skin=cozy] .xbtn{width:44px;height:44px;border-radius:16px;background:var(--acc);
+  color:#fff;font-size:24px;font-weight:700;box-shadow:0 4px 0 var(--acc-e)}
+[data-skin=cozy] .xbtn:active{transform:translateY(4px);box-shadow:0 0 0 var(--acc-e)}
+
+/* Переключатели разделов — кремовые пилюли, активная залита. */
+[data-skin=cozy] .seg{background:transparent;gap:8px;padding:0}
+[data-skin=cozy] .seg button{background:var(--cz);border-radius:15px;padding:11px 8px;
+  font-weight:700;box-shadow:0 3px 0 var(--cz-e);color:var(--ink2)}
+[data-skin=cozy] .seg button.on{background:var(--acc);color:#fff;
+  box-shadow:0 3px 0 var(--acc-e)}
+[data-skin=cozy] .seg button.on .segn{color:#fff}
+
+/* Полка тренажёра: в уютном скине предметы крупнее и выше. */
+[data-skin=cozy] .mgtile{border-radius:22px;border:0;box-shadow:0 4px 0 var(--cz-e)}
+[data-skin=cozy] .mgtile:active{transform:translateY(4px);box-shadow:0 0 0 var(--cz-e)}
+[data-skin=cozy] .mgobj{width:54px;height:54px;border-radius:18px}
+[data-skin=cozy] .mgobj svg{width:31px;height:31px}
+[data-skin=cozy] .mghero{width:72px;height:72px;border-radius:24px}
+
+/* Шапка и таб-бар: тёплое стекло, активная вкладка — пилюля. */
+[data-skin=cozy] header{border-bottom:0;box-shadow:0 2px 0 var(--hair2)}
+[data-skin=cozy] .ic{border:0;background:var(--cz);box-shadow:0 3px 0 var(--cz-e);
+  width:42px;height:42px;border-radius:15px}
+[data-skin=cozy] .ic:active{transform:translateY(3px);box-shadow:0 0 0 var(--cz-e)}
+[data-skin=cozy] nav{border-top:0;box-shadow:0 -2px 0 var(--hair2)}
+[data-skin=cozy] nav button.on{background:var(--acc-soft);border-radius:16px}
+
+/* Прочие мелочи, где строгость мешает уюту. */
+[data-skin=cozy] .chip{border-radius:12px;font-weight:600}
+[data-skin=cozy] .bl2{height:12px;border-radius:6px}
+[data-skin=cozy] .bl2 i{border-radius:6px}
+[data-skin=cozy] .dico{border-radius:12px}
+[data-skin=cozy] .delta{border-radius:15px;font-weight:700}
+[data-skin=cozy] .bneed{border-radius:18px}
+[data-skin=cozy] .tgl{border-radius:16px}
 </style>
 </head>
 <body>
@@ -1269,6 +1402,16 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <button data-theme="light">Светлая</button>
       <button data-theme="dark">Тёмная</button>
       <button data-theme="auto">Как в системе</button>
+    </div>
+
+    <!-- Оформление. Не тема, а именно скин: та же игра, другой язык
+         поверхностей. Строгий — дашборд, каким игра была; уютный —
+         тёплая бумага и кнопки-предметы. Обе живут в одном файле, и
+         переключение ничего не пересобирает: меняется один атрибут. -->
+    <div class="seg" id="skinSeg" role="group" aria-label="Оформление"
+         style="grid-template-columns:repeat(2,1fr)">
+      <button data-skin="plain">Строгий</button>
+      <button data-skin="cozy">Уютный</button>
     </div>
 
     <!-- Тумблеры. Вибрация и анимация — не украшения, а то, от чего
@@ -2047,6 +2190,8 @@ const S = {
   rtoSoft:false, rtoIn:60, growIn:55,
   blocker:null, blockersDone:[], blockIn:75, blockStart:0, blockTasks:0, taskCount:0,
   mgIn:210, mgDone:[], mgAt:{},
+  // Оформление: "plain" — дашборд, "cozy" — уютный скин. Настройка, не прогресс.
+  skin:"plain",
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
@@ -3132,7 +3277,7 @@ function paintTrain(){
    у самой кнопки «Уволиться» их тоже переживает.
    ══════════════════════════════════════════════════════════════ */
 function resetProgress(){
-  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme,
+  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, skin:S.skin,
                  vibro:S.vibro, calm:S.calm, onboarded:S.onboarded };
   const fresh = JSON.parse(S0);
   Object.keys(S).forEach(k => delete S[k]);
@@ -3142,7 +3287,7 @@ function resetProgress(){
   clearSave();
   $("log").innerHTML = "";
   S.logHistory = [];
-  applyTheme(S.theme || "auto");
+  applyTheme(S.theme || "auto"); applySkin(S.skin || "plain");
   // Данные уже чистые, но экран — нет: если сброс случился посреди
   // созвона, блокера или карточки новой эпохи, эти окна ссылаются на
   // состояние, которого больше нет, и без явного закрытия провисят
@@ -3164,7 +3309,7 @@ function doQuit(){
   const offer = 1 + ivScore * 0.06;
   const keep = {
     lifetime, legacy: legacyOf(lifetime) * offer, runs: (S.runs||0)+1,
-    volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, savedAt:S.savedAt,
+    volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, skin:S.skin, savedAt:S.savedAt,
     vibro:S.vibro, calm:S.calm, unmissed:S.unmissed
   };
   const fresh = JSON.parse(S0);
@@ -3175,7 +3320,7 @@ function doQuit(){
   bumpEcon();
   $("log").innerHTML = "";
   S.logHistory = [];
-  applyTheme(S.theme || "auto");
+  applyTheme(S.theme || "auto"); applySkin(S.skin || "plain");
   document.querySelector('nav button[data-tab=work]').click();
   rollTask(); showTask();
   sfx("era"); buzz([25,70,25]);
@@ -3233,6 +3378,19 @@ function applyTheme(mode){
   S.theme = mode;
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===mode));
+}
+/* Скин — не тема. Тема отвечает на вопрос «светло или темно», скин —
+   «строго или уютно», и они независимы: уютный бывает ночным. Поэтому
+   отдельный атрибут и отдельная настройка, а не четыре кнопки в одной
+   строке. Оформление переживает сброс прогресса: это настройка, а не
+   достижение. */
+function applySkin(mode){
+  const r = document.documentElement;
+  if(mode==="cozy") r.setAttribute("data-skin","cozy");
+  else r.removeAttribute("data-skin");
+  S.skin = mode;
+  document.querySelectorAll("#skinSeg button").forEach(b =>
+    b.classList.toggle("on", b.dataset.skin===mode));
 }
 // Разметка первого шага — снята с самой карточки один раз при загрузке,
 // чтобы paintSettings() могла вернуть кнопку в исходное состояние: сброс
@@ -3297,6 +3455,8 @@ function paintSettings(){
   $("volMusV").textContent = $("volMus").value;
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===(S.theme||"auto")));
+  document.querySelectorAll("#skinSeg button").forEach(b =>
+    b.classList.toggle("on", b.dataset.skin===(S.skin||"plain")));
   $("tPause").checked = !!S.paused;
   $("tVibro").checked = S.vibro !== false;
   $("tCalm").checked  = !!S.calm;
@@ -3501,6 +3661,8 @@ $("setClose").onclick = closeSet;
 $("setScrim").onclick = closeSet;
 document.querySelectorAll("#themeSeg button").forEach(b =>
   b.onclick = () => applyTheme(b.dataset.theme));
+document.querySelectorAll("#skinSeg button").forEach(b =>
+  b.onclick = () => { sfx("tap"); applySkin(b.dataset.skin); });
 
 /* Пауза. Игра идёт в реальном времени, и отойти от неё было нельзя
    никак: закрыть вкладку — потерять месяцы, оставить открытой — тоже.
@@ -3558,7 +3720,7 @@ $("impBtn").onclick = () => {
   saveGame();
   closeSet();
   $("log").innerHTML = ""; renderLogHistory();
-  applyTheme(S.theme || "auto"); applyCalm(); applyPause();
+  applyTheme(S.theme || "auto"); applySkin(S.skin || "plain"); applyCalm(); applyPause();
   bumpEcon(); rollTask(); showTask(); paint();
   log("Сохранение перенесено. Год " + year() + ", в штате " + S.staff.length + ".", "lore");
   sfx("era");
@@ -4986,6 +5148,7 @@ if(restored){
   rollTask();
 }
 applyTheme(S.theme || "auto");
+applySkin(S.skin || "plain");
 applyCalm(); applyPause();
 setTeamPane(S.teamPane || "hire");
 showTask(); paint(); measure();
@@ -5023,7 +5186,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                EARLY_CAP,CAP_YEAR,MONTH,BURN_TAP,pace,checkEra,paintSpark,loopMath,
-               ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,
+               ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,applySkin,
                ONB,obOpen,obClose,paintTracks,revealNext,roleRipe,upRipe,REVEAL_GAP,
                CRISES,krOpen,krAnswer,krDue,krLoss,
                restore,serialize,
