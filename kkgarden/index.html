@@ -138,15 +138,13 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
    ШАПКА
    ═══════════════════════════════════════════════════════════ */
 .top{display:flex;align-items:center;gap:8px;padding:12px 16px 12px}
-.brand{
-  display:flex;align-items:center;gap:7px;flex:1;min-width:0;
-  font-size:14px;font-weight:800;letter-spacing:.3px;text-transform:uppercase;
-  color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.18);
-  background:linear-gradient(180deg,#7ade7c,#39a44c);
-  border:2.5px solid var(--rim);border-radius:16px;padding:7px 13px 8px;
+/* марка — только знак: место в шапке нужно двум счётчикам */
+.brandmark{
+  width:44px;height:44px;flex:0 0 auto;margin-right:auto;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(180deg,#7ade7c,#39a44c);border:2.5px solid var(--rim);
   box-shadow:0 4px 0 #237038,0 8px 14px rgba(60,45,20,.2),inset 0 2px 0 rgba(255,255,255,.4);
 }
-.brand svg{width:17px;height:17px;flex:0 0 auto}
+.brandmark svg{width:23px;height:23px}
 .purse{
   display:flex;align-items:center;gap:7px;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
   color:#5b4720;text-shadow:0 1.5px 0 rgba(255,255,255,.65);
@@ -159,6 +157,11 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
     text-shadow:0 1.5px 0 rgba(0,0,0,.4);box-shadow:0 4px 0 #151a16,0 8px 14px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.1)}
 }
 .purse svg{width:20px;height:20px;display:block}
+/* КеГЛи — настоящая награда, поэтому стоит первой и зелёная */
+.purse.kegli{background:linear-gradient(180deg,#f0ffe9,#c9f2bf);color:#2c5f28;box-shadow:0 4px 0 #7cbd6f,0 8px 14px rgba(40,70,25,.2),inset 0 2px 0 rgba(255,255,255,.6)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .purse.kegli{background:linear-gradient(180deg,#33422f,#26301f);color:#c9f2bf;box-shadow:0 4px 0 #131a12,inset 0 2px 0 rgba(255,255,255,.08)}
+}
 .purse.bump{animation:bump .5s var(--pop)}
 @keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.16)}100%{transform:scale(1)}}
 .iconbtn{
@@ -454,6 +457,18 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .dots i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block;
   box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}
 
+/* корешок соседу */
+.giftbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:13px 14px;border-radius:22px;margin:0 0 14px;
+  background:var(--surface2);border:3px solid var(--rim);
+  box-shadow:0 5px 0 rgba(150,120,70,.22),0 10px 18px rgba(90,70,35,.13),inset 0 2px 0 rgba(255,255,255,.65)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .giftbox{box-shadow:0 5px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.06)}
+}
+.giftbox .gifttx{flex:1;min-width:150px;font-size:12.5px;font-weight:600;line-height:1.35;color:var(--mut)}
+.giftbox .gifttx b{color:var(--ink);font-weight:800}
+.giftbox .giftstat{flex:0 0 100%;font-size:11.5px;font-weight:700;color:var(--faint);letter-spacing:.2px}
+
 /* альбом */
 .album{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
 .cell{aspect-ratio:1;border-radius:22px;position:relative;overflow:hidden;padding:8px;
@@ -519,11 +534,18 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 <body>
 <div class="app">
   <div class="top">
-    <div class="brand">
-      <svg viewBox="0 0 24 24" fill="none"><path d="M12 13c-2 0-4-1-4-3s2-3 4-3 4 1 4 3-2 3-4 3z" fill="#fff"/><path d="M12 13v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
-      Клеверник
+    <div class="brandmark" title="Клеверник">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 13c-2 0-4-1-4-3s2-3 4-3 4 1 4 3-2 3-4 3z" fill="#fff"/><path d="M12 13v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
     </div>
-    <button class="iconbtn" id="soundbtn" aria-label="Звук"></button>
+    <div class="purse kegli" id="keglibox" title="КеГЛи на карте">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="#8fe08a"/>
+        <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M12 13c-1.6 0-3-.9-3-2.2S10.4 8.6 12 8.6s3 .9 3 2.2S13.6 13 12 13z" fill="#2f7d34"/>
+        <path d="M12 13v3.6" stroke="#2f7d34" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span id="kegli">0</span>
+    </div>
     <div class="purse" id="purse">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
         <circle cx="12" cy="13" r="8" fill="#8fd9f7"/>
@@ -533,6 +555,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
       </svg>
       <span id="coins">0</span>
     </div>
+    <button class="iconbtn" id="soundbtn" aria-label="Звук"></button>
   </div>
 
   <div class="scene" id="scene">
@@ -606,6 +629,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
   <div class="sh-head"><div class="graber"></div><div class="ribbon"><h2>Альбом</h2></div><button class="x" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="sh-body">
     <p class="hint">Каждый выращенный цветок остаётся здесь навсегда. Серые — ещё не открыты.</p>
+    <div class="giftbox" id="giftbox"></div>
     <div class="album" id="albumgrid"></div>
   </div>
 </div>
@@ -629,6 +653,8 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
       <button class="gbtn g-cream sm" data-dev="coins">+1000 росинок</button>
       <button class="gbtn g-cream sm" data-dev="taps">Сбросить тапы</button>
       <button class="gbtn g-cream sm" data-dev="stage">Следующая стадия</button>
+      <button class="gbtn g-cream sm" data-dev="bud">Сразу к бутону</button>
+      <button class="gbtn g-cream sm" data-dev="hour">Промотать час</button>
       <button class="gbtn g-cream sm" data-dev="ready">Сразу к сбору</button>
       <button class="gbtn g-cream sm" data-dev="dry">Осушить</button>
       <button class="gbtn g-cream sm" data-dev="seeds">Открыть все семена</button>
@@ -642,6 +668,11 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
       <button class="gbtn g-cream sm" data-sfx="harvest">Сбор</button>
       <button class="gbtn g-cream sm" data-sfx="buy">Покупка</button>
       <button class="gbtn g-cream sm" data-sfx="deny">Отказ</button>
+    </div>
+    <p class="devlbl">Корешки</p>
+    <div class="devrow">
+      <button class="gbtn g-cream sm" data-dev="giftnow">Ответный корешок сейчас</button>
+      <button class="gbtn g-cream sm" data-dev="kegli">+30 КеГЛей</button>
     </div>
     <p class="devlbl">Опасное</p>
     <div class="devrow">
@@ -667,10 +698,10 @@ const SEEDS = [
   {id:"chamo",  nm:"Ромашка",   rar:"common",  petal:"#ffffff", core:"#f5c53d", form:"daisy",  pay:90,  task:"t1", how:"За задание «Молочная новинка»"},
   {id:"calen",  nm:"Календула", rar:"rare",    petal:"#f79427", core:"#c96a12", form:"daisy",  pay:150, task:"t2", how:"За задание «Суп за 20 минут»"},
   {id:"cosmos", nm:"Космея",    rar:"rare",    petal:"#f06c9b", core:"#f5c53d", form:"daisy",  pay:170, task:"t3", how:"За задание «Сок дня»"},
-  {id:"corn",   nm:"Василёк",   rar:"special", petal:"#5a7de0", core:"#2c4aa0", form:"daisy",  pay:260, how:"Скоро"},
-  {id:"lav",    nm:"Лаванда",   rar:"special", petal:"#9b7de0", core:"#6b4fb0", form:"spike",  pay:280, how:"Скоро"},
-  {id:"poppy",  nm:"Мак",       rar:"legend",  petal:"#e0392b", core:"#2a1a14", form:"daisy",  pay:420, how:"Скоро"},
-  {id:"pion",   nm:"Пион",      rar:"legend",  petal:"#f28ab0", core:"#e05a8a", form:"peony",  pay:500, how:"Скоро"}
+  {id:"corn",   nm:"Василёк",   rar:"special", petal:"#5a7de0", core:"#2c4aa0", form:"daisy",  pay:260, how:"Приходит корешком от соседа"},
+  {id:"lav",    nm:"Лаванда",   rar:"special", petal:"#9b7de0", core:"#6b4fb0", form:"spike",  pay:280, how:"Приходит корешком от соседа"},
+  {id:"poppy",  nm:"Мак",       rar:"legend",  petal:"#e0392b", core:"#2a1a14", form:"daisy",  pay:420, how:"Приходит корешком от соседа"},
+  {id:"pion",   nm:"Пион",      rar:"legend",  petal:"#f28ab0", core:"#e05a8a", form:"peony",  pay:500, how:"Приходит корешком от соседа"}
 ];
 
 const SHOP = {
@@ -703,16 +734,48 @@ const TASKS = [
 
 const STAGES = ["Семечко","Росток","Первый лист","Три листа","Бутон","Готово к сбору"];
 const STAGE_EM = ["🌰","🌱","🍃","🌿","🪴","🌸"];
-const NEED = 100;              // очков на стадию
-const RATE_DAY = 0.34;         // очков/сек днём
-const RATE_NIGHT = 0.07;       // очков/сек ночью
-const TAP_GAIN = 5;            // очков за тап
+
+/* ── ТЕМП: три слоя в одном цикле ──────────────────────────────────
+   40 секунд — десять тапов по солнцу дают ровно одну стадию.
+                Зашёл, потратил свет, увидел, как растение подросло.
+   3 минуты   — полная сессия: полить, зайти в магазин, в альбом,
+                отдать корешок соседу.
+   Сутки      — бутон набирает силу вчетверо дольше обычной стадии,
+                поэтому распустившийся цветок встречает наутро.
+                Никаких обратных отсчётов: только слово «к утру».      */
+const NEED = 100;                                  // базовая цена стадии
+const STAGE_COST = [NEED, NEED, NEED, NEED, NEED * 2];  // всего 600: сутки пассивного роста
+const need = st => STAGE_COST[st] != null ? STAGE_COST[st] : NEED;
+const RATE_DAY = 0.008;        // очков/сек днём — обычная стадия за 3,5 часа
+const RATE_NIGHT = 0.005;      // ночью медленнее, но никогда не стоп
+const TAP_GAIN = 10;           // десять тапов = ровно одна стадия
 const TAP_LIMIT = 10;
 const DRY_PENALTY = .35;
+const WATER_DRAIN = 0.0025;    // полный горшок сохнет около одиннадцати часов
+const KEGLI_PER_FLOWER = 30;   // награда за распустившийся цветок
+
+/* ── СОСЕДИ ────────────────────────────────────────────────────────
+   Обмен черенками без бэкенда. Имя — единственное, что игрок узнаёт
+   о другой стороне. Падежи заранее: «ушёл Татьяне», «корешок от Ольги». */
+const NEIGHBOURS = [
+  {d:"Татьяне",  g:"Татьяны"},  {d:"Ольге",    g:"Ольги"},
+  {d:"Марине",   g:"Марины"},   {d:"Ирине",    g:"Ирины"},
+  {d:"Светлане", g:"Светланы"}, {d:"Елене",    g:"Елены"},
+  {d:"Наталье",  g:"Натальи"},  {d:"Галине",   g:"Галины"},
+  {d:"Вере",     g:"Веры"},     {d:"Нине",     g:"Нины"},
+  {d:"Анне",     g:"Анны"},     {d:"Людмиле",  g:"Людмилы"},
+  {d:"Сергею",   g:"Сергея"},   {d:"Николаю",  g:"Николая"},
+  {d:"Владимиру",g:"Владимира"},{d:"Борису",   g:"Бориса"}
+];
+const GIFT_BACK_MS = 45 * 1000;   // в тестовой сборке ответ приходит быстро
 
 /* ════ СОСТОЯНИЕ ══════════════════════════ */
 const DEFAULTS = {
   coins: 180,
+  kegli: 0,
+  gifted: 0,
+  received: 0,
+  giftBack: 0,
   seed: "clover",
   stage: 0,
   prog: 0,
@@ -773,10 +836,26 @@ function fertMult(){
 function autoWater(){ return itemOf(S.can) && itemOf(S.can).auto; }
 function waterSlow(){ const c = itemOf(S.can); return c && c.water ? c.water : 1; }
 
-function rate(){
-  const base = lit() ? RATE_DAY : RATE_NIGHT;
-  const dry = S.water <= 0 ? DRY_PENALTY : 1;
-  return base * potMult() * fertMult() * dry;
+/* Базовая скорость за отрезок. Короткий шаг считаем по факту, а длинное
+   отсутствие охватывает и день, и ночь — берём их доли в сутках, иначе
+   вернувшийся утром получает ночную ставку за все сутки. */
+function baseRate(dt){
+  if(S.lamp) return RATE_DAY;                            // с лампой ночи нет
+  if(dt < 3600) return lit() ? RATE_DAY : RATE_NIGHT;
+  const NIGHT_SHARE = 9 / 24;                            // ночь у нас с 21 до 6
+  return RATE_DAY * (1 - NIGHT_SHARE) + RATE_NIGHT * NIGHT_SHARE;
+}
+
+/* Рост за отрезок dt. Влага за время отсутствия кончается не мгновенно:
+   часть срока земля влажная, и только остаток идёт со штрафом. Считать
+   весь отрезок по конечной влажности — терять игроку полночи роста. */
+function growthOver(dt){
+  const base = baseRate(dt) * potMult() * fertMult();
+  if(autoWater()) return base * dt;
+  const drain = WATER_DRAIN * waterSlow();
+  const wet = drain > 0 ? Math.min(dt, S.water / drain) : dt;
+  const dry = Math.max(0, dt - wet);
+  return base * (wet + dry * DRY_PENALTY);
 }
 
 let toastT;
@@ -1180,7 +1259,8 @@ function render(){
   }
 
   $("#coins").textContent = Math.floor(S.coins);
-  const pct = S.stage >= 5 ? 100 : Math.min(100, S.prog / NEED * 100);
+  $("#kegli").textContent = Math.floor(S.kegli || 0);
+  const pct = S.stage >= 5 ? 100 : Math.min(100, S.prog / need(S.stage) * 100);
   $("#fill").style.width = pct + "%";
   $("#bar").classList.toggle("full", S.stage >= 5);
   $("#stagename").textContent = STAGES[S.stage];
@@ -1214,8 +1294,9 @@ function render(){
 
   let st, em;
   if(S.stage >= 5){ st = `<b>${sd.nm}</b> распустился. Соберите — и посадите следующее семя.`; em = "🌸"; }
-  else if(night && !S.lamp){ st = "Ночь. Растёт медленно — фитолампа это исправит."; em = "🌙"; }
   else if(S.water <= 0){ st = "Земля пересохла. Полейте, иначе рост почти встал."; em = "🏜️"; }
+  else if(S.stage === 4){ st = "Бутон набирает силу. Раскроется к утру — загляните завтра."; em = "🪴"; }
+  else if(night && !S.lamp){ st = "Ночь. Растёт медленно — фитолампа это исправит."; em = "🌙"; }
   else if(S.taps >= TAP_LIMIT){ st = "Солнце на сегодня отдало всё. Дальше растёт само."; em = "😌"; }
   else { st = `Нажмите на ${night ? "лампу" : "солнце"} — растение потянется к свету.`; em = STAGE_EM[S.stage]; }
   if(st !== lastStatusHtml){ $("#statustx").innerHTML = st; lastStatusHtml = st; }
@@ -1253,22 +1334,34 @@ function tick(){
   const now = Date.now();
   let dt = (now - (S.last || now)) / 1000;
   if(dt < 0) dt = 0;
-  if(dt > 60 * 60 * 12) dt = 60 * 60 * 12;
+  // цикл теперь суточный, поэтому потолок отсутствия — двое суток, а не полдня:
+  // с прежними двенадцатью часами вернувшийся наутро терял половину ночи
+  if(dt > 60 * 60 * 48) dt = 60 * 60 * 48;
   S.last = now;
 
   if(S.tapDay !== today()){ S.tapDay = today(); S.taps = 0; }
 
-  if(autoWater()) S.water = 100;
-  else S.water = Math.max(0, S.water - dt * 0.14 * waterSlow());
-
   const was = S.stage;
   if(S.stage < 5){
-    S.prog += rate() * dt;
-    while(S.prog >= NEED && S.stage < 5){ S.prog -= NEED; S.stage++; }
-    if(S.stage >= 5) S.prog = NEED;
+    S.prog += growthOver(dt);   // считается до полива: влага нужна прежняя
+    advance();
   }
+
+  if(autoWater()) S.water = 100;
+  else S.water = Math.max(0, S.water - dt * WATER_DRAIN * waterSlow());
+
+  // ответный корешок от соседа: приходит и тогда, когда игра была закрыта
+  if(S.giftBack && now >= S.giftBack){ S.giftBack = 0; receiveCutting(); }
+
   if(S.stage > was && dt < 30) stageUp();
   render();
+}
+
+/* Стадии стоят по-разному: последняя вчетверо дороже, поэтому бутон
+   не раскрывается в ту же сессию, сколько по нему ни тапай. */
+function advance(){
+  while(S.stage < 5 && S.prog >= need(S.stage)){ S.prog -= need(S.stage); S.stage++; }
+  if(S.stage >= 5) S.prog = 0;
 }
 
 function stageUp(){
@@ -1292,8 +1385,7 @@ function tapSun(){
   S.taps++;
   S.prog += TAP_GAIN;
   const was = S.stage;
-  while(S.prog >= NEED && S.stage < 5){ S.prog -= NEED; S.stage++; }
-  if(S.stage >= 5) S.prog = NEED;
+  advance();
 
   const b = $("#burst"); b.classList.remove("go"); void b.offsetWidth; b.classList.add("go");
 
@@ -1336,6 +1428,7 @@ function mainAction(){
 function harvest(){
   const sd = seedOf(S.seed);
   S.coins += sd.pay;
+  S.kegli = (S.kegli || 0) + KEGLI_PER_FLOWER;
   S.album[sd.id] = (S.album[sd.id] || 0) + 1;
   S.stage = 0; S.prog = 0;
 
@@ -1345,7 +1438,10 @@ function harvest(){
   sparks(x, y, 14, ["#ffe89a","#ffffff",sd.petal]);
   coinsToPurse(Math.min(8, Math.max(4, Math.round(sd.pay / 60))));
 
-  toast(`+${sd.pay} росинок. ${sd.nm} — в альбоме.`);
+  const kb = $("#keglibox");
+  kb.classList.add("bump"); setTimeout(() => kb.classList.remove("bump"), 520);
+
+  toast(`${sd.nm} собран. +${KEGLI_PER_FLOWER} КеГЛей на карту и ${sd.pay} росинок.`);
   save(); render();
   // магазин предлагаем сам, но только если игрок за это время никуда не ушёл
   setTimeout(() => {
@@ -1490,8 +1586,63 @@ function plant(id){
   closeSheets(true);
 }
 
+/* ════ КОРЕШКИ ════════════════════════════
+   Обмен без бэкенда и без выбора адресата: отдаёшь случайному соседу,
+   узнаёшь только имя. Ответ приходит сам — это и есть путь к сортам,
+   которые иначе не открыть. */
+const neighbour = () => NEIGHBOURS[Math.floor(Math.random() * NEIGHBOURS.length)];
+
+function giftCutting(){
+  const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
+  if(!grown){ SFX.deny(); toast("Сначала вырастите первый цветок."); return; }
+  if(S.giftBack){ SFX.deny(); toast("Один корешок уже в пути. Дождитесь ответа."); return; }
+  S.gifted = (S.gifted || 0) + 1;
+  S.giftBack = Date.now() + GIFT_BACK_MS;
+  SFX.task();
+  toast(`Корешок ушёл ${neighbour().d}.`);
+  save(); renderGift();
+}
+
+function receiveCutting(){
+  const from = neighbour();
+  const locked = SEEDS.filter(s => !S.seedsOwned.includes(s.id));
+  S.received = (S.received || 0) + 1;
+  if(locked.length){
+    const sd = locked[Math.floor(Math.random() * locked.length)];
+    S.seedsOwned.push(sd.id);
+    SFX.task();
+    toast(`Корешок от ${from.g} — ${sd.nm.toLowerCase()}. Семена в магазине.`);
+  } else {
+    S.coins += 120;
+    SFX.coin();
+    toast(`Корешок от ${from.g}. Все сорта уже есть — прислали горсть росинок.`);
+  }
+  save();
+  if($("#album").classList.contains("on")) renderAlbum();
+  if($("#shop").classList.contains("on")) shopTab(curTab);
+}
+
+function renderGift(){
+  const el = $("#giftbox");
+  if(!el) return;
+  const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
+  let inner;
+  if(S.giftBack){
+    inner = `<span class="gifttx"><b>Корешок в пути.</b> Сосед ответит тем же — загляните позже.</span>`;
+  } else if(grown > 0){
+    inner = `<span class="gifttx">Лишний отросток не пропадает. Отдайте его тому, кто тоже растит — вам ответят тем же.</span>
+      <button class="gbtn g-pink sm" id="giftbtn">Подарить корешок</button>`;
+  } else {
+    inner = `<span class="gifttx">Вырастите первый цветок — будет чем делиться.</span>`;
+  }
+  const stat = (S.gifted || S.received)
+    ? `<span class="giftstat">Отдано ${S.gifted || 0} · получено ${S.received || 0}</span>` : "";
+  el.innerHTML = inner + stat;
+}
+
 /* ════ АЛЬБОМ И ЗАДАНИЯ ═══════════════════ */
 function renderAlbum(){
+  renderGift();
   $("#albumgrid").innerHTML = SEEDS.map(sd => {
     const n = S.album[sd.id] || 0;
     const R = RAR[sd.rar];
@@ -1568,6 +1719,7 @@ $("#soundbtn").addEventListener("click", () => {
 });
 
 document.addEventListener("click", e => {
+  if(e.target.closest("#giftbtn")) return giftCutting();
   const el = e.target.closest("[data-close],[data-tab],[data-buy],[data-use],[data-plant],[data-task],[data-hour],[data-dev],[data-sfx]");
   if(!el) return;
   if(el.hasAttribute("data-close")) return closeSheets();
@@ -1587,8 +1739,15 @@ document.addEventListener("click", e => {
     if(a === "coins") S.coins += 1000;
     if(a === "taps") S.taps = 0;
     if(a === "stage"){ if(S.stage < 5){ S.stage++; S.prog = 0; } }
-    if(a === "ready"){ S.stage = 5; S.prog = NEED; }
+    if(a === "bud"){ S.stage = 4; S.prog = 0; }
+    if(a === "hour"){ S.last -= 3600 * 1000; tick(); }   // промотать час реального роста
+    if(a === "ready"){ S.stage = 5; S.prog = 0; }
     if(a === "dry") S.water = 0;
+    if(a === "kegli") S.kegli = (S.kegli || 0) + KEGLI_PER_FLOWER;
+    if(a === "giftnow"){
+      if(S.giftBack){ S.giftBack = 0; receiveCutting(); }
+      else toast("Сначала подарите корешок из альбома.");
+    }
     if(a === "seeds"){ SEEDS.forEach(s => { if(!S.seedsOwned.includes(s.id)) S.seedsOwned.push(s.id); }); }
     if(a === "all"){
       for(const cat in SHOP) SHOP[cat].items.forEach(it => { if(!S.owned.includes(it.id)) S.owned.push(it.id); });
