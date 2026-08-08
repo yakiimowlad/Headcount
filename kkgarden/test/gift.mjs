@@ -30,11 +30,40 @@ if (k.ui !== '30') fail.push(`1. счётчик показывает «${k.ui}»
 await p.evaluate(() => closeSheets(true));
 await p.click('#albumbtn'); await p.waitForTimeout(500);
 await p.screenshot({ path: `${out}/kk-gift-1.png` });
-await p.click('#giftbtn'); await p.waitForTimeout(400);
+await p.click('#giftrnd'); await p.waitForTimeout(400);   // случайному соседу
 const sent = await p.evaluate(() => ({ t: window.__t[window.__t.length - 1], gifted: S.gifted, pending: !!S.giftBack }));
 if (!/^Корешок ушёл \S+\.$/.test(sent.t)) fail.push(`2. текст отправки: «${sent.t}»`);
 if (sent.gifted !== 1 || !sent.pending) fail.push(`2. состояние после отправки: ${JSON.stringify(sent)}`);
 await p.screenshot({ path: `${out}/kk-gift-2.png` });
+
+/* 2б. Тот же номер карты — всегда тот же человек */
+await p.evaluate(() => { S.giftBack = 0; S.gifted = 0; renderGift(); });
+const same = await p.evaluate(() => {
+  const a = nameFromCard('12345678').d, b = nameFromCard('12345678').d;
+  const diff = new Set(['11112222','33334444','55556666','77778888','99990000','12121212'].map(c => nameFromCard(c).d));
+  return { stable: a === b, spread: diff.size };
+});
+if (!same.stable) fail.push('2б. один номер даёт разные имена');
+if (same.spread < 3) fail.push(`2б. разные номера дают всего ${same.spread} имён`);
+
+/* 2в. Короткий номер не отправляется */
+await p.evaluate(() => { document.querySelector('#cardin').value = '123'; });
+await p.click('#giftbtn'); await p.waitForTimeout(300);
+const short = await p.evaluate(() => ({ t: window.__t[window.__t.length - 1], pending: !!S.giftBack }));
+if (short.pending) fail.push('2в. корешок ушёл по номеру из трёх цифр');
+if (!/восьми цифр/.test(short.t)) fail.push(`2в. нет подсказки про длину: «${short.t}»`);
+
+/* 2г. Нормальный номер уходит нужному человеку и форматируется */
+await p.evaluate(() => { document.querySelector('#cardin').value = ''; });
+await p.type('#cardin', '4276123456789012');
+const shown = await p.evaluate(() => document.querySelector('#cardin').value);
+if (shown !== '4276 1234 5678 9012') fail.push(`2г. номер отображается как «${shown}»`);
+const expect = await p.evaluate(() => nameFromCard('4276123456789012').d);
+await p.click('#giftbtn'); await p.waitForTimeout(300);
+const byCard = await p.evaluate(() => ({ t: window.__t[window.__t.length - 1], card: S.lastCard }));
+if (byCard.t !== `Корешок ушёл ${expect}.`) fail.push(`2г. ушёл не тому: «${byCard.t}», ожидалось ${expect}`);
+if (byCard.card !== '4276 1234 5678 9012') fail.push(`2г. карта запомнилась как «${byCard.card}»`);
+await p.screenshot({ path: `${out}/kk-gift-card.png` });
 
 /* 3. Второй корешок не уходит, пока не пришёл ответ */
 await p.evaluate(() => { renderGift(); });

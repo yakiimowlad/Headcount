@@ -468,6 +468,17 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .giftbox .gifttx{flex:1;min-width:150px;font-size:12.5px;font-weight:600;line-height:1.35;color:var(--mut)}
 .giftbox .gifttx b{color:var(--ink);font-weight:800}
 .giftbox .giftstat{flex:0 0 100%;font-size:11.5px;font-weight:700;color:var(--faint);letter-spacing:.2px}
+.giftform{flex:0 0 100%;display:flex;gap:9px;align-items:stretch}
+.cardin{
+  flex:1;min-width:0;height:42px;padding:0 14px;border-radius:15px;
+  font:inherit;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.6px;
+  color:var(--ink);background:var(--bg);
+  border:2.5px solid var(--rim);outline:none;
+  box-shadow:inset 0 3px 6px rgba(90,70,35,.16),0 2px 0 rgba(150,120,70,.18)}
+.cardin::placeholder{color:var(--faint);font-weight:600;letter-spacing:0}
+.cardin:focus{border-color:#ef5a90;box-shadow:inset 0 3px 6px rgba(90,70,35,.16),0 0 0 3px rgba(239,90,144,.22)}
+.linkbtn{flex:0 0 100%;text-align:left;padding:2px 2px 0;font-size:12.5px;font-weight:700;
+  color:var(--green);text-decoration:underline;text-underline-offset:3px}
 
 /* альбом */
 .album{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
@@ -1592,15 +1603,38 @@ function plant(id){
    которые иначе не открыть. */
 const neighbour = () => NEIGHBOURS[Math.floor(Math.random() * NEIGHBOURS.length)];
 
-function giftCutting(){
+/* Номер карты превращается в человека детерминированно: один и тот же
+   номер — всегда одно и то же имя. Так подарок «по карте» ощущается
+   адресным, хотя никакого сервера за ним нет. */
+function nameFromCard(digits){
+  let h = 2166136261;
+  for(let i = 0; i < digits.length; i++){ h ^= digits.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return NEIGHBOURS[(h >>> 0) % NEIGHBOURS.length];
+}
+const cardDigits = v => (v || "").replace(/\D/g, "").slice(0, 16);
+const cardPretty = d => d.replace(/(.{4})/g, "$1 ").trim();
+
+function giftCutting(to){
   const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
   if(!grown){ SFX.deny(); toast("Сначала вырастите первый цветок."); return; }
   if(S.giftBack){ SFX.deny(); toast("Один корешок уже в пути. Дождитесь ответа."); return; }
   S.gifted = (S.gifted || 0) + 1;
   S.giftBack = Date.now() + GIFT_BACK_MS;
+  S.lastCard = to && to.card ? to.card : "";
   SFX.task();
-  toast(`Корешок ушёл ${neighbour().d}.`);
+  toast(`Корешок ушёл ${(to && to.who ? to.who : neighbour()).d}.`);
   save(); renderGift();
+}
+
+/* по номеру карты */
+function giftByCard(){
+  const d = cardDigits($("#cardin") ? $("#cardin").value : "");
+  if(d.length < 8){
+    SFX.deny(); toast("Номер карты — не меньше восьми цифр.");
+    if($("#cardin")) $("#cardin").focus();
+    return;
+  }
+  giftCutting({ who: nameFromCard(d), card: cardPretty(d) });
 }
 
 function receiveCutting(){
@@ -1628,10 +1662,16 @@ function renderGift(){
   const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
   let inner;
   if(S.giftBack){
-    inner = `<span class="gifttx"><b>Корешок в пути.</b> Сосед ответит тем же — загляните позже.</span>`;
+    const to = S.lastCard ? ` на карту ${S.lastCard}` : "";
+    inner = `<span class="gifttx"><b>Корешок в пути${to}.</b> Вам ответят тем же — загляните позже.</span>`;
   } else if(grown > 0){
     inner = `<span class="gifttx">Лишний отросток не пропадает. Отдайте его тому, кто тоже растит — вам ответят тем же.</span>
-      <button class="gbtn g-pink sm" id="giftbtn">Подарить корешок</button>`;
+      <div class="giftform">
+        <input class="cardin" id="cardin" type="tel" inputmode="numeric" autocomplete="off"
+               maxlength="19" placeholder="Номер карты КуулКлевер" aria-label="Номер карты получателя">
+        <button class="gbtn g-pink sm" id="giftbtn">Отправить</button>
+      </div>
+      <button class="linkbtn" id="giftrnd">или случайному соседу</button>`;
   } else {
     inner = `<span class="gifttx">Вырастите первый цветок — будет чем делиться.</span>`;
   }
@@ -1719,7 +1759,8 @@ $("#soundbtn").addEventListener("click", () => {
 });
 
 document.addEventListener("click", e => {
-  if(e.target.closest("#giftbtn")) return giftCutting();
+  if(e.target.closest("#giftbtn")) return giftByCard();
+  if(e.target.closest("#giftrnd")) return giftCutting();
   const el = e.target.closest("[data-close],[data-tab],[data-buy],[data-use],[data-plant],[data-task],[data-hour],[data-dev],[data-sfx]");
   if(!el) return;
   if(el.hasAttribute("data-close")) return closeSheets();
@@ -1758,6 +1799,19 @@ document.addEventListener("click", e => {
     SFX.press();
     save(); render(); if($("#shop").classList.contains("on")) shopTab(curTab); toast("Готово");
   }
+});
+
+/* номер карты: цифры группами по четыре, Enter отправляет */
+document.addEventListener("input", e => {
+  if(e.target.id !== "cardin") return;
+  const before = e.target.selectionStart, raw = e.target.value;
+  e.target.value = cardPretty(cardDigits(raw));
+  // курсор не должен прыгать в конец при правке середины
+  const added = e.target.value.length - raw.length;
+  if(before !== null && before < raw.length) e.target.setSelectionRange(before + added, before + added);
+});
+document.addEventListener("keydown", e => {
+  if(e.target.id === "cardin" && e.key === "Enter"){ e.preventDefault(); giftByCard(); }
 });
 
 /* звёзды */
