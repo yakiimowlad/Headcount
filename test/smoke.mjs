@@ -347,6 +347,10 @@ ok("на экране улучшений видна касса", await page.eval
 console.log("\nТочки на вкладках");
 ok("точка «Команда» загорается, когда найм по карману", await page.evaluate(() => {
   const G = window.GAME, S = G.S;
+  // Новое выкладывается очередью, и роль, которую ещё не объявили,
+  // нанять нельзя ни за какие деньги. Объявляем всё созревшее — это то
+  // же, что сделала бы игра сама через пару игровых месяцев.
+  G.C.roles.forEach(r => { if (G.roleRipe(r) && !S.seen.includes(r.id)) S.seen.push(r.id); });
   S.tab = "work"; S.cash = 0; G.paintDots();
   const off = document.getElementById("dotTeam").classList.contains("on");
   S.cash = 5e7; G.paintDots();
