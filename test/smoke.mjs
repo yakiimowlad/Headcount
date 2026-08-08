@@ -30,6 +30,12 @@ await page.waitForTimeout(400);
 
 console.log("\nЗапуск");
 ok("страница поднялась без ошибок", errors.length === 0, errors);
+ok("онбординг встречает в первую жизнь", await page.evaluate(() =>
+  !document.getElementById("onb").hidden));
+ok("«Пропустить» отдаёт игру сразу", await page.evaluate(() => {
+  document.getElementById("obSkip").click();
+  return document.getElementById("onb").hidden && window.GAME.S.onboarded === true;
+}));
 ok("версия объявлена", await page.evaluate(() => /^\d+\.\d+\.\d+$/.test(window.GAME.VERSION ?? "")),
    await page.evaluate(() => window.GAME.VERSION));
 

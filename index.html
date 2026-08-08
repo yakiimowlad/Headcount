@@ -424,7 +424,58 @@ main{max-width:520px;margin:0 auto;
 .sn2{font-size:16px;font-weight:600;letter-spacing:-.2px}
 .si.now .sn2{color:var(--acc-ink)}
 .sd{font-size:13px;color:var(--mut);line-height:1.4;margin-top:3px}
+/* ── ОНБОРДИНГ ────────────────────────────────────────────────────
+   Отдельный слой поверх всего, не шит: это не часть интерфейса, это
+   то, что показывают до него. Поэтому и закрывается он не крестиком,
+   а прохождением до конца или явным «пропустить». */
+#onb{position:fixed;inset:0;z-index:60;background:var(--bg);
+  display:flex;align-items:center;justify-content:center;padding:24px}
+#onb[hidden]{display:none}
+.ob-in{width:100%;max-width:420px;text-align:center}
+.ob-art{height:170px;display:grid;place-items:center;margin-bottom:26px}
+#onb h2{font-size:26px;font-weight:700;letter-spacing:-.6px;margin-bottom:8px}
+#onb p{font-size:16px;color:var(--ink2);line-height:1.4;min-height:44px}
+.ob-dots{display:flex;gap:6px;justify-content:center;margin:22px 0 20px}
+.ob-dots i{width:6px;height:6px;border-radius:3px;background:var(--faint);
+  transition:width .25s var(--e),background .25s}
+.ob-dots i.on{width:18px;background:var(--acc)}
+#onb .go{width:100%;flex:none}
+.ob-skip{margin-top:14px;font-size:14px;font-weight:600;color:var(--mut);padding:8px}
+
+/* Картинки онбординга. Каждая — про одну механику и движется так же,
+   как она: тап нажимается, деньги растут, полоса заполняется, время идёт. */
+.oba{width:170px;height:170px}
+.oba .bg{fill:var(--sf);stroke:var(--hair);stroke-width:1}
+.oba .ink{fill:var(--ink)} .oba .mut{fill:var(--mut)} .oba .acc{fill:var(--acc)}
+.oba .wrn{fill:var(--wrn)} .oba .fnt{fill:var(--faint)}
+.oba .ln{stroke:var(--faint);stroke-width:2;fill:none;stroke-linecap:round}
+/* 1. Палец тапает — кнопка проседает, из неё вылетают деньги */
+@keyframes obTap{0%,100%{transform:translateY(0)}45%{transform:translateY(5px)}}
+@keyframes obFly{0%{opacity:0;transform:translateY(0)}
+  20%{opacity:1}100%{opacity:0;transform:translateY(-38px)}}
+.oba .tapbtn{animation:obTap 1.6s var(--e) infinite}
+.oba .coin{animation:obFly 1.6s ease-out infinite}
+.oba .coin2{animation:obFly 1.6s ease-out .25s infinite}
+/* 2. Человечки появляются один за другим, деньги идут сами */
+@keyframes obPop{0%,10%{opacity:0;transform:scale(.6)}25%,100%{opacity:1;transform:scale(1)}}
+.oba .p1{animation:obPop 2.4s var(--e) infinite}
+.oba .p2{animation:obPop 2.4s var(--e) .35s infinite}
+.oba .p3{animation:obPop 2.4s var(--e) .7s infinite}
+/* 3. Полоса выгорания наливается охрой и обнуляется */
+@keyframes obFill{0%{width:6px}80%,100%{width:104px}}
+.oba .burn{animation:obFill 2.2s ease-in infinite}
+/* 4. Время идёт само, и это единственное, что здесь движется */
+@keyframes obTime{0%{width:0}100%{width:110px}}
+.oba .time{animation:obTime 3.4s linear infinite}
+
 .sreq{font-size:12px;color:var(--wrn-ink);margin-top:5px;font-weight:600}
+/* Ступень, до которой ещё нельзя дотянуться: приглушена целиком.
+   Раньше на её месте висело оранжевое требование — цвет тревоги там,
+   где делать нечего. */
+.si.ghost{opacity:.45}
+.ghostrow{display:flex;align-items:center;gap:4px;margin-top:6px}
+.ghostrow span{font-size:12px;color:var(--mut);margin-left:5px}
+.silh{width:15px;height:15px;fill:var(--faint);stroke:none;flex:none}
 .act{margin-top:8px;padding:9px 16px;border-radius:14px;background:var(--acc-soft);
   color:var(--acc-ink);font-weight:600;font-size:14px;transition:transform .1s var(--e)}
 .act:active{transform:scale(.96)}
@@ -1088,6 +1139,21 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 
 <!-- Настройки. Закрываемая модалка: у неё есть [×], и его наличие — часть
      языка. Там, где закрыть нельзя (созвон), крестика нет намеренно. -->
+<!-- Онбординг. Четыре экрана по одной мысли, показывается один раз
+     в первую жизнь. Каждая картинка рисуется CSS и SVG — файл остаётся
+     одним, и объяснение механики не тянет за собой мегабайт гифок.
+     «Пропустить» на первом же экране: кто понял по кнопке, тот понял. -->
+<div id="onb" hidden>
+  <div class="ob-in">
+    <div class="ob-art" id="obArt"></div>
+    <h2 id="obTitle"></h2>
+    <p id="obText"></p>
+    <div class="ob-dots" id="obDots"></div>
+    <button class="go" id="obNext">Дальше</button>
+    <button class="ob-skip" id="obSkip">Пропустить</button>
+  </div>
+</div>
+
 <div class="scrim" id="setScrim"></div>
 <div class="sheet" id="setSheet">
   <div class="sh-in">
@@ -1221,7 +1287,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.2.1";
+const VERSION = "1.3.0";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 90 секунд = 5 часов 42 минуты, если не делать
@@ -1904,6 +1970,10 @@ const $ = id => document.getElementById(id);
 const LOCK = '<svg class="lkic" viewBox="0 0 24 24">'+
   '<rect x="4.5" y="10.5" width="15" height="10.5" rx="2.5"/>'+
   '<path d="M8 10.5V7a4 4 0 0 1 8 0v3.5"/></svg>';
+// Силуэт человека: место в структуре, которое когда-нибудь займут.
+// Заливкой, а не контуром, — это тень, а не иконка.
+const SILH = '<svg class="silh" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/>'+
+  '<path d="M4 22a8 8 0 0 1 16 0z"/></svg>';
 const MON = ["январь","февраль","март","апрель","май","июнь","июль","август","сентябрь","октябрь","ноябрь","декабрь"];
 function fmt(n){
   const a = Math.abs(n);
@@ -2795,7 +2865,7 @@ function mgDue(){
    ══════════════════════════════════════════════════════════════ */
 function resetProgress(){
   const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme,
-                 vibro:S.vibro, calm:S.calm };
+                 vibro:S.vibro, calm:S.calm, onboarded:S.onboarded };
   const fresh = JSON.parse(S0);
   Object.keys(S).forEach(k => delete S[k]);
   Object.assign(S, fresh, keep);
@@ -2967,6 +3037,73 @@ function paintSettings(){
   $("resetBox").innerHTML = RESET_ASK;
   wireResetBtn();
 }
+/* ══════════════════════════════════════════════════════════════
+   ОНБОРДИНГ
+   Четыре мысли, по одной на экран, в том порядке, в каком они
+   становятся правдой: сначала работаешь руками, потом нанимаешь,
+   потом обнаруживаешь, что устал, и только потом замечаешь, что
+   всё это время шло время.
+
+   Правило текста: глагол первым, цифра вместо прилагательного,
+   ни одного «вы можете» и ни одного восклицательного знака.
+   ══════════════════════════════════════════════════════════════ */
+const ONB = [
+  { t:"Работа платит",
+    p:"Нажимайте на задачу. Это деньги.",
+    // Кнопка нарисована серой намеренно: зелёная спорила бы с зелёной
+    // же кнопкой «Дальше» под текстом, и палец тянулся не туда.
+    // Зелёное здесь одно — деньги, ради которых всё и затевается.
+    a:'<svg class="oba" viewBox="0 0 150 150">'+
+      '<text class="acc coin" x="60" y="44" text-anchor="middle" font-size="17" font-weight="700">+160 ₽</text>'+
+      '<text class="acc coin2" x="104" y="52" text-anchor="middle" font-size="13" font-weight="700">+56 ₽</text>'+
+      '<g class="tapbtn"><rect class="bg" x="18" y="72" width="114" height="40" rx="20"/>'+
+      '<rect class="fnt" x="42" y="88" width="50" height="8" rx="4"/>'+
+      '<circle class="ink" cx="104" cy="106" r="13"/></g></svg>' },
+  { t:"Люди платят больше",
+    p:"Наймите. Они работают, пока вы нет.",
+    a:'<svg class="oba" viewBox="0 0 150 150">'+
+      '<g class="p1"><circle class="ink" cx="30" cy="60" r="12"/><path class="ink" d="M12 96a18 18 0 0 1 36 0z"/></g>'+
+      '<g class="p2"><circle class="ink" cx="75" cy="60" r="12"/><path class="ink" d="M57 96a18 18 0 0 1 36 0z"/></g>'+
+      '<g class="p3"><circle class="ink" cx="120" cy="60" r="12"/><path class="ink" d="M102 96a18 18 0 0 1 36 0z"/></g>'+
+      '<text class="acc" x="75" y="132" text-anchor="middle" font-size="17" font-weight="700">+400 000 ₽/мес</text>'+
+      '</svg>' },
+  { t:"Всё жжёт",
+    p:"Следите за полосой. На сотне вы ляжете.",
+    a:'<svg class="oba" viewBox="0 0 150 150">'+
+      '<rect class="bg" x="22" y="66" width="106" height="18" rx="9"/>'+
+      '<rect class="wrn burn" x="23" y="67" height="16" rx="8"/>'+
+      '<text class="mut" x="75" y="112" text-anchor="middle" font-size="13" font-weight="600">выгорание</text>'+
+      '</svg>' },
+  { t:"Время идёт само",
+    p:"Игра кончится в 2026-м. Успейте вырасти.",
+    a:'<svg class="oba" viewBox="0 0 150 150">'+
+      '<text class="mut" x="20" y="62" font-size="13" font-weight="700">2007</text>'+
+      '<text class="mut" x="104" y="62" font-size="13" font-weight="700">2026</text>'+
+      '<rect class="fnt" x="20" y="74" width="110" height="4" rx="2"/>'+
+      '<rect class="acc time" x="20" y="74" height="4" rx="2"/>'+
+      '</svg>' }
+];
+let obAt = 0;
+function obShow(){
+  const o = ONB[obAt];
+  $("obArt").innerHTML = o.a;
+  $("obTitle").textContent = o.t;
+  $("obText").textContent  = o.p;
+  $("obDots").innerHTML = ONB.map((_,i)=>'<i class="'+(i===obAt?"on":"")+'"></i>').join("");
+  $("obNext").textContent = obAt === ONB.length-1 ? "Начать" : "Дальше";
+}
+function obOpen(){ obAt = 0; obShow(); $("onb").hidden = false; }
+function obClose(){
+  $("onb").hidden = true;
+  S.onboarded = true;
+  saveGame();
+}
+$("obNext").onclick = () => {
+  sfx("tap");
+  if(obAt < ONB.length-1){ obAt++; obShow(); } else obClose();
+};
+$("obSkip").onclick = () => { sfx("tap"); obClose(); };
+
 const closeSet = () => {
   $("setSheet").classList.remove("on"); $("setScrim").classList.remove("on");
 };
@@ -3327,10 +3464,15 @@ function paintTracks(){
       if(!prev && !done){ hidden = true; return; }
       if((st.era||0) > S.era && !done){ hidden = true; return; }
       const ready = !done && stepReady(st);
-      h += '<div class="si '+(done?"done":ready?"now":"")+'">'+
+      const srcRole = C.roles.find(r=>r.id===st.from);
+      // Человека, которого ещё нельзя нанять, нельзя и «освободить».
+      // Требование «нужен свободный мидл» в 2007-м отправляло игрока
+      // искать кнопку, которой в игре пока нет вообще.
+      const ghost = !done && !ready && srcRole && roleLocked(srcRole);
+      h += '<div class="si '+(done?"done":ready?"now":ghost?"ghost":"")+'">'+
         '<div class="sn2">'+st.title+'</div><div class="sd">'+st.desc+'</div>';
       if(!done){
-        const src = C.roles.find(r=>r.id===st.from).name.toLowerCase();
+        const src = srcRole.name.toLowerCase();
         const pc = promoCost(st);
         // Две цены у одного действия: разовая — на кнопке, потому что это
         // условие, ежемесячная — строкой описания тем же кеглем, потому
@@ -3341,6 +3483,10 @@ function paintTracks(){
           ? '<div class="sd">Ставка станет '+rub(st.pay)+'/мес</div>'+
             '<button class="act'+(S.cash<pc?" off":"")+'" data-step="'+st.id+'" data-track="'+tr.id+'">'+
             'Повысить · '+rub(pc)+'</button>'
+          // Силуэт вместо требования: видно, что здесь вырастет ступень,
+          // не видно чем. Интрига вместо инструкции, которую всё равно
+          // нельзя выполнить.
+          : ghost ? '<div class="ghostrow">'+SILH+SILH+SILH+'<span>таких пока не нанимают</span></div>'
           : '<div class="sreq">Нужен свободный '+src+'</div>';
       }
       h += '</div>';
@@ -4409,6 +4555,10 @@ applyCalm(); applyPause();
 setTeamPane(S.teamPane || "hire");
 showTask(); paint(); measure();
 
+// Онбординг — только в первую жизнь и только один раз. Тому, кто уже
+// уволился и начал заново, объяснять про кнопку не надо.
+if(!S.onboarded && !(S.runs||0) && !S.month) obOpen();
+
 // pagehide переживает и обычное закрытие вкладки, и уход в фон на iOS —
 // beforeunload там ненадёжен, особенно в PWA-режиме с домашнего экрана,
 // который эта игра прямо объявляет своими apple-mobile-web-app-мета-тегами.
@@ -4439,6 +4589,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                EARLY_CAP,CAP_YEAR,MONTH,BURN_TAP,pace,checkEra,paintSpark,loopMath,
                ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,
+               ONB,obOpen,obClose,paintTracks,
                restore,serialize,
                stamp,stampOf,paintBadge,paintPeek,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
