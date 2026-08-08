@@ -42,7 +42,8 @@
     "meets:"           созвоны [название, описание, эпоха]
     "noise:"           фоновые строки хроники [эпоха, текст]
     "roles:"           роли найма: dept, tier грейд, pay, out, viaBlock
-    "const MG"         две мини-игры: дозвон (2007+) и промпт (2022+)
+    "const MG"         три мини-игры: дозвон (2007+), смета (2011+), промпт (2022+)
+    "MG_ART"           предметы мини-игр: иконки для полки и шапки
     "tracks:"          пять треков карьеры, ступени с eff и after
     "loops:"           пять зацикленных улучшений: cost, mul, say по заходам
     "ups:"             разовые улучшения: grp, t грейд, era, req, f, after
@@ -63,7 +64,8 @@
     "gateOk"           проверка требований блокера
     "БЛОКЕРЫ"          в тике: выдача и снятие
     "ООО"              llcOffer, регистрация, экономика до и после
-    "МИНИ-ИГРЫ"        mgOpen, mgDue: редкое событие по эпохе
+    "МИНИ-ИГРЫ"        mgOpen, mgDue: событие по эпохе
+    "paintTrain"       полка тренажёра: те же игры, но по своей воле
     "promoCost"        повышение стоит денег сразу, не только в ФОТ
     "checkEra"         смена эпохи · "showEraLike" экран объяснения
 
@@ -332,6 +334,38 @@ main{max-width:520px;margin:0 auto;
 .mgs i{flex:1;height:4px;border-radius:2px;background:var(--faint)}
 .mgs i.win{background:var(--acc)} .mgs i.lose{background:var(--wrn)}
 .later[disabled]{opacity:.4}
+
+/* ── ТРЕНАЖЁР ──────────────────────────────────────────────────────
+   Первое место в игре, где выбор сделан не строкой текста, а предметом:
+   телефон, смета, окно чата. Предмет узнаётся раньше, чем прочитан
+   заголовок, — а мини-игра и есть предмет, с которым возишься.
+
+   Плитка нажимается, как настоящая кнопка: тень снизу — это её высота,
+   и на тапе она садится ровно на эту высоту. Остальная игра плоская
+   намеренно, здесь можно: это единственный уголок, где играют руками. */
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 14px 16px}
+.mgtile{display:grid;justify-items:center;gap:7px;padding:12px 6px 10px;
+  border-radius:18px;background:var(--sf);border:.5px solid var(--hair);
+  box-shadow:0 3px 0 var(--hair2),var(--sh);
+  transition:transform .1s var(--e),box-shadow .1s var(--e),opacity .3s}
+.mgtile:active{transform:translateY(3px);box-shadow:0 0 0 var(--hair2),var(--sh)}
+.mgobj{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;
+  background:var(--tint,var(--acc-soft))}
+.mgobj svg{width:27px;height:27px;stroke:var(--tink,var(--acc-ink));fill:none;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mgtile b{font-size:12.5px;font-weight:600;letter-spacing:-.2px;line-height:1.15;text-align:center}
+.mgtile em{font-style:normal;font-size:10.5px;font-weight:600;color:var(--mut);
+  font-variant-numeric:tabular-nums}
+.mgtile.hot em{color:var(--acc-ink)}
+/* Остыло или ушло с эпохой — плитка остаётся на полке, но выцветает.
+   Убирать её совсем нельзя: полка и показывает, что игра уже прожита. */
+.mgtile.off{opacity:.45} .mgtile.off .mgobj{filter:grayscale(1)}
+.mgtile.off:active{transform:none;box-shadow:0 3px 0 var(--hair2),var(--sh)}
+/* Тот же предмет крупно — в шапке самой мини-игры. */
+.mghero{width:64px;height:64px;border-radius:21px;display:grid;place-items:center;
+  background:var(--tint,var(--acc-soft));margin:2px 0 12px}
+.mghero svg{width:36px;height:36px;stroke:var(--tink,var(--acc-ink));fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 /* Две цены клика в одной строке: слева деньги, справа здоровье.
    Полоса выгорания стоит прямо под ними — связь читается без объяснений. */
 .note{margin-top:10px;font-size:13px;color:var(--mut);min-height:18px;
@@ -495,6 +529,16 @@ main{max-width:520px;margin:0 auto;
 /* шкалы отделов */
 .bar{padding:13px 18px;border-bottom:.5px solid var(--hair2)}
 .bar:last-child{border-bottom:none}
+/* Отдел узнаётся значком раньше, чем прочитано название: на «Компании»
+   пять строк подряд, и глазу нужно за что-то зацепиться. Значок
+   маленький и монохромный — это отчёт, а не витрина. */
+.bar{display:grid;grid-template-columns:26px 1fr;column-gap:11px;align-items:start}
+.dico{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;
+  background:var(--hair2);margin-top:-2px}
+.dico svg{width:16px;height:16px;stroke:var(--mut);fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.bar.live .dico{background:var(--acc-soft)} .bar.live .dico svg{stroke:var(--acc-ink)}
+.bar.warn .dico{background:var(--wrn-soft)} .bar.warn .dico svg{stroke:var(--wrn-ink)}
 .bt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
 .bn{font-size:14px;font-weight:600}
 .bv{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
@@ -990,6 +1034,20 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
         <div class="rp">›</div>
       </div>
     </div>
+
+    <!-- Тренажёр. Мини-игры перестали быть только событием: сюда игрок
+         заходит сам — потренироваться до того, как припечёт, или просто
+         размяться. Предметы, а не список названий: полка, на которой
+         видно, во что уже играли. -->
+    <div class="card" id="trainCard" hidden style="margin-top:12px">
+      <div class="row">
+        <div class="rl">
+          <div class="rn2">Тренажёр</div>
+          <div class="rd" id="trainHint">Размяться, пока не припекло</div>
+        </div>
+      </div>
+      <div class="mgrid" id="mgGrid"></div>
+    </div>
   </div>
 
   <!-- КОМАНДА -->
@@ -1141,6 +1199,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   <div class="sh-in">
     <div class="grab"></div>
     <div class="erayear n" id="mgStep"></div>
+    <div class="mghero" id="mgIcon"></div>
     <h2 id="mgT"></h2>
     <p id="mgD"></p>
     <div id="mgDial" hidden>
@@ -1323,7 +1382,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.4.0";
+const VERSION = "1.4.1";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 60 секунд = 3 часа 48 минут, если не делать
@@ -1987,7 +2046,7 @@ const S = {
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
   blocker:null, blockersDone:[], blockIn:75, blockStart:0, blockTasks:0, taskCount:0,
-  mgIn:210, mgDone:[],
+  mgIn:210, mgDone:[], mgAt:{},
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
@@ -2840,9 +2899,21 @@ const CRISES = [
    lose:"Отзывы разошлись дальше. Заказы идут медленнее."}
 ];
 
+/* У каждой мини-игры есть предмет: телефон, смета, окно чата. Он стоит
+   на полке тренажёра и он же встречает в шапке самой игры — так плитка
+   и экран читаются как одна вещь, а не как кнопка и текст под ней.
+   Пути нарисованы здесь, рядом с содержанием: иконка — часть контента,
+   как и заголовок. */
+const MG_ART = {
+  dial:'<path d="M4 6a2 2 0 0 1 2-2h2l1.4 3.6-2 1.3a11.5 11.5 0 0 0 5.7 5.7l1.3-2L18 14v2a2 2 0 0 1-2 2A12.5 12.5 0 0 1 4 6z"/><path d="M14 4.2a6 6 0 0 1 5.8 5.8"/>',
+  smeta:'<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 11.5h3M8.5 15.5h3M15 11.5v5M12.5 14h5"/>',
+  prompt:'<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M12 7.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>'
+};
+
 const MG = {
   dial: {
-    era:[0,1], rounds:3,
+    era:[0,1], rounds:3, short:"Дозвон",
+    tint:"rgba(255,159,10,.16)", tink:"var(--wrn-ink)",
     title:"Дозвониться до заказчика",
     desc:"Модем берёт линию не всегда. Три попытки, между ними линия занята.",
     win:"Соединение установилось", lose:"Занято",
@@ -2850,8 +2921,36 @@ const MG = {
     mid:"Дозвонились с третьего раза. Заказчик уже уехал, но всё передал.",
     bad:"Не дозвонились. Правки пришли в понедельник, и половина устарела."
   },
+  /* Середина игры была без мини-игры вовсе: дозвон кончался с модемом,
+     а промпт начинался с ИИ, и десять лет между ними полка стояла
+     пустой. Смета — то, чем в эти годы и занимаются: обещание,
+     которое называют оценкой. */
+  smeta: {
+    era:[1,3], rounds:3, short:"Смета",
+    tint:"rgba(74,127,165,.16)", tink:"#4a7fa5",
+    title:"Свести смету",
+    desc:"Заказчик просит вилку. Вилка — это обещание, даже когда называется оценкой.",
+    ok:"Смету приняли без торга. Сроки впервые за год сошлись с реальностью.",
+    mid:"Смету приняли со второго круга. Пару этапов отдали по себестоимости.",
+    bad:"Смету свели вниз до неприличия. Разницу команда доработала вечерами.",
+    qs:[
+      {q:"«Ну примерно, навскидку, ни к чему не обязывает»",
+       a:["Назвать число вслух прямо на созвоне",
+          "Дать вилку письмом: что входит, что нет, до какого числа держится",
+          "Написать «от 500 тысяч» и надеяться на лучшее"], right:1},
+      {q:"Разработчик оценил задачу в три дня",
+       a:["Поставить три дня: он же профессионал",
+          "Заложить его три дня плюс приёмку, правки и чужой отпуск",
+          "Умножить на три и никому не объяснять почему"], right:1},
+      {q:"Клиент просит минус тридцать процентов — объём большой",
+       a:["Дать тридцать: объём и правда большой",
+          "Убрать из сметы работ на тридцать и показать, что осталось",
+          "Отказать и не объяснять"], right:1}
+    ]
+  },
   prompt: {
-    era:[4,5], rounds:3,
+    era:[4,5], rounds:3, short:"Промпт",
+    tint:"rgba(138,107,184,.16)", tink:"#8a6bb8",
     title:"Уговорить модель",
     desc:"Задача простая. Формулировка — нет. Три попытки, один заход каждая.",
     win:"То, что нужно", lose:"Не то",
@@ -2874,20 +2973,32 @@ const MG = {
     ]
   }
 };
-let mgKey = null, mgRound = 0, mgHits = [];
+let mgKey = null, mgRound = 0, mgHits = [], mgSelf = false;
 
 // Награда считается от текущей экономики, а не фиксированной суммой:
 // иначе к 2020-му мини-игра платит меньше одного тапа и становится
 // не событием, а помехой.
 function mgPrize(){ return Math.max(clickVal()*35, revenue()*0.8, 60000); }
 
-function mgOpen(key){
-  mgKey = key; mgRound = 0; mgHits = [];
+// Заход по своей воле платит вдвое меньше, чем то же самое случившееся
+// само: иначе «потренироваться» станет основным способом зарабатывать,
+// а тренажёр — таймером, у которого сидят. Выгорание он снимает так же,
+// как событие: ради этого туда и заходят.
+const MG_SELF = 0.5;
+const MG_COOL = 10;                          // месяцев между заходами
+const mgWait  = k => Math.max(0, MG_COOL - (S.month - ((S.mgAt||{})[k] ?? -MG_COOL)));
+const mgNow   = k => S.era >= MG[k].era[0] && S.era <= MG[k].era[1];
+
+function mgOpen(key, self){
+  mgKey = key; mgRound = 0; mgHits = []; mgSelf = !!self;
   const g = MG[key];
   $("mgT").textContent = g.title;
   $("mgOk").hidden = true;
   $("mgDial").hidden = key !== "dial";
-  $("mgPick").hidden = key !== "prompt";
+  $("mgPick").hidden = key === "dial";
+  const ic = $("mgIcon");
+  ic.innerHTML = '<svg viewBox="0 0 24 24">' + MG_ART[key] + '</svg>';
+  ic.style.setProperty("--tint", g.tint); ic.style.setProperty("--tink", g.tink);
   mgDraw();
   sfx("block");
   $("mgSheet").classList.add("on"); $("mgScrim").classList.add("on");
@@ -2925,17 +3036,18 @@ function mgStep(hit){
   mgFinish();
 }
 function mgFinish(){
-  const g = MG[mgKey], n = mgHits.filter(Boolean).length;
+  const g = MG[mgKey], n = mgHits.filter(Boolean).length, k = mgSelf ? MG_SELF : 1;
+  S.mgAt = {...(S.mgAt||{}), [mgKey]: S.month};
   $("mgDial").hidden = true; $("mgPick").hidden = true;
   $("mgStep").textContent = "ИТОГ";
   $("mgOk").hidden = false;
   if(n === g.rounds){
-    const v = mgPrize()*2.2;
+    const v = mgPrize()*2.2*k;
     S.cash += v; S.earned += v; S.burn = Math.max(0, S.burn-8);
     $("mgD").innerHTML = g.ok + mgDots();
     log(g.ok + " <b>+"+rub(v)+"</b>", "good"); sfx("buy");
   } else if(n > 0){
-    const v = mgPrize()*0.8;
+    const v = mgPrize()*0.8*k;
     S.cash += v; S.earned += v;
     $("mgD").innerHTML = g.mid + mgDots();
     log(g.mid + " <b>+"+rub(v)+"</b>", "good");
@@ -2966,10 +3078,49 @@ $("mgOk").onclick = () => { sfx("tap"); mgClose(); };
 // дозвон в 2024-м был бы не шуткой, а ошибкой.
 function mgDue(){
   const done = S.mgDone || [];
-  return Object.keys(MG).find(k => {
-    const [a,b] = MG[k].era;
-    return S.era >= a && S.era <= b && (done.filter(x=>x===k).length < 2);
+  return Object.keys(MG).find(k =>
+    mgNow(k) && !mgWait(k) && done.filter(x=>x===k).length < 2);
+}
+
+/* ── Полка тренажёра ──
+   Открывается не по эпохе, а по факту работы: показывать её человеку,
+   который сделал три задачи, — значит уводить его с первого экрана
+   куда-то ещё. Плитка остаётся на полке навсегда: дозвон в 2024-м уже
+   не сыграть, но видно, что он был. Перерисовываем только когда
+   изменилась подпись — тик идёт десять раз в секунду и съедал бы тап
+   между нажатием и отпусканием. */
+let mgSig = "";
+function paintTrain(){
+  const card = $("trainCard"), on = (S.taskCount||0) >= 12;
+  card.hidden = !on;
+  if(!on) return;
+  if(!S.trainSeen){
+    S.trainSeen = true;
+    snack("Тренажёр открыт: мини-игру теперь можно затеять самому");
+  }
+  const keys = Object.keys(MG).filter(k => S.era >= MG[k].era[0]);
+  // Созвон, блокер и больничный уже занимают экран и время. Затевать
+  // поверх них ещё одну игру — складывать окна друг на друга.
+  const busy = onCall() || !!activeBlocker() || S.sick > 0;
+  const sig = (busy?"b|":"") + keys.map(k => k + (mgNow(k) ? mgWait(k) : "x")).join("|");
+  if(sig === mgSig) return;
+  mgSig = sig;
+  $("mgGrid").innerHTML = keys.map(k => {
+    const g = MG[k], gone = !mgNow(k), wait = mgWait(k), ready = !gone && !wait && !busy;
+    return '<button class="mgtile'+(ready?" hot":"")+((gone||wait)?" off":"")+'"'+
+      (ready?'':' disabled')+' data-mg="'+k+'">'+
+      '<span class="mgobj" style="--tint:'+g.tint+';--tink:'+g.tink+'">'+
+      '<svg viewBox="0 0 24 24">'+MG_ART[k]+'</svg></span>'+
+      '<b>'+g.short+'</b>'+
+      '<em>'+(gone ? "было" : wait ? wait+" мес" : busy ? "не сейчас" : "готово")+'</em></button>';
+  }).join("");
+  $("mgGrid").querySelectorAll(".mgtile").forEach(b => {
+    b.onclick = () => { sfx("tap"); mgOpen(b.dataset.mg, true); };
   });
+  $("trainHint").textContent =
+    busy ? "Сейчас не до тренировок" :
+    keys.some(k => mgNow(k) && !mgWait(k))
+      ? "Размяться, пока не припекло" : "Пока остывает. Само тоже случится";
 }
 /* ══════════════════════════════════════════════════════════════
    СБРОС ПРОГРЕССА
@@ -3990,6 +4141,15 @@ function paintSpark(){
 }
 function share(part, whole){ return whole > 0 ? part/whole : 0; }
 function level(x, ok, warn){ return x <= ok ? "ok" : x <= warn ? "mid" : "bad"; }
+/* Значки отделов: код, наушники, схема подчинения, бейдж, пустой стул.
+   Последний — про твоё отсутствие, и стул тут точнее любого символа. */
+const DEPT_ART = {
+  eng:'<path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/>',
+  ops:'<path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.6"/><rect x="17" y="13" width="4" height="6" rx="1.6"/>',
+  lead:'<circle cx="12" cy="5" r="2.4"/><circle cx="5.5" cy="18.5" r="2.4"/><circle cx="18.5" cy="18.5" r="2.4"/><path d="M12 7.4v4.2M5.5 16.1v-2a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2"/>',
+  hr:'<rect x="4" y="6" width="16" height="14" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><circle cx="12" cy="12" r="2"/><path d="M8.6 17.2a3.6 3.6 0 0 1 6.8 0"/>',
+  away:'<path d="M7 4v9h10V4M7 13v7M17 13v7M5 13h14"/>'
+};
 function paintCo(){
   paintSpark();
   const rev=revenue(), pay=payroll(), ovh=overhead(), pr=rev-pay-ovh;
@@ -4028,30 +4188,33 @@ function paintCo(){
     d[p.dept]+=v*mA;
   });
   const max = Math.max(1, d.eng, d.ops);
-  const bar = (name,val) =>
-    '<div class="bar"><div class="bt"><span class="bn">'+name+'</span>'+
+  const dico = k => '<span class="dico"><svg viewBox="0 0 24 24">'+DEPT_ART[k]+'</svg></span>';
+  const bar = (k,name,val) =>
+    '<div class="bar'+(val?" live":"")+'">'+dico(k)+'<div><div class="bt"><span class="bn">'+name+'</span>'+
     '<span class="bv">'+(val?rub(val)+"/мес":"нет людей")+'</span></div>'+
-    '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div>';
+    '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div></div>';
   // Отделы поддержки не производят выручку — они меняют её условия.
   const heads = S.staff.filter(p=>p.bonus && p.scope==="all").length;
   const seats = heads*span();
   const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
-  const eff = (name,val,col,tip) =>
-    '<div class="bar tap" data-tip="'+(tip||"")+'"><div class="bt"><span class="bn">'+name+'</span>'+
+  const eff = (k,name,val,col,tip,mood) =>
+    '<div class="bar tap '+(mood||"")+'" data-tip="'+(tip||"")+'">'+dico(k)+
+    '<div class="bt"><span class="bn">'+name+'</span>'+
     '<span class="bv" style="color:'+col+'">'+val+'</span></div></div>';
   const A = "var(--acc-ink)", W = "var(--wrn-ink)", M = "var(--mut)";
   $("depts").innerHTML =
-    bar("Разработка", d.eng) + bar("Поддержка", d.ops) +
-    eff("Управление", heads
+    bar("eng","Разработка", d.eng) + bar("ops","Поддержка", d.ops) +
+    eff("lead","Управление", heads
       ? "+"+Math.round((mA-1)*100)+"% скорости · "+Math.round(cover*100)+"% штата"
-      : "нет руководителей", heads?A:M, "ускоряет всех исполнителей") +
-    eff("Персонал", S.hired.recruit
+      : "нет руководителей", heads?A:M, "ускоряет всех исполнителей", heads?"live":"") +
+    eff("hr","Персонал", S.hired.recruit
       ? "найм дешевле на "+Math.round((1-S.hireTax*(1-.2))*100)+"%"
-      : "нет рекрутёров", S.hired.recruit?A:M, "рекрутёр удешевляет найм") +
+      : "нет рекрутёров", S.hired.recruit?A:M, "рекрутёр удешевляет найм",
+      S.hired.recruit?"live":"") +
     // Отсутствие — это потеря, а не достижение: знак и охра, даже когда
     // потеря мала. Управление её уменьшает, но не превращает в плюс.
-    eff("Твоё отсутствие", "−"+Math.round(absenceHit()*100)+"% выручки", W,
-      "меньше при сильном управлении");
+    eff("away","Твоё отсутствие", "−"+Math.round(absenceHit()*100)+"% выручки", W,
+      "меньше при сильном управлении", "warn");
 }
 // Что именно поменялось со сменой эпохи. Не «стало интереснее», а список:
 // новые задачи, новые роли, новые требования заказчиков.
@@ -4212,6 +4375,7 @@ function paint(){
   if(S.tab==="career") { paintTracks(); }
   if(S.tab==="work"){
     paintUpsBadge();
+    paintTrain();
     // Смена работы: единственная кнопка, которая двигает личную ставку.
     const ready = jobReady(), wait = jobWait();
     $("jobCard").className = "card" + (ready ? " ready" : "");
@@ -4872,7 +5036,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
                startQuit,doQuit,canQuit,legacyOf,migrate,countHired,resetProgress,SAVE_V,
-               MG,mgOpen,mgDue,mgPrize,
+               MG,mgOpen,mgDue,mgPrize,mgWait,paintTrain,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};
