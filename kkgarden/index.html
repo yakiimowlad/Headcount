@@ -1,0 +1,1845 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<title>Клеверник · КуулКлевер</title>
+<meta name="description" content="Мини-игра КуулКлевер: растим клевер на подоконнике, собираем росинки, открываем цветы.">
+<meta name="application-name" content="Клеверник">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Клеверник">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta property="og:title" content="Клеверник · КуулКлевер">
+<meta property="og:description" content="Растим клевер на подоконнике, пока едет заказ.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="КуулКлевер">
+<meta property="og:locale" content="ru_RU">
+<meta name="theme-color" content="#f2ecdc" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1512" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%232e9e5b' d='M12 13c-2 0-4-1-4-3s2-3 4-3 4 1 4 3-2 3-4 3zm0 0v8'/%3E%3C/svg%3E">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   ТОКЕНЫ
+   Игровая палитра: сочные вертикальные градиенты, сливочные
+   канты, жёсткая «подошва» под кнопкой вместо мягкой тени.
+   ═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:#f2ecdc; --bg2:#e6dcc2;
+  --surface:rgba(255,255,255,.78); --surface2:#fffdf6;
+  --ink:#3b2f1e; --ink2:#6b5a41; --mut:#9a8b74; --faint:#d6cbb4;
+  --hair:rgba(94,72,40,.16); --hair2:rgba(94,72,40,.07);
+  --rim:rgba(255,255,255,.94);
+
+  --green:#3aa64a; --green-d:#1f7a44; --blue:#2b8fe6; --pink:#f0568f;
+  --gold:#f7a922; --violet:#8b5cf0;
+  --soil:#4c3b2c;
+
+  --shadow:0 2px 0 rgba(120,96,56,.14),0 10px 22px rgba(90,70,35,.13);
+  --shadow-lg:0 3px 0 rgba(120,96,56,.16),0 18px 38px rgba(90,70,35,.2);
+  --e:cubic-bezier(.32,.72,0,1);
+  --pop:cubic-bezier(.34,1.56,.64,1);
+}
+:root:not([data-theme="light"]){}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#141a15; --bg2:#0d1210;
+    --surface:rgba(30,38,32,.8); --surface2:#1e261f;
+    --ink:#f2f5f2; --ink2:#cdd4ce; --mut:#8b968d; --faint:#3d473f;
+    --hair:rgba(255,255,255,.13); --hair2:rgba(255,255,255,.06);
+    --rim:rgba(255,255,255,.2);
+    --shadow:0 2px 0 rgba(0,0,0,.5),0 10px 24px rgba(0,0,0,.5);
+    --shadow-lg:0 3px 0 rgba(0,0,0,.55),0 18px 40px rgba(0,0,0,.6);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{overflow-x:clip;margin:0}
+body{
+  background:
+    radial-gradient(ellipse 120% 60% at 50% 0%,rgba(255,255,255,.5),rgba(255,255,255,0) 60%),
+    linear-gradient(var(--bg),var(--bg2));
+  background-attachment:fixed;
+  color:var(--ink);
+  font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;min-height:100dvh;
+  padding-top:env(safe-area-inset-top);
+}
+.app{max-width:480px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
+.tap{transition:transform .18s var(--e)}
+.tap:active{transform:scale(.96)}
+
+/* ═══════════════════════════════════════════════════════════
+   ИГРОВАЯ КНОПКА
+   Три слоя: подошва (жёсткая тень цвета тёмной грани),
+   корпус (градиент + сливочный кант), блик (inset сверху).
+   Нажатие — уезжает на всю высоту подошвы, как настоящая клавиша.
+   ═══════════════════════════════════════════════════════════ */
+.gbtn{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;gap:9px;
+  min-height:58px;padding:0 18px;border-radius:22px;
+  font-size:16px;font-weight:800;letter-spacing:.1px;line-height:1.15;text-align:center;
+  color:#fff;
+  --g1:#6fd66f;--g2:#3aa64a;--deep:#26743a;
+  background:linear-gradient(180deg,var(--g1) 0%,var(--g2) 100%);
+  border:3px solid var(--rim);
+  box-shadow:
+    0 6px 0 var(--deep),
+    0 11px 18px rgba(60,45,20,.22),
+    inset 0 3px 0 rgba(255,255,255,.4),
+    inset 0 -5px 12px rgba(0,0,0,.13);
+  text-shadow:0 2px 0 rgba(0,0,0,.2);
+  transition:transform .11s var(--e),box-shadow .11s var(--e),filter .2s;
+  touch-action:manipulation;-webkit-user-select:none;user-select:none;
+}
+.gbtn:active:not(:disabled){
+  transform:translateY(6px);
+  box-shadow:
+    0 0 0 var(--deep),
+    0 3px 7px rgba(60,45,20,.22),
+    inset 0 3px 0 rgba(255,255,255,.28),
+    inset 0 -5px 12px rgba(0,0,0,.16);
+}
+.gbtn:disabled{
+  --g1:#dcd6c6;--g2:#c6bfab;--deep:#a9a08a;
+  color:#fffdf6;text-shadow:none;cursor:default;
+  box-shadow:0 5px 0 var(--deep),inset 0 3px 0 rgba(255,255,255,.32);
+}
+/* «делать нечего» — не то же самое, что «сломано»: кнопка спокойная, а не мёртвая */
+.gbtn.calm:disabled{--g1:#fffaef;--g2:#ffe9c4;--deep:#d8b276;
+  color:#a08a5f;text-shadow:0 1.5px 0 rgba(255,255,255,.7)}
+.gbtn.calm:disabled svg{opacity:.6}
+.gbtn svg{width:21px;height:21px;flex:0 0 auto;filter:drop-shadow(0 1.5px 0 rgba(0,0,0,.18))}
+
+/* размеры */
+.gbtn.sm{min-height:42px;padding:0 14px;border-radius:15px;font-size:13.5px;border-width:2.5px;
+  box-shadow:0 4px 0 var(--deep),0 7px 12px rgba(60,45,20,.18),inset 0 2px 0 rgba(255,255,255,.4),inset 0 -3px 8px rgba(0,0,0,.12)}
+.gbtn.sm:active:not(:disabled){transform:translateY(4px);
+  box-shadow:0 0 0 var(--deep),0 2px 5px rgba(60,45,20,.2),inset 0 2px 0 rgba(255,255,255,.3),inset 0 -3px 8px rgba(0,0,0,.14)}
+.gbtn.sm svg{width:15px;height:15px}
+.gbtn.xs{min-height:34px;padding:0 11px;border-radius:12px;font-size:12.5px;border-width:2px;
+  box-shadow:0 3px 0 var(--deep),0 5px 9px rgba(60,45,20,.16),inset 0 2px 0 rgba(255,255,255,.38)}
+.gbtn.xs:active:not(:disabled){transform:translateY(3px);box-shadow:0 0 0 var(--deep),inset 0 2px 0 rgba(255,255,255,.3)}
+.gbtn.wide{width:100%}
+
+/* цветовые семейства */
+.g-green {--g1:#7ade7c;--g2:#39a44c;--deep:#237038}
+.g-gold  {--g1:#ffd45e;--g2:#f5a017;--deep:#c1730a}
+.g-blue  {--g1:#7dd0ff;--g2:#2b8fe6;--deep:#1a67ac}
+.g-pink  {--g1:#ffa1c6;--g2:#ef5a90;--deep:#bd3266}
+.g-violet{--g1:#c9a4ff;--g2:#8b5cf0;--deep:#6035bd}
+.g-cream {--g1:#fffaef;--g2:#ffe9c4;--deep:#d8b276;color:#6b5023;text-shadow:0 1.5px 0 rgba(255,255,255,.7)}
+.g-cream svg{filter:none}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .g-cream{--g1:#3b453d;--g2:#2c352e;--deep:#151a16;color:#eef3ec;text-shadow:0 1.5px 0 rgba(0,0,0,.4)}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ШАПКА
+   ═══════════════════════════════════════════════════════════ */
+.top{display:flex;align-items:center;gap:8px;padding:12px 16px 12px}
+/* марка — только знак: место в шапке нужно двум счётчикам */
+.brandmark{
+  width:44px;height:44px;flex:0 0 auto;margin-right:auto;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(180deg,#7ade7c,#39a44c);border:2.5px solid var(--rim);
+  box-shadow:0 4px 0 #237038,0 8px 14px rgba(60,45,20,.2),inset 0 2px 0 rgba(255,255,255,.4);
+}
+.brandmark svg{width:23px;height:23px}
+.purse{
+  display:flex;align-items:center;gap:7px;font-size:17px;font-weight:800;font-variant-numeric:tabular-nums;
+  color:#5b4720;text-shadow:0 1.5px 0 rgba(255,255,255,.65);
+  background:linear-gradient(180deg,#fffaef,#ffe6b8);
+  border:2.5px solid var(--rim);border-radius:16px;padding:7px 14px 8px 10px;
+  box-shadow:0 4px 0 #d8ac66,0 8px 14px rgba(60,45,20,.2),inset 0 2px 0 rgba(255,255,255,.6);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .purse{background:linear-gradient(180deg,#3b453d,#2c352e);color:#ffe6b8;
+    text-shadow:0 1.5px 0 rgba(0,0,0,.4);box-shadow:0 4px 0 #151a16,0 8px 14px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.1)}
+}
+.purse svg{width:20px;height:20px;display:block}
+/* КеГЛи — настоящая награда, поэтому стоит первой и зелёная */
+.purse.kegli{background:linear-gradient(180deg,#f0ffe9,#c9f2bf);color:#2c5f28;box-shadow:0 4px 0 #7cbd6f,0 8px 14px rgba(40,70,25,.2),inset 0 2px 0 rgba(255,255,255,.6)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .purse.kegli{background:linear-gradient(180deg,#33422f,#26301f);color:#c9f2bf;box-shadow:0 4px 0 #131a12,inset 0 2px 0 rgba(255,255,255,.08)}
+}
+.purse.bump{animation:bump .5s var(--pop)}
+@keyframes bump{0%{transform:scale(1)}35%{transform:scale(1.16)}100%{transform:scale(1)}}
+.iconbtn{
+  width:44px;height:44px;flex:0 0 auto;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(180deg,#fffaef,#ffe6b8);border:2.5px solid var(--rim);
+  box-shadow:0 4px 0 #d8ac66,0 8px 14px rgba(60,45,20,.2),inset 0 2px 0 rgba(255,255,255,.6);
+  transition:transform .11s var(--e),box-shadow .11s var(--e);
+}
+.iconbtn:active{transform:translateY(4px);box-shadow:0 0 0 #d8ac66,inset 0 2px 0 rgba(255,255,255,.5)}
+.iconbtn svg{width:22px;height:22px;color:#8a6a2e}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .iconbtn{background:linear-gradient(180deg,#3b453d,#2c352e);box-shadow:0 4px 0 #151a16,inset 0 2px 0 rgba(255,255,255,.1)}
+  :root:not([data-theme="light"]) .iconbtn svg{color:#e7d3a5}
+}
+.iconbtn.off svg{opacity:.4}
+
+/* ═══════════════════════════════════════════════════════════
+   СЦЕНА
+   ═══════════════════════════════════════════════════════════ */
+.scene{
+  position:relative;height:48dvh;min-height:296px;overflow:hidden;
+  border-radius:30px;margin:0 14px;
+  border:4px solid var(--rim);
+  box-shadow:0 7px 0 rgba(150,120,70,.28),0 20px 40px rgba(80,60,25,.22),inset 0 0 0 1px rgba(0,0,0,.05);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .scene{box-shadow:0 7px 0 rgba(0,0,0,.5),0 20px 40px rgba(0,0,0,.55)}
+}
+.sky{position:absolute;inset:0;transition:background 1.4s linear}
+.sky[data-t="morning"]{background:linear-gradient(#bfe0f2 0%,#e6ddc8 62%,#f3e6cf 100%)}
+.sky[data-t="day"]{background:linear-gradient(#9fd4f2 0%,#cfe9f2 58%,#e8f2e6 100%)}
+.sky[data-t="evening"]{background:linear-gradient(#7f9fd4 0%,#d9a17f 55%,#e9b98d 100%)}
+.sky[data-t="night"]{background:linear-gradient(#101c33 0%,#1d2b48 60%,#2a3a58 100%)}
+.stars{position:absolute;inset:0;opacity:0;transition:opacity 1.2s linear;pointer-events:none}
+.sky[data-t="night"]+.stars{opacity:1}
+.star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;animation:tw 4s ease-in-out infinite}
+@keyframes tw{0%,100%{opacity:.25}50%{opacity:.9}}
+
+/* рама окна */
+.frame{position:absolute;inset:0;pointer-events:none}
+.frame i{position:absolute;background:linear-gradient(90deg,#fffaef,#efe3cd);box-shadow:0 0 0 1px rgba(120,95,55,.18)}
+.frame .v{top:0;bottom:38%;width:11px;left:calc(50% - 5.5px)}
+.frame .h{left:0;right:0;height:11px;top:33%;background:linear-gradient(180deg,#fffaef,#efe3cd)}
+.sill{position:absolute;left:0;right:0;bottom:0;height:23%;
+  background:linear-gradient(#fdf8ea,#e2d6bc);box-shadow:0 -2px 0 rgba(140,110,60,.18)}
+:root:not([data-theme="light"]) .sill{background:linear-gradient(#2a302b,#20251f)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .frame i{background:#252b26}
+  :root:not([data-theme="light"]) .sill{box-shadow:0 -2px 0 rgba(0,0,0,.4)}
+}
+
+/* солнце-пузырик */
+.sunwrap{position:absolute;top:11%;right:10%;z-index:2;width:88px;
+  display:flex;flex-direction:column;align-items:center;gap:7px}
+.orb{position:relative;width:88px;height:88px;border-radius:50%;border:0;padding:0;flex:0 0 auto;
+  transition:transform .35s var(--pop),opacity .8s linear;touch-action:manipulation}
+.orb.hidden{opacity:0;pointer-events:none;transform:scale(.6)}
+.orb .body{position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 34% 28%,#fff8dc 0%,#ffd76b 44%,#f8b73f 74%,#e08d1c 100%);
+  box-shadow:
+    0 0 0 10px rgba(255,206,90,.2),
+    0 0 46px 14px rgba(255,197,74,.45),
+    inset -8px -11px 20px rgba(190,110,15,.4),
+    inset 0 5px 10px rgba(255,255,255,.55);
+  animation:breath 3.4s ease-in-out infinite}
+.orb .gloss{position:absolute;left:19%;top:13%;width:32%;height:23%;border-radius:50%;
+  background:linear-gradient(#fff,rgba(255,255,255,0));filter:blur(1px);opacity:.9}
+.orb.moon .body{background:radial-gradient(circle at 36% 28%,#fbfdff 0%,#dbe4f0 46%,#aebbd0 100%);
+  box-shadow:0 0 0 10px rgba(190,210,240,.12),0 0 38px 10px rgba(170,195,235,.3),
+    inset -8px -11px 20px rgba(80,100,130,.35),inset 0 5px 10px rgba(255,255,255,.5)}
+.orb.lamp .body{background:radial-gradient(circle at 34% 28%,#ffe6f7 0%,#ff8fd0 44%,#d95cc0 76%,#a93fa8 100%);
+  box-shadow:0 0 0 11px rgba(255,110,200,.18),0 0 54px 18px rgba(255,90,190,.42),
+    inset -8px -11px 20px rgba(120,25,100,.4),inset 0 5px 10px rgba(255,255,255,.5)}
+@keyframes breath{0%,100%{transform:scale(1)}50%{transform:scale(1.055)}}
+.orb:active{transform:scale(.88)}
+.orb.spent{filter:saturate(.3) brightness(.9)}
+.orb.spent .body{animation:none}
+.burst{position:absolute;inset:-16px;border-radius:50%;border:3px solid rgba(255,224,140,.9);opacity:0;pointer-events:none}
+.burst.go{animation:bst .62s var(--e)}
+@keyframes bst{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(1.55)}}
+
+/* счётчик тапов кольцом вокруг солнца */
+.orbring{position:absolute;inset:-9px;pointer-events:none;transform:rotate(-90deg)}
+.orbring circle{fill:none;stroke-linecap:round}
+.orbring .bg{stroke:rgba(120,90,30,.22);stroke-width:5}
+.orbring .fg{stroke:#fffdf0;stroke-width:5;transition:stroke-dashoffset .4s var(--e);
+  filter:drop-shadow(0 1px 2px rgba(120,80,10,.45))}
+.orb.spent .orbring{opacity:.4}
+
+/* всплывающие числа */
+.floaty{position:absolute;font-size:20px;font-weight:900;color:#fff;letter-spacing:-.3px;
+  text-shadow:0 0 3px rgba(120,80,10,.9),0 2px 0 rgba(120,80,10,.55),0 4px 10px rgba(0,0,0,.35);
+  pointer-events:none;animation:fl 1.05s var(--e) forwards;z-index:5}
+@keyframes fl{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1;transform:translateY(-8px) scale(1.15)}
+  40%{transform:translateY(-16px) scale(1)}100%{opacity:0;transform:translateY(-56px) scale(.95)}}
+
+/* искры и лепестки */
+.spark{position:absolute;width:9px;height:9px;border-radius:50%;pointer-events:none;z-index:5;
+  box-shadow:0 0 8px 2px rgba(255,220,120,.7)}
+.petal{position:absolute;width:12px;height:9px;border-radius:60% 60% 60% 60%/70% 70% 40% 40%;pointer-events:none;z-index:5}
+.coinfly{position:absolute;width:26px;height:26px;pointer-events:none;z-index:80;
+  transition:transform .75s cubic-bezier(.5,-.2,.6,1),opacity .75s linear;filter:drop-shadow(0 3px 5px rgba(0,0,0,.3))}
+
+/* розовое свечение лампы */
+.glow{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity 1s linear;
+  background:radial-gradient(ellipse 62% 46% at 50% 78%,rgba(255,105,200,.42),rgba(255,105,200,0) 70%);mix-blend-mode:screen}
+.glow.on{opacity:1}
+
+/* растение */
+.plantwrap{position:absolute;left:50%;bottom:13%;transform:translateX(-50%);width:190px;height:200px;
+  display:flex;align-items:flex-end;justify-content:center}
+.plantwrap svg{width:100%;height:100%;overflow:visible}
+/* три анимации — три вложенные группы: shorthand animation не складывается */
+.sway{transform-origin:50% 100%;animation:sway 6s ease-in-out infinite}
+@keyframes sway{0%,100%{transform:rotate(-1.6deg)}50%{transform:rotate(1.6deg)}}
+.grow{transform-origin:50% 95%;animation:pop .55s var(--pop)}
+@keyframes pop{0%{transform:scale(.82);opacity:.35}60%{transform:scale(1.06)}100%{transform:scale(1);opacity:1}}
+.ready .bloom{animation:glowb 1.8s ease-in-out infinite}
+@keyframes glowb{0%,100%{filter:drop-shadow(0 0 0 rgba(255,255,255,0))}50%{filter:drop-shadow(0 0 14px rgba(255,255,255,.9))}}
+.nodwrap.nod{transform-origin:50% 100%;animation:nod .5s var(--pop)}
+@keyframes nod{0%{transform:translateY(0)}30%{transform:translateY(5px) scaleY(.94)}100%{transform:translateY(0)}}
+
+/* прогресс роста — толстая капсула со сливочным кантом */
+.bar{position:absolute;left:14px;right:14px;top:13px;z-index:3}
+.bar .track{height:18px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.42),rgba(255,255,255,.6));
+  border:3px solid var(--rim);overflow:hidden;position:relative;
+  box-shadow:0 3px 0 rgba(90,70,35,.2),inset 0 3px 6px rgba(0,0,0,.28)}
+.bar .fill{height:100%;width:0;border-radius:999px;position:relative;
+  background:linear-gradient(180deg,#9ff0b6 0%,#4cc472 45%,#2e9e5b 100%);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.55),inset 0 -4px 8px rgba(0,0,0,.15);
+  transition:width .45s var(--e)}
+.bar .fill::after{content:"";position:absolute;inset:0;border-radius:999px;
+  background:repeating-linear-gradient(115deg,rgba(255,255,255,.24) 0 9px,rgba(255,255,255,0) 9px 20px);
+  animation:stripe 1.1s linear infinite}
+@keyframes stripe{to{background-position:20px 0}}
+.bar.full .fill{background:linear-gradient(180deg,#ffe89a 0%,#ffc846 45%,#f2a017 100%)}
+.bar .meta{display:flex;align-items:center;gap:8px;margin-top:7px;font-size:12.5px;font-weight:800;
+  color:#2b3a30;text-shadow:0 1px 0 rgba(255,255,255,.75)}
+.sky[data-t="night"]~.bar .meta{color:#eaf1fa;text-shadow:0 1px 4px rgba(0,0,0,.6)}
+.chip{display:inline-block;font-size:12.5px;font-weight:800;font-variant-numeric:tabular-nums;
+  background:rgba(255,255,255,.8);border:2.5px solid rgba(255,255,255,.95);border-radius:999px;
+  padding:3px 11px 4px;box-shadow:0 3px 0 rgba(90,70,35,.18);color:#2b3a30;text-shadow:none}
+.sky[data-t="night"]~* .chip,.sky[data-t="night"]~.chip{background:rgba(20,32,55,.7);border-color:rgba(255,255,255,.5);color:#eaf1fa}
+/* счётчик солнца живёт под солнцем, чтобы не спорить с полосой роста */
+.suncount{white-space:nowrap;transition:opacity .3s}
+.suncount.spent{opacity:.5}
+
+/* кнопка тестировщика — заметная, но не спорит с игрой */
+.dev{position:absolute;left:12px;bottom:12px;z-index:6;
+  display:flex;align-items:center;gap:6px;height:38px;padding:0 13px 0 11px;border-radius:14px;
+  font-size:12.5px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:#fff;
+  background:linear-gradient(180deg,#c9a4ff,#8b5cf0);
+  border:2.5px solid var(--rim);
+  text-shadow:0 1.5px 0 rgba(0,0,0,.25);
+  box-shadow:0 4px 0 #6035bd,0 8px 14px rgba(40,20,80,.3),inset 0 2px 0 rgba(255,255,255,.4);
+  transition:transform .11s var(--e),box-shadow .11s var(--e)}
+.dev:active{transform:translateY(4px);box-shadow:0 0 0 #6035bd,inset 0 2px 0 rgba(255,255,255,.3)}
+.dev svg{width:16px;height:16px}
+.dev .pulse{position:absolute;inset:-4px;border-radius:18px;border:2px solid rgba(139,92,240,.6);
+  opacity:0;animation:devpulse 3.4s ease-out infinite;pointer-events:none}
+@keyframes devpulse{0%{opacity:.7;transform:scale(.96)}60%,100%{opacity:0;transform:scale(1.18)}}
+
+/* ═══════════════════════════════════════════════════════════
+   НИЖНЯЯ ПАНЕЛЬ
+   ═══════════════════════════════════════════════════════════ */
+.panel{padding:14px 16px calc(18px + env(safe-area-inset-bottom))}
+.status{
+  display:flex;align-items:center;gap:10px;
+  font-size:14px;line-height:1.35;color:var(--ink2);
+  background:var(--surface2);border:2.5px solid var(--rim);border-radius:20px;
+  padding:11px 14px;margin-bottom:12px;min-height:56px;
+  box-shadow:0 4px 0 rgba(150,120,70,.2),0 9px 16px rgba(90,70,35,.13),inset 0 2px 0 rgba(255,255,255,.7)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .status{box-shadow:0 4px 0 rgba(0,0,0,.5),0 9px 16px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.06)}
+}
+.status .em{font-size:24px;line-height:1;flex:0 0 auto;filter:drop-shadow(0 2px 2px rgba(0,0,0,.15))}
+.status b{color:var(--ink);font-weight:800}
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.acts .gbtn.full{grid-column:span 2}
+.badge{position:absolute;top:-9px;right:-7px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;
+  background:linear-gradient(180deg,#ff8fae,#ef3f6e);border:2.5px solid var(--rim);
+  display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;
+  text-shadow:0 1px 0 rgba(0,0,0,.25);box-shadow:0 3px 0 #bd2450;animation:bpulse 2.2s ease-in-out infinite}
+@keyframes bpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+/* влага */
+.water{display:flex;align-items:center;gap:10px;margin:13px 2px 0;font-size:12.5px;font-weight:700;color:var(--mut)}
+.water .wt{flex:1;height:13px;border-radius:999px;
+  background:linear-gradient(180deg,rgba(70,55,30,.16),rgba(70,55,30,.09));
+  border:2.5px solid var(--rim);overflow:hidden;
+  box-shadow:0 2px 0 rgba(150,120,70,.16),inset 0 2px 4px rgba(0,0,0,.2)}
+.water .wf{height:100%;border-radius:999px;width:0;transition:width .5s var(--e),background .4s linear;
+  background:linear-gradient(180deg,#9edcff,#2b8fe6);
+  box-shadow:inset 0 2px 0 rgba(255,255,255,.5)}
+.water.low .wf{background:linear-gradient(180deg,#ffcf7a,#f08a22)}
+.water.dry .wf{background:linear-gradient(180deg,#ff9c9c,#e04545)}
+.water.dry span:last-child{color:#e04545}
+.water span:last-child{font-variant-numeric:tabular-nums;min-width:38px;text-align:right}
+
+/* ═══════════════════════════════════════════════════════════
+   ШИТЫ
+   ═══════════════════════════════════════════════════════════ */
+.scrim{position:fixed;inset:0;background:rgba(40,28,10,.5);backdrop-filter:blur(3px);
+  opacity:0;pointer-events:none;transition:opacity .3s;z-index:40}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:50;
+  background:linear-gradient(180deg,var(--bg),var(--bg2));
+  border-radius:34px 34px 0 0;border-top:4px solid var(--rim);
+  transform:translateY(101%);transition:transform .4s var(--e);
+  max-width:480px;margin:0 auto;display:flex;flex-direction:column;
+  box-shadow:0 -10px 40px rgba(50,35,10,.35);
+  max-height:calc(100dvh - env(safe-area-inset-top) - 42px)}
+.sheet.on{transform:translateY(0)}
+.sh-head{padding:10px 18px 10px;position:relative;flex:0 0 auto}
+.graber{width:44px;height:6px;border-radius:3px;background:var(--faint);margin:0 auto 14px}
+
+/* заголовок-лента, как в референсе */
+.ribbon{
+  position:relative;display:inline-block;max-width:calc(100% - 62px);
+  padding:9px 20px 11px;border-radius:16px;
+  background:linear-gradient(180deg,#ff9bb9,#ee5480);
+  border:3px solid var(--rim);
+  box-shadow:0 5px 0 #c22e5c,0 10px 18px rgba(80,20,40,.25),inset 0 3px 0 rgba(255,255,255,.35)}
+.ribbon h2{margin:0;font-size:21px;font-weight:900;letter-spacing:.2px;color:#fff;
+  text-shadow:0 2px 0 rgba(150,25,70,.55),0 3px 6px rgba(0,0,0,.2)}
+.ribbon.gold{background:linear-gradient(180deg,#ffd45e,#f5a017);box-shadow:0 5px 0 #c1730a,0 10px 18px rgba(90,55,5,.25),inset 0 3px 0 rgba(255,255,255,.4)}
+.ribbon.gold h2{text-shadow:0 2px 0 rgba(150,85,5,.5)}
+.ribbon.green{background:linear-gradient(180deg,#7ade7c,#39a44c);box-shadow:0 5px 0 #237038,0 10px 18px rgba(20,70,30,.25),inset 0 3px 0 rgba(255,255,255,.4)}
+.ribbon.green h2{text-shadow:0 2px 0 rgba(20,90,40,.5)}
+.ribbon.violet{background:linear-gradient(180deg,#c9a4ff,#8b5cf0);box-shadow:0 5px 0 #6035bd,0 10px 18px rgba(40,20,80,.25),inset 0 3px 0 rgba(255,255,255,.4)}
+.ribbon.violet h2{text-shadow:0 2px 0 rgba(60,25,120,.5)}
+
+/* крестик — как на скриншоте: скруглённый квадрат, толстый кант, подошва */
+.x{
+  position:absolute;right:16px;top:20px;width:46px;height:46px;border-radius:17px;
+  display:grid;place-items:center;
+  background:linear-gradient(180deg,#d3e87e,#a8ca3c);
+  border:3px solid var(--rim);
+  box-shadow:0 5px 0 #7d9a20,0 9px 16px rgba(60,70,10,.28),inset 0 3px 0 rgba(255,255,255,.45);
+  transition:transform .11s var(--e),box-shadow .11s var(--e)}
+.x:active{transform:translateY(5px);box-shadow:0 0 0 #7d9a20,inset 0 3px 0 rgba(255,255,255,.35)}
+.x svg{width:21px;height:21px;color:#fffdf2;filter:drop-shadow(0 2px 0 rgba(90,110,20,.6))}
+
+.sh-body{overflow-y:auto;overscroll-behavior:contain;padding:8px 16px calc(26px + env(safe-area-inset-bottom));-webkit-overflow-scrolling:touch}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:8px 22px 14px 16px;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{
+  flex:0 0 auto;padding:9px 15px 11px;border-radius:15px;font-size:13.5px;font-weight:800;
+  color:#6b5023;background:linear-gradient(180deg,#fffaef,#ffe9c4);
+  border:2.5px solid var(--rim);position:relative;
+  box-shadow:0 4px 0 #d8b276,inset 0 2px 0 rgba(255,255,255,.6);
+  transition:transform .11s var(--e),box-shadow .11s var(--e)}
+.tab:active{transform:translateY(4px);box-shadow:0 0 0 #d8b276}
+.tab.on{background:linear-gradient(180deg,#7ade7c,#39a44c);color:#fff;text-shadow:0 1.5px 0 rgba(0,0,0,.22);
+  box-shadow:0 4px 0 #237038,inset 0 2px 0 rgba(255,255,255,.4)}
+.tab.on:active{box-shadow:0 0 0 #237038}
+.tab .dot{position:absolute;top:-5px;right:-4px;width:13px;height:13px;border-radius:50%;
+  background:linear-gradient(180deg,#ff8fae,#ef3f6e);border:2.5px solid var(--rim);box-shadow:0 2px 0 #bd2450}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .tab{background:linear-gradient(180deg,#3b453d,#2c352e);color:#eef3ec;box-shadow:0 4px 0 #151a16,inset 0 2px 0 rgba(255,255,255,.08)}
+  :root:not([data-theme="light"]) .tab:active{box-shadow:0 0 0 #151a16}
+}
+
+/* карточка товара */
+.card{
+  display:flex;gap:12px;align-items:center;padding:12px 12px;border-radius:22px;
+  background:var(--surface2);border:3px solid var(--rim);
+  box-shadow:0 5px 0 rgba(150,120,70,.22),0 10px 18px rgba(90,70,35,.13),inset 0 2px 0 rgba(255,255,255,.65);
+  margin-bottom:12px;position:relative;overflow:hidden}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .card{box-shadow:0 5px 0 rgba(0,0,0,.5),0 10px 18px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.06)}
+}
+.card .rar{position:absolute;left:0;top:0;bottom:0;width:7px;border-radius:0 4px 4px 0}
+.card .ic{width:56px;height:56px;flex:0 0 auto;margin-left:5px;border-radius:18px;display:grid;place-items:center;
+  border:2.5px solid var(--rim);box-shadow:inset 0 3px 0 rgba(255,255,255,.45),inset 0 -6px 12px rgba(0,0,0,.1),0 3px 0 rgba(0,0,0,.1)}
+.card .ic svg{width:34px;height:34px}
+.card .tx{flex:1;min-width:0}
+.card .nm{font-size:15.5px;font-weight:800;letter-spacing:-.1px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.card .ds{font-size:12.5px;color:var(--mut);margin-top:3px;line-height:1.32;font-weight:600}
+.card.locked{opacity:.62}
+.card.locked .ic{background:var(--hair2)!important;border-style:dashed;border-color:var(--faint);box-shadow:none}
+.pricetag{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
+.pricetag svg{width:15px;height:15px}
+.owned{flex:0 0 auto;display:flex;align-items:center;gap:5px;font-size:13px;font-weight:800;color:var(--green);
+  padding:0 6px}
+.owned svg{width:17px;height:17px}
+/* «Закрыто» — не кнопка, поэтому и выглядит не как кнопка */
+.lockchip{flex:0 0 auto;display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;
+  color:var(--mut);padding:0 8px}
+.lockchip svg{width:15px;height:15px}
+.dots{display:inline-flex;gap:3.5px;vertical-align:middle}
+.dots i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block;
+  box-shadow:0 0 0 1.5px rgba(255,255,255,.7)}
+
+/* корешок соседу */
+.giftbox{display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  padding:13px 14px;border-radius:22px;margin:0 0 14px;
+  background:var(--surface2);border:3px solid var(--rim);
+  box-shadow:0 5px 0 rgba(150,120,70,.22),0 10px 18px rgba(90,70,35,.13),inset 0 2px 0 rgba(255,255,255,.65)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .giftbox{box-shadow:0 5px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.06)}
+}
+.giftbox .gifttx{flex:1;min-width:150px;font-size:12.5px;font-weight:600;line-height:1.35;color:var(--mut)}
+.giftbox .gifttx b{color:var(--ink);font-weight:800}
+.giftbox .giftstat{flex:0 0 100%;font-size:11.5px;font-weight:700;color:var(--faint);letter-spacing:.2px}
+.giftform{flex:0 0 100%;display:flex;gap:9px;align-items:stretch}
+.cardin{
+  flex:1;min-width:0;height:42px;padding:0 14px;border-radius:15px;
+  font:inherit;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.6px;
+  color:var(--ink);background:var(--bg);
+  border:2.5px solid var(--rim);outline:none;
+  box-shadow:inset 0 3px 6px rgba(90,70,35,.16),0 2px 0 rgba(150,120,70,.18)}
+.cardin::placeholder{color:var(--faint);font-weight:600;letter-spacing:0}
+.cardin:focus{border-color:#ef5a90;box-shadow:inset 0 3px 6px rgba(90,70,35,.16),0 0 0 3px rgba(239,90,144,.22)}
+.linkbtn{flex:0 0 100%;text-align:left;padding:2px 2px 0;font-size:12.5px;font-weight:700;
+  color:var(--green);text-decoration:underline;text-underline-offset:3px}
+
+/* альбом */
+.album{display:grid;grid-template-columns:repeat(3,1fr);gap:11px}
+.cell{aspect-ratio:1;border-radius:22px;position:relative;overflow:hidden;padding:8px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;
+  background:var(--surface2);border:3px solid var(--rim);
+  box-shadow:0 5px 0 rgba(150,120,70,.22),0 9px 14px rgba(90,70,35,.12),inset 0 2px 0 rgba(255,255,255,.6)}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .cell{box-shadow:0 5px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.06)}
+}
+.cell.lock{background:var(--hair2);border-style:dashed;border-color:var(--faint);box-shadow:none}
+.cell svg{width:52px;height:52px}
+.cell.lock svg{opacity:.3}
+.cell .cn{font-size:11px;font-weight:800;color:var(--ink2);text-align:center;line-height:1.15}
+.cell.lock .cn{color:var(--mut);font-weight:700}
+.cell .rb{position:absolute;top:0;left:0;right:0;height:6px}
+.cell .cnt{position:absolute;right:5px;top:5px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;
+  display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;
+  background:linear-gradient(180deg,#ffd45e,#f5a017);border:2px solid var(--rim);
+  text-shadow:0 1px 0 rgba(0,0,0,.2);box-shadow:0 2px 0 #c1730a}
+
+/* задания */
+.task{padding:13px;border-radius:22px;background:var(--surface2);border:3px solid var(--rim);
+  box-shadow:0 5px 0 rgba(150,120,70,.22),0 10px 18px rgba(90,70,35,.13),inset 0 2px 0 rgba(255,255,255,.65);
+  margin-bottom:12px}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]) .task{box-shadow:0 5px 0 rgba(0,0,0,.5),inset 0 2px 0 rgba(255,255,255,.06)}
+}
+.task .th{font-size:16px;font-weight:800;letter-spacing:-.1px}
+.task .td{font-size:12.5px;color:var(--mut);margin-top:4px;line-height:1.38;font-weight:600}
+.task .tr{display:flex;align-items:center;gap:9px;margin-top:12px;font-size:12.5px;font-weight:800;color:var(--green)}
+.task .tr>svg{width:30px;height:30px;flex:0 0 auto;
+  background:linear-gradient(180deg,#fffaef,#ffe9c4);border:2.5px solid var(--rim);border-radius:12px;padding:2px;
+  box-shadow:0 2px 0 rgba(150,120,70,.25)}
+.task.done{opacity:.72}
+.hint{font-size:13px;color:var(--ink2);line-height:1.45;font-weight:600;
+  background:var(--hair2);border-radius:16px;padding:11px 13px;margin:2px 0 14px}
+
+/* тост */
+.toast{position:fixed;left:50%;bottom:calc(30px + env(safe-area-inset-bottom));transform:translate(-50%,24px) scale(.96);
+  background:linear-gradient(180deg,#4a3a22,#302411);color:#fff5e0;
+  padding:13px 20px;border-radius:20px;font-size:14.5px;font-weight:700;line-height:1.3;
+  border:3px solid rgba(255,255,255,.85);
+  box-shadow:0 6px 0 rgba(30,20,8,.5),0 14px 30px rgba(0,0,0,.35);
+  max-width:min(90vw,420px);text-align:center;opacity:0;pointer-events:none;
+  transition:.32s var(--pop);z-index:90}
+.toast.on{opacity:1;transform:translate(-50%,0) scale(1)}
+
+/* дев-панель */
+.devrow{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.devlbl{font-size:11.5px;font-weight:900;letter-spacing:.8px;text-transform:uppercase;color:var(--mut);margin:0 0 8px 4px}
+
+@media (max-width:359px){
+  .gbtn{font-size:14.5px;min-height:52px;padding:0 12px}
+  .scene{height:44dvh}
+}
+/* `*` не совпадает с псевдоэлементами, а полоса роста анимируется именно
+   в ::after — без этой строки бесконечные полоски переживали бы запрет движения */
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="top">
+    <div class="brandmark" title="Клеверник">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 13c-2 0-4-1-4-3s2-3 4-3 4 1 4 3-2 3-4 3z" fill="#fff"/><path d="M12 13v8" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+    </div>
+    <div class="purse kegli" id="keglibox" title="КеГЛи на карте">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="12" r="9" fill="#8fe08a"/>
+        <circle cx="12" cy="12" r="9" fill="none" stroke="#fff" stroke-width="2"/>
+        <path d="M12 13c-1.6 0-3-.9-3-2.2S10.4 8.6 12 8.6s3 .9 3 2.2S13.6 13 12 13z" fill="#2f7d34"/>
+        <path d="M12 13v3.6" stroke="#2f7d34" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span id="kegli">0</span>
+    </div>
+    <div class="purse" id="purse">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <circle cx="12" cy="13" r="8" fill="#8fd9f7"/>
+        <circle cx="12" cy="13" r="8" fill="none" stroke="#fff" stroke-width="2"/>
+        <circle cx="12" cy="13" r="5.2" fill="#57b8e8"/>
+        <path d="M9.4 11.4c.6-1 1.5-1.6 2.4-1.9" stroke="#fff" stroke-width="1.7" stroke-linecap="round"/>
+      </svg>
+      <span id="coins">0</span>
+    </div>
+    <button class="iconbtn" id="soundbtn" aria-label="Звук"></button>
+  </div>
+
+  <div class="scene" id="scene">
+    <div class="sky" id="sky" data-t="day"></div>
+    <div class="stars" id="stars"></div>
+    <div class="glow" id="glow"></div>
+    <div class="frame"><i class="v"></i><i class="h"></i></div>
+    <div class="sill"></div>
+
+    <div class="sunwrap">
+      <button class="orb" id="orb" aria-label="Посветить на растение">
+        <span class="body"></span><span class="gloss"></span><span class="burst" id="burst"></span>
+        <svg class="orbring" viewBox="0 0 106 106" aria-hidden="true">
+          <circle class="bg" cx="53" cy="53" r="50"></circle>
+          <circle class="fg" id="orbfg" cx="53" cy="53" r="50"></circle>
+        </svg>
+      </button>
+      <span class="chip suncount" id="tapsleft">☀ 10</span>
+    </div>
+
+    <div class="plantwrap" id="plantwrap"></div>
+
+    <div class="bar" id="bar">
+      <div class="track"><div class="fill" id="fill"></div></div>
+      <div class="meta"><span class="chip" id="stagename">Семечко</span></div>
+    </div>
+
+    <button class="dev" id="devbtn" aria-label="Открыть тестовую панель">
+      <span class="pulse"></span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"/>
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 8.9 19.3a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.56-1.03H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.7 8.9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1.03-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15.1 4.7a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.4 9v.09A1.7 1.7 0 0 0 21 10.1a2 2 0 1 1 0 4h-.09a1.7 1.7 0 0 0-1.51 1.03z"/>
+      </svg>
+      Тест
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="status" id="status"><span class="em" id="statusem">🌱</span><span id="statustx"></span></div>
+    <div class="acts">
+      <button class="gbtn g-green full" id="mainbtn">Полить</button>
+      <button class="gbtn g-cream" id="shopbtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h16l-1.2 11.2a1 1 0 0 1-1 .8H6.2a1 1 0 0 1-1-.8L4 8z"/><path d="M8.5 8V6a3.5 3.5 0 0 1 7 0v2"/></svg>
+        Магазин
+        <span class="badge" id="shopbadge" hidden></span>
+      </button>
+      <button class="gbtn g-cream" id="albumbtn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="3.5" width="16" height="17" rx="3"/><path d="M8 3.5v17"/><circle cx="14.5" cy="11" r="2.2"/></svg>
+        Альбом</button>
+      <button class="gbtn g-pink full" id="tasksbtn" style="min-height:50px;font-size:14.5px">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l2 2 4-4"/><rect x="3.5" y="4" width="17" height="16" rx="4"/></svg>
+        Задания недели
+        <span class="badge" id="taskbadge" hidden></span>
+      </button>
+    </div>
+    <div class="water" id="waterrow">
+      <span>Влага</span><div class="wt"><div class="wf" id="wf"></div></div><span id="wtxt">100%</span>
+    </div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+
+<div class="sheet" id="shop">
+  <div class="sh-head"><div class="graber"></div><div class="ribbon gold"><h2>Магазин</h2></div><button class="x" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="tabs" id="shoptabs"></div>
+  <div class="sh-body" id="shopbody"></div>
+</div>
+
+<div class="sheet" id="album">
+  <div class="sh-head"><div class="graber"></div><div class="ribbon"><h2>Альбом</h2></div><button class="x" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sh-body">
+    <p class="hint">Каждый выращенный цветок остаётся здесь навсегда. Серые — ещё не открыты.</p>
+    <div class="giftbox" id="giftbox"></div>
+    <div class="album" id="albumgrid"></div>
+  </div>
+</div>
+
+<div class="sheet" id="tasks">
+  <div class="sh-head"><div class="graber"></div><div class="ribbon green"><h2>Задания</h2></div><button class="x" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sh-body">
+    <p class="hint">Попробуйте что-то новое из КуулКлевер — и получите семена. Каждое задание засчитывается один раз.</p>
+    <div id="tasklist"></div>
+  </div>
+</div>
+
+<div class="sheet" id="devsheet">
+  <div class="sh-head"><div class="graber"></div><div class="ribbon violet"><h2>Тестовая панель</h2></div><button class="x" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="sh-body">
+    <p class="hint">Только для демонстрации. В продакшене этой кнопки не существует.</p>
+    <p class="devlbl">Время суток</p>
+    <div class="devrow" id="devtime"></div>
+    <p class="devlbl">Прогресс</p>
+    <div class="devrow">
+      <button class="gbtn g-cream sm" data-dev="coins">+1000 росинок</button>
+      <button class="gbtn g-cream sm" data-dev="taps">Сбросить тапы</button>
+      <button class="gbtn g-cream sm" data-dev="stage">Следующая стадия</button>
+      <button class="gbtn g-cream sm" data-dev="bud">Сразу к бутону</button>
+      <button class="gbtn g-cream sm" data-dev="hour">Промотать час</button>
+      <button class="gbtn g-cream sm" data-dev="ready">Сразу к сбору</button>
+      <button class="gbtn g-cream sm" data-dev="dry">Осушить</button>
+      <button class="gbtn g-cream sm" data-dev="seeds">Открыть все семена</button>
+      <button class="gbtn g-cream sm" data-dev="all">Открыть весь магазин</button>
+    </div>
+    <p class="devlbl">Звук</p>
+    <div class="devrow">
+      <button class="gbtn g-cream sm" data-sfx="tap">Тап</button>
+      <button class="gbtn g-cream sm" data-sfx="water">Полив</button>
+      <button class="gbtn g-cream sm" data-sfx="stage">Стадия</button>
+      <button class="gbtn g-cream sm" data-sfx="harvest">Сбор</button>
+      <button class="gbtn g-cream sm" data-sfx="buy">Покупка</button>
+      <button class="gbtn g-cream sm" data-sfx="deny">Отказ</button>
+    </div>
+    <p class="devlbl">Корешки</p>
+    <div class="devrow">
+      <button class="gbtn g-cream sm" data-dev="giftnow">Ответный корешок сейчас</button>
+      <button class="gbtn g-cream sm" data-dev="kegli">+30 КеГЛей</button>
+    </div>
+    <p class="devlbl">Опасное</p>
+    <div class="devrow">
+      <button class="gbtn g-pink sm" data-dev="reset">Начать заново</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+/* ════ КАНОН ДАННЫХ ═══════════════════════ */
+const RAR = {
+  common:{c:"#7d9083",n:1,t:"Обычное", g:["#d5e2d7","#adc1b0"]},
+  rare:{c:"#2b8fe6",n:2,t:"Редкое",   g:["#c2e1fb","#8bc0ef"]},
+  special:{c:"#8b5cf0",n:3,t:"Особое",g:["#dcc9ff","#b492ec"]},
+  legend:{c:"#f5a017",n:4,t:"Легендарное", g:["#ffe4a8","#ffc257"]}
+};
+
+const SEEDS = [
+  {id:"clover", nm:"Клевер",    rar:"common",  petal:"#ffffff", core:"#e9dcc0", form:"clover", pay:60,  free:true,  how:"Всегда доступен"},
+  {id:"chamo",  nm:"Ромашка",   rar:"common",  petal:"#ffffff", core:"#f5c53d", form:"daisy",  pay:90,  task:"t1", how:"За задание «Молочная новинка»"},
+  {id:"calen",  nm:"Календула", rar:"rare",    petal:"#f79427", core:"#c96a12", form:"daisy",  pay:150, task:"t2", how:"За задание «Суп за 20 минут»"},
+  {id:"cosmos", nm:"Космея",    rar:"rare",    petal:"#f06c9b", core:"#f5c53d", form:"daisy",  pay:170, task:"t3", how:"За задание «Сок дня»"},
+  {id:"corn",   nm:"Василёк",   rar:"special", petal:"#5a7de0", core:"#2c4aa0", form:"daisy",  pay:260, how:"Приходит корешком от соседа"},
+  {id:"lav",    nm:"Лаванда",   rar:"special", petal:"#9b7de0", core:"#6b4fb0", form:"spike",  pay:280, how:"Приходит корешком от соседа"},
+  {id:"poppy",  nm:"Мак",       rar:"legend",  petal:"#e0392b", core:"#2a1a14", form:"daisy",  pay:420, how:"Приходит корешком от соседа"},
+  {id:"pion",   nm:"Пион",      rar:"legend",  petal:"#f28ab0", core:"#e05a8a", form:"peony",  pay:500, how:"Приходит корешком от соседа"}
+];
+
+const SHOP = {
+  pot:{ nm:"Горшки", items:[
+    {id:"pot0", nm:"Глиняный",        ds:"Тот, что достался от бабушки",        price:0,    rar:"common",  mult:1,    own:true},
+    {id:"pot1", nm:"Керамический",    ds:"Рост быстрее на 25%",                 price:220,  rar:"common",  mult:1.25},
+    {id:"pot2", nm:"Кашпо с дренажом",ds:"Рост быстрее на 60%, влага уходит медленнее", price:800, rar:"rare", mult:1.6},
+    {id:"pot3", nm:"Терракотовый",    ds:"Рост быстрее вдвое. Дышит, как настоящая земля", price:2400, rar:"special", mult:2}
+  ]},
+  can:{ nm:"Лейки", items:[
+    {id:"can0", nm:"Кружка",          ds:"Полив вручную, по одному разу",       price:0,    rar:"common",  own:true},
+    {id:"can1", nm:"Лейка с ситечком",ds:"Влага держится вдвое дольше",         price:340,  rar:"common",  water:.5},
+    {id:"can2", nm:"Автополив",       ds:"Земля больше не пересыхает. Никогда", price:1600, rar:"special", auto:true}
+  ]},
+  fert:{ nm:"Удобрения", items:[
+    {id:"f1", nm:"Биогумус",          ds:"+20% к росту на сутки",               price:120,  rar:"common",  fert:1.2, temp:24},
+    {id:"f2", nm:"Компост",           ds:"+45% к росту на трое суток",          price:480,  rar:"rare",    fert:1.45, temp:72},
+    {id:"f3", nm:"Подкормка на год",  ds:"+35% к росту навсегда",               price:2000, rar:"special", fert:1.35}
+  ]},
+  light:{ nm:"Свет", items:[
+    {id:"lamp", nm:"Фитолампа",       ds:"Ночью растение растёт как днём. И светится розовым", price:3000, rar:"legend", lamp:true}
+  ]}
+};
+
+const TASKS = [
+  {id:"t1", nm:"Молочная новинка", ds:"Попробуйте любой продукт молочного завода МясновЪ, которого ещё не было в ваших заказах", seed:"chamo"},
+  {id:"t2", nm:"Суп за 20 минут",  ds:"Соберите набор по рецепту из КУУЛинарной книги — и приготовьте", seed:"calen"},
+  {id:"t3", nm:"Сок дня",          ds:"Возьмите любой сок или морс из свежей полки", seed:"cosmos"}
+];
+
+const STAGES = ["Семечко","Росток","Первый лист","Три листа","Бутон","Готово к сбору"];
+const STAGE_EM = ["🌰","🌱","🍃","🌿","🪴","🌸"];
+
+/* ── ТЕМП: три слоя в одном цикле ──────────────────────────────────
+   40 секунд — десять тапов по солнцу дают ровно одну стадию.
+                Зашёл, потратил свет, увидел, как растение подросло.
+   3 минуты   — полная сессия: полить, зайти в магазин, в альбом,
+                отдать корешок соседу.
+   Сутки      — бутон набирает силу вчетверо дольше обычной стадии,
+                поэтому распустившийся цветок встречает наутро.
+                Никаких обратных отсчётов: только слово «к утру».      */
+const NEED = 100;                                  // базовая цена стадии
+const STAGE_COST = [NEED, NEED, NEED, NEED, NEED * 2];  // всего 600: сутки пассивного роста
+const need = st => STAGE_COST[st] != null ? STAGE_COST[st] : NEED;
+const RATE_DAY = 0.008;        // очков/сек днём — обычная стадия за 3,5 часа
+const RATE_NIGHT = 0.005;      // ночью медленнее, но никогда не стоп
+const TAP_GAIN = 10;           // десять тапов = ровно одна стадия
+const TAP_LIMIT = 10;
+const DRY_PENALTY = .35;
+const WATER_DRAIN = 0.0025;    // полный горшок сохнет около одиннадцати часов
+const KEGLI_PER_FLOWER = 30;   // награда за распустившийся цветок
+
+/* ── СОСЕДИ ────────────────────────────────────────────────────────
+   Обмен черенками без бэкенда. Имя — единственное, что игрок узнаёт
+   о другой стороне. Падежи заранее: «ушёл Татьяне», «корешок от Ольги». */
+const NEIGHBOURS = [
+  {d:"Татьяне",  g:"Татьяны"},  {d:"Ольге",    g:"Ольги"},
+  {d:"Марине",   g:"Марины"},   {d:"Ирине",    g:"Ирины"},
+  {d:"Светлане", g:"Светланы"}, {d:"Елене",    g:"Елены"},
+  {d:"Наталье",  g:"Натальи"},  {d:"Галине",   g:"Галины"},
+  {d:"Вере",     g:"Веры"},     {d:"Нине",     g:"Нины"},
+  {d:"Анне",     g:"Анны"},     {d:"Людмиле",  g:"Людмилы"},
+  {d:"Сергею",   g:"Сергея"},   {d:"Николаю",  g:"Николая"},
+  {d:"Владимиру",g:"Владимира"},{d:"Борису",   g:"Бориса"}
+];
+const GIFT_BACK_MS = 45 * 1000;   // в тестовой сборке ответ приходит быстро
+
+/* ════ СОСТОЯНИЕ ══════════════════════════ */
+const DEFAULTS = {
+  coins: 180,
+  kegli: 0,
+  gifted: 0,
+  received: 0,
+  giftBack: 0,
+  seed: "clover",
+  stage: 0,
+  prog: 0,
+  water: 100,
+  taps: 0,
+  tapDay: "",
+  pot: "pot0",
+  can: "can0",
+  fertUntil: 0,
+  fertMult: 1,
+  fertPerm: 1,
+  lamp: false,
+  owned: ["pot0","can0"],
+  seedsOwned: ["clover"],
+  album: {},
+  tasksDone: [],
+  last: Date.now(),
+  hourOverride: null,
+  sound: true
+};
+let S = load();
+
+function load(){
+  try{
+    const raw = localStorage.getItem("kk-garden");
+    if(raw) return Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(raw));
+  }catch(e){}
+  return JSON.parse(JSON.stringify(DEFAULTS));
+}
+function save(){
+  try{ localStorage.setItem("kk-garden", JSON.stringify(S)); }catch(e){}
+  if(window.storage && window.storage.set){ try{ window.storage.set("kk-garden", JSON.stringify(S)); }catch(e){} }
+}
+
+/* ════ ХЕЛПЕРЫ ════════════════════════════ */
+const $ = s => document.querySelector(s);
+const seedOf = id => SEEDS.find(s => s.id === id);
+const itemOf = id => { for(const k in SHOP){ const it = SHOP[k].items.find(i=>i.id===id); if(it) return it; } return null; };
+const today = () => new Date().toISOString().slice(0,10);
+
+function hour(){ return S.hourOverride !== null ? S.hourOverride : new Date().getHours(); }
+function timeOfDay(){
+  const h = hour();
+  if(h >= 6 && h < 9) return "morning";
+  if(h >= 9 && h < 18) return "day";
+  if(h >= 18 && h < 21) return "evening";
+  return "night";
+}
+function isNight(){ return timeOfDay() === "night"; }
+function lit(){ return !isNight() || S.lamp; }
+
+function potMult(){ const p = itemOf(S.pot); return p && p.mult ? p.mult : 1; }
+function fertMult(){
+  let m = S.fertPerm || 1;
+  if(S.fertUntil > Date.now()) m *= (S.fertMult || 1);
+  return m;
+}
+function autoWater(){ return itemOf(S.can) && itemOf(S.can).auto; }
+function waterSlow(){ const c = itemOf(S.can); return c && c.water ? c.water : 1; }
+
+/* Базовая скорость за отрезок. Короткий шаг считаем по факту, а длинное
+   отсутствие охватывает и день, и ночь — берём их доли в сутках, иначе
+   вернувшийся утром получает ночную ставку за все сутки. */
+function baseRate(dt){
+  if(S.lamp) return RATE_DAY;                            // с лампой ночи нет
+  if(dt < 3600) return lit() ? RATE_DAY : RATE_NIGHT;
+  const NIGHT_SHARE = 9 / 24;                            // ночь у нас с 21 до 6
+  return RATE_DAY * (1 - NIGHT_SHARE) + RATE_NIGHT * NIGHT_SHARE;
+}
+
+/* Рост за отрезок dt. Влага за время отсутствия кончается не мгновенно:
+   часть срока земля влажная, и только остаток идёт со штрафом. Считать
+   весь отрезок по конечной влажности — терять игроку полночи роста. */
+function growthOver(dt){
+  const base = baseRate(dt) * potMult() * fertMult();
+  if(autoWater()) return base * dt;
+  const drain = WATER_DRAIN * waterSlow();
+  const wet = drain > 0 ? Math.min(dt, S.water / drain) : dt;
+  const dry = Math.max(0, dt - wet);
+  return base * (wet + dry * DRY_PENALTY);
+}
+
+let toastT;
+function toast(msg){
+  const t = $("#toast"); t.textContent = msg; t.classList.add("on");
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove("on"), 2600);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   ЗВУК
+   Ни одного файла: всё синтезируется в WebAudio на лету.
+   Осцилляторы + отфильтрованный шум, один общий мастер-гейн.
+   Контекст создаётся при первом касании — политика автоплея.
+   ═══════════════════════════════════════════════════════════ */
+const SFX = (() => {
+  let ctx = null, master = null, ambGain = null, ambNodes = [], ambTimer = 0;
+  const ready = () => !!ctx && ctx.state === "running";
+
+  function ensure(){
+    if(!ctx){
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if(!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = S.sound ? .5 : 0;
+      // мягкий лимитер, чтобы наложения не щёлкали
+      const comp = ctx.createDynamicsCompressor();
+      comp.threshold.value = -14; comp.knee.value = 22; comp.ratio.value = 8;
+      comp.attack.value = .004; comp.release.value = .2;
+      master.connect(comp); comp.connect(ctx.destination);
+    }
+    if(ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  /* один голос: осциллятор с огибающей и опциональным глиссандо */
+  function tone(o){
+    if(!ensure()) return;
+    const t0 = ctx.currentTime + (o.at || 0);
+    const osc = ctx.createOscillator();
+    const g = ctx.createGain();
+    osc.type = o.type || "sine";
+    osc.frequency.setValueAtTime(o.f, t0);
+    if(o.f2) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.f2), t0 + (o.dur || .2));
+    const v = (o.v == null ? .3 : o.v);
+    const a = o.a == null ? .006 : o.a;
+    g.gain.setValueAtTime(.0001, t0);
+    g.gain.exponentialRampToValueAtTime(v, t0 + a);
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + (o.dur || .2));
+    let node = osc;
+    if(o.lp){
+      const f = ctx.createBiquadFilter();
+      f.type = "lowpass"; f.frequency.value = o.lp;
+      osc.connect(f); node = f;
+    }
+    node.connect(g); g.connect(o.bus || master);
+    osc.start(t0); osc.stop(t0 + (o.dur || .2) + .04);
+  }
+
+  let noiseBuf = null;
+  function noiseBuffer(){
+    if(noiseBuf) return noiseBuf;
+    const n = ctx.sampleRate * 2;
+    noiseBuf = ctx.createBuffer(1, n, ctx.sampleRate);
+    const d = noiseBuf.getChannelData(0);
+    for(let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuf;
+  }
+
+  /* шумовой слой: вода, шелест, ветер */
+  function noise(o){
+    if(!ensure()) return;
+    const t0 = ctx.currentTime + (o.at || 0);
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(); src.loop = true;
+    const f = ctx.createBiquadFilter();
+    f.type = o.type || "bandpass";
+    f.frequency.setValueAtTime(o.f || 900, t0);
+    if(o.f2) f.frequency.exponentialRampToValueAtTime(Math.max(60, o.f2), t0 + (o.dur || .3));
+    f.Q.value = o.q == null ? 1.2 : o.q;
+    const g = ctx.createGain();
+    const v = o.v == null ? .18 : o.v;
+    g.gain.setValueAtTime(.0001, t0);
+    g.gain.exponentialRampToValueAtTime(v, t0 + (o.a == null ? .02 : o.a));
+    g.gain.exponentialRampToValueAtTime(.0001, t0 + (o.dur || .3));
+    src.connect(f); f.connect(g); g.connect(o.bus || master);
+    src.start(t0); src.stop(t0 + (o.dur || .3) + .05);
+  }
+
+  const SC = [523.25, 587.33, 659.25, 783.99, 880, 1046.5, 1174.66, 1318.5]; // пентатоника-ish, до-мажор
+
+  const lib = {
+    /* тап по солнцу: чем больше тапов подряд, тем выше нота */
+    tap(i){
+      const n = SC[Math.min(SC.length - 1, i || 0)];
+      tone({f:n, f2:n*1.02, type:"triangle", dur:.16, v:.3});
+      tone({f:n*2, type:"sine", dur:.1, v:.1, at:.005});
+      noise({f:2600, f2:1400, q:1.6, dur:.1, v:.05});
+    },
+    /* полив: струя + три капли */
+    water(){
+      noise({f:1600, f2:420, q:.8, dur:.55, v:.16, a:.05});
+      for(let i = 0; i < 3; i++)
+        tone({f:660 + i*90, f2:300, type:"sine", dur:.14, v:.12, at:.12 + i*.09});
+    },
+    /* новая стадия: восходящее трезвучие */
+    stage(){
+      [0,2,4].forEach((s,i) => tone({f:SC[s], type:"triangle", dur:.34, v:.24, at:i*.075}));
+      noise({f:900, f2:3200, q:.9, dur:.4, v:.06, a:.12});
+    },
+    /* сбор: фанфара из пяти нот и шелест лепестков */
+    harvest(){
+      [0,2,4,5,7].forEach((s,i) => {
+        tone({f:SC[s], type:"triangle", dur:.42, v:.26, at:i*.085});
+        tone({f:SC[s]*2, type:"sine", dur:.3, v:.08, at:i*.085 + .01});
+      });
+      noise({f:700, f2:4200, q:.7, dur:.7, v:.07, a:.2, at:.1});
+    },
+    /* монетка */
+    coin(){
+      tone({f:987.77, type:"square", dur:.07, v:.14, lp:5000});
+      tone({f:1318.5, type:"square", dur:.13, v:.12, lp:6000, at:.06});
+    },
+    buy(){ lib.coin(); tone({f:196, f2:130, type:"sine", dur:.22, v:.2, at:.02}); },
+    /* посадка семечка: глухой «тюк» в землю */
+    plant(){
+      tone({f:150, f2:90, type:"sine", dur:.24, v:.28});
+      noise({f:500, f2:180, q:.7, dur:.26, v:.12});
+    },
+    /* задание выполнено */
+    task(){
+      [0,3,5,7].forEach((s,i) => tone({f:SC[s], type:"sine", dur:.36, v:.22, at:i*.07}));
+    },
+    open(){ noise({f:400, f2:1800, q:.6, dur:.26, v:.08, a:.08}); tone({f:330, f2:520, type:"sine", dur:.2, v:.14}); },
+    close(){ noise({f:1600, f2:350, q:.6, dur:.22, v:.07, a:.03}); tone({f:440, f2:260, type:"sine", dur:.16, v:.11}); },
+    tabc(){ tone({f:740, type:"triangle", dur:.06, v:.14}); },
+    press(){ tone({f:520, f2:600, type:"triangle", dur:.05, v:.1}); },
+    deny(){ tone({f:220, f2:150, type:"sawtooth", dur:.2, v:.16, lp:900}); },
+    /* редкая птица днём, сверчок ночью — оживляет фон */
+    bird(){
+      const b = 1400 + Math.random()*500;
+      tone({f:b, f2:b*1.5, type:"sine", dur:.09, v:.07});
+      tone({f:b*1.2, f2:b*.8, type:"sine", dur:.11, v:.06, at:.13});
+    },
+    cricket(){
+      for(let i = 0; i < 4; i++) noise({f:4600, q:24, dur:.03, v:.05, at:i*.055});
+    }
+  };
+
+  /* фоновый слой: тихий «воздух» за окном, разный днём и ночью */
+  function ambientOn(){
+    if(!ensure() || ambNodes.length) return;
+    ambGain = ctx.createGain(); ambGain.gain.value = 0; ambGain.connect(master);
+    const src = ctx.createBufferSource();
+    src.buffer = noiseBuffer(); src.loop = true;
+    const f = ctx.createBiquadFilter(); f.type = "lowpass"; f.frequency.value = 420; f.Q.value = .4;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = .07;
+    const lfoG = ctx.createGain(); lfoG.gain.value = 170;
+    lfo.connect(lfoG); lfoG.connect(f.frequency);
+    src.connect(f); f.connect(ambGain);
+    src.start(); lfo.start();
+    ambGain.gain.linearRampToValueAtTime(.05, ctx.currentTime + 2.5);
+    ambNodes = [src, lfo, ambGain];
+    clearInterval(ambTimer);
+    ambTimer = setInterval(() => {
+      if(document.hidden || !S.sound) return;
+      if(Math.random() < .35) (isNight() ? lib.cricket : lib.bird)();
+    }, 5200);
+  }
+  function ambientOff(){
+    clearInterval(ambTimer); ambTimer = 0;
+    ambNodes.forEach(n => { try{ n.stop ? n.stop() : n.disconnect(); }catch(e){} });
+    ambNodes = [];
+  }
+
+  const api = {};
+  Object.keys(lib).forEach(k => { api[k] = (...a) => { if(S.sound){ ensure(); lib[k](...a); } }; });
+  api.unlock = () => { if(S.sound){ ensure(); ambientOn(); } };
+  api.setMuted = m => {
+    S.sound = !m;
+    if(master) master.gain.setTargetAtTime(m ? 0 : .5, ctx.currentTime, .05);
+    if(m) ambientOff(); else { ensure(); ambientOn(); }
+  };
+  api.pause = () => { if(ctx && ctx.state === "running" && document.hidden) ctx.suspend(); };
+  api.resume = () => { if(ctx && S.sound) ctx.resume(); };
+  api.ready = ready;
+  return api;
+})();
+
+const ICO_SOUND_ON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor" stroke-linejoin="round"/><path d="M16 9.2a4 4 0 0 1 0 5.6"/><path d="M18.6 6.6a7.6 7.6 0 0 1 0 10.8"/></svg>`;
+const ICO_SOUND_OFF = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z" fill="currentColor" stroke-linejoin="round"/><path d="M16.5 10l4 4M20.5 10l-4 4"/></svg>`;
+function renderSound(){
+  const b = $("#soundbtn");
+  b.innerHTML = S.sound ? ICO_SOUND_ON : ICO_SOUND_OFF;
+  b.classList.toggle("off", !S.sound);
+  b.setAttribute("aria-label", S.sound ? "Выключить звук" : "Включить звук");
+}
+
+/* ════ ГРАФИКА РАСТЕНИЯ ═══════════════════ */
+function leafPath(x,y,s,rot){
+  return `<g transform="translate(${x} ${y}) rotate(${rot}) scale(${s})">
+    <path d="M0 0 C -13 -4 -19 -15 -13 -24 C -5 -30 6 -26 9 -16 C 11 -8 7 -2 0 0 Z"
+      fill="url(#lf)" stroke="#1f7a44" stroke-width="1.4" stroke-linejoin="round"/>
+    <path d="M0 0 C -5 -9 -8 -16 -8 -22" stroke="#1f7a44" stroke-width="1" opacity=".45" fill="none"/>
+  </g>`;
+}
+function flowerHead(sd, cx, cy, scale){
+  const p = sd.petal, c = sd.core;
+  let g = "";
+  if(sd.form === "clover"){
+    for(let i=0;i<12;i++){
+      const a = (i/12)*Math.PI*2, r = 12;
+      g += `<ellipse cx="${(Math.cos(a)*r).toFixed(1)}" cy="${(Math.sin(a)*r*.8).toFixed(1)}" rx="7" ry="5.5"
+             transform="rotate(${(a*180/Math.PI).toFixed(0)} ${(Math.cos(a)*r).toFixed(1)} ${(Math.sin(a)*r*.8).toFixed(1)})"
+             fill="${p}" stroke="#d9cdb4" stroke-width=".9"/>`;
+    }
+    g += `<circle r="8" fill="${c}"/>`;
+  } else if(sd.form === "spike"){
+    for(let i=0;i<7;i++){
+      g += `<ellipse cx="0" cy="${-i*8+16}" rx="${7-i*0.6}" ry="5" fill="${p}" opacity="${.95-i*.06}" stroke="rgba(0,0,0,.08)" stroke-width=".6"/>`;
+    }
+    g += `<circle r="3.5" cy="18" fill="${c}"/>`;
+  } else if(sd.form === "peony"){
+    for(let ring=2;ring>=0;ring--){
+      const n = 8, rr = 8 + ring*6;
+      for(let i=0;i<n;i++){
+        const a = (i/n)*Math.PI*2 + ring*.4;
+        g += `<ellipse cx="${(Math.cos(a)*rr).toFixed(1)}" cy="${(Math.sin(a)*rr).toFixed(1)}" rx="9" ry="7"
+               transform="rotate(${(a*180/Math.PI).toFixed(0)} ${(Math.cos(a)*rr).toFixed(1)} ${(Math.sin(a)*rr).toFixed(1)})"
+               fill="${p}" opacity="${.7+ring*.15}"/>`;
+      }
+    }
+    g += `<circle r="7" fill="${c}"/>`;
+  } else {
+    for(let i=0;i<10;i++){
+      const a = (i/10)*Math.PI*2;
+      g += `<ellipse cx="${(Math.cos(a)*13).toFixed(1)}" cy="${(Math.sin(a)*13).toFixed(1)}" rx="9" ry="4.5"
+             transform="rotate(${(a*180/Math.PI).toFixed(0)} ${(Math.cos(a)*13).toFixed(1)} ${(Math.sin(a)*13).toFixed(1)})"
+             fill="${p}" stroke="rgba(0,0,0,.09)" stroke-width=".8"/>`;
+    }
+    g += `<circle r="6.5" fill="${c}"/>`;
+  }
+  return `<g class="bloom" transform="translate(${cx} ${cy}) scale(${scale})">${g}</g>`;
+}
+function potSvg(){
+  const tone = {pot0:["#d09a6f","#a06f4c","#e8bb92"], pot1:["#c6d1d8","#94a2ab","#e2eaef"],
+                pot2:["#8fabb8","#5f7b89","#b4cbd6"], pot3:["#dc8058","#a4522f","#f0a683"]}[S.pot] || ["#d09a6f","#a06f4c","#e8bb92"];
+  return `
+    <path d="M52 126 L138 126 L129 186 Q128 192 121 192 L69 192 Q62 192 61 186 Z" fill="${tone[0]}"/>
+    <path d="M61 126 L69 126 L67 190 Q62 189 61 184 Z" fill="${tone[2]}" opacity=".65"/>
+    <path d="M52 126 L138 126 L135 141 L55 141 Z" fill="${tone[1]}"/>
+    <path d="M52 126 L138 126 L137 130 L53 130 Z" fill="${tone[2]}" opacity=".8"/>
+    <ellipse cx="95" cy="130" rx="41" ry="7" fill="#3c2e22"/>
+    <ellipse cx="95" cy="128" rx="38" ry="6" fill="#4c3b2c"/>
+    <ellipse cx="88" cy="127" rx="12" ry="2.4" fill="#5d4a37" opacity=".7"/>`;
+}
+function plantSvg(){
+  const sd = seedOf(S.seed) || SEEDS[0];
+  const st = S.stage;
+  let body = "";
+  if(st === 0){
+    body = `<ellipse cx="95" cy="126" rx="6" ry="4.5" fill="#8a6b45"/>
+            <path d="M91 125 q4 -3 8 0" stroke="#6f5233" stroke-width="1.2" fill="none"/>`;
+  } else if(st === 1){
+    body = `<path d="M95 128 L95 106" stroke="#2e9e5b" stroke-width="3.4" stroke-linecap="round"/>
+            ${leafPath(95,108,.55,-32)}${leafPath(95,108,.55,152)}`;
+  } else if(st === 2){
+    body = `<path d="M95 128 L95 88" stroke="#2e9e5b" stroke-width="3.8" stroke-linecap="round"/>
+            ${leafPath(95,92,.8,-38)}${leafPath(95,92,.8,146)}${leafPath(95,90,.7,55)}`;
+  } else if(st === 3){
+    body = `<path d="M95 128 L95 70" stroke="#2e9e5b" stroke-width="4" stroke-linecap="round"/>
+            <path d="M95 104 q -16 -6 -22 -20" stroke="#2e9e5b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M95 96 q 18 -6 24 -20" stroke="#2e9e5b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            ${leafPath(73,84,.85,-50)}${leafPath(119,76,.85,40)}${leafPath(95,70,.9,0)}`;
+  } else if(st === 4){
+    body = `<path d="M95 128 L95 58" stroke="#2e9e5b" stroke-width="4.2" stroke-linecap="round"/>
+            <path d="M95 100 q -17 -6 -23 -21" stroke="#2e9e5b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M95 92 q 19 -6 25 -21" stroke="#2e9e5b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            ${leafPath(72,79,.9,-52)}${leafPath(120,71,.9,42)}
+            <ellipse cx="95" cy="52" rx="8" ry="11" fill="${sd.petal}" opacity=".6" stroke="#2e9e5b" stroke-width="1.6"/>`;
+  } else {
+    body = `<path d="M95 128 L95 54" stroke="#2e9e5b" stroke-width="4.2" stroke-linecap="round"/>
+            <path d="M95 100 q -17 -6 -23 -21" stroke="#2e9e5b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            <path d="M95 92 q 19 -6 25 -21" stroke="#2e9e5b" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+            ${leafPath(72,79,.9,-52)}${leafPath(120,71,.9,42)}
+            ${flowerHead(sd,95,46,1)}`;
+  }
+  return `<svg viewBox="0 0 190 200">
+    <defs><linearGradient id="lf" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#3fb56d"/><stop offset="1" stop-color="#8ce0ab"/></linearGradient></defs>
+    ${potSvg()}
+    <g class="grow"><g class="nodwrap"><g class="sway">${body}</g></g></g>
+  </svg>`;
+}
+function seedIcon(sd, size){
+  return `<svg viewBox="0 0 100 100">${flowerHead(sd,50,50,size||1.5)}</svg>`;
+}
+function ghostIcon(sd, size){
+  // силуэт должен читаться на сливочном фоне, поэтому он заметно темнее фона
+  const g = {petal:"#b2bdb3", core:"#95a196", form:sd.form};
+  return `<svg viewBox="0 0 100 100" style="opacity:.9">${flowerHead(g,50,50,size||1.5)}</svg>`;
+}
+
+/* ════ ЧАСТИЦЫ ════════════════════════════ */
+/* CSS-правило prefers-reduced-motion гасит только CSS-анимации.
+   Частицы живут на Web Animations API, до них !important не достаёт,
+   поэтому спрашиваем систему сами. */
+const calmMQ = window.matchMedia ? matchMedia("(prefers-reduced-motion: reduce)") : null;
+const calm = () => !!(calmMQ && calmMQ.matches);
+
+function sceneXY(el, dx, dy){
+  const r = el.getBoundingClientRect(), sr = $("#scene").getBoundingClientRect();
+  return [r.left - sr.left + r.width/2 + (dx||0), r.top - sr.top + r.height/2 + (dy||0)];
+}
+function sparks(x, y, n, colors){
+  if(calm()) return;
+  const sc = $("#scene");
+  for(let i = 0; i < n; i++){
+    const s = document.createElement("span");
+    s.className = "spark";
+    s.style.left = x + "px"; s.style.top = y + "px";
+    s.style.background = colors[i % colors.length];
+    sc.appendChild(s);
+    const a = Math.random() * Math.PI * 2, d = 30 + Math.random() * 60;
+    s.animate([
+      {transform:"translate(-50%,-50%) scale(1)", opacity:1},
+      {transform:`translate(calc(-50% + ${Math.cos(a)*d}px),calc(-50% + ${Math.sin(a)*d}px)) scale(0)`, opacity:0}
+    ], {duration:520 + Math.random()*280, easing:"cubic-bezier(.2,.7,.3,1)"}).onfinish = () => s.remove();
+  }
+}
+function petalRain(x, y, color){
+  if(calm()) return;
+  const sc = $("#scene");
+  for(let i = 0; i < 14; i++){
+    const p = document.createElement("span");
+    p.className = "petal";
+    p.style.left = x + "px"; p.style.top = y + "px";
+    p.style.background = color;
+    sc.appendChild(p);
+    const dx = (Math.random() - .5) * 150, dy = 60 + Math.random() * 110;
+    p.animate([
+      {transform:"translate(-50%,-50%) rotate(0deg)", opacity:1},
+      {transform:`translate(calc(-50% + ${dx}px),calc(-50% + ${dy}px)) rotate(${(Math.random()*720-360)|0}deg)`, opacity:0}
+    ], {duration:900 + Math.random()*500, easing:"cubic-bezier(.3,.5,.5,1)"}).onfinish = () => p.remove();
+  }
+}
+function coinsToPurse(n){
+  const bump = () => { $("#purse").classList.add("bump"); setTimeout(() => $("#purse").classList.remove("bump"), 520); };
+  if(calm()){ bump(); SFX.coin(); return; }   // без полёта, но счёт всё равно отзывается
+  const purse = $("#purse").getBoundingClientRect();
+  const plant = $("#plantwrap").getBoundingClientRect();
+  for(let i = 0; i < n; i++){
+    const c = document.createElement("div");
+    c.className = "coinfly";
+    c.innerHTML = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#8fd9f7" stroke="#fff" stroke-width="2.5"/><circle cx="12" cy="12" r="6.5" fill="#57b8e8"/></svg>`;
+    c.style.position = "fixed";
+    c.style.left = (plant.left + plant.width/2 - 13) + "px";
+    c.style.top = (plant.top + plant.height*.3) + "px";
+    document.body.appendChild(c);
+    const jx = (Math.random() - .5) * 90, jy = -30 - Math.random() * 50;
+    requestAnimationFrame(() => {
+      c.style.transform = `translate(${jx}px,${jy}px) scale(1.25)`;
+      setTimeout(() => {
+        c.style.transitionDuration = ".5s";
+        c.style.transform = `translate(${purse.left + purse.width/2 - (plant.left + plant.width/2)}px,${purse.top + purse.height/2 - (plant.top + plant.height*.3) - 13}px) scale(.55)`;
+        c.style.opacity = "0";
+      }, 180 + i * 55);
+    });
+    setTimeout(() => { c.remove(); if(i === n-1) bump(); }, 1100 + i * 55);
+    setTimeout(() => SFX.coin(), 200 + i * 60);
+  }
+}
+
+/* ════ РЕНДЕР ═════════════════════════════ */
+let prevStage = -1, prevSeed = "";
+let lastMainHtml = "", lastStatusHtml = "";
+const RING = 2 * Math.PI * 50;
+const ICO_HARVEST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13c3.5 0 6 2.2 6 6-3.5 0-6-2.2-6-6z"/><path d="M19 8c0 5-3.5 8-8 11"/><path d="M12 4c3 0 5 2 5 5-3 0-5-2-5-5z"/></svg>`;
+const ICO_CAN = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10h9v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8z"/><path d="M15 12l5-4"/><path d="M8 10V8a2 2 0 0 1 4 0v2"/></svg>`;
+
+function render(){
+  const tod = timeOfDay();
+  $("#sky").dataset.t = tod;
+  $("#glow").classList.toggle("on", isNight() && S.lamp);
+
+  const orb = $("#orb");
+  const night = isNight();
+  orb.classList.toggle("moon", night && !S.lamp);
+  orb.classList.toggle("lamp", night && S.lamp);
+  orb.classList.toggle("spent", S.taps >= TAP_LIMIT || (night && !S.lamp));
+
+  const left = Math.max(0, TAP_LIMIT - S.taps);
+  const ring = $("#orbfg");
+  ring.style.strokeDasharray = RING;
+  ring.style.strokeDashoffset = RING * (1 - left / TAP_LIMIT);
+
+  if(S.stage !== prevStage || S.seed !== prevSeed){
+    $("#plantwrap").innerHTML = plantSvg();
+    $("#plantwrap").classList.toggle("ready", S.stage >= 5);
+    prevStage = S.stage; prevSeed = S.seed;
+  }
+
+  $("#coins").textContent = Math.floor(S.coins);
+  $("#kegli").textContent = Math.floor(S.kegli || 0);
+  const pct = S.stage >= 5 ? 100 : Math.min(100, S.prog / need(S.stage) * 100);
+  $("#fill").style.width = pct + "%";
+  $("#bar").classList.toggle("full", S.stage >= 5);
+  $("#stagename").textContent = STAGES[S.stage];
+  const sc = $("#tapsleft");
+  sc.textContent = "☀ " + left;
+  sc.classList.toggle("spent", left === 0);
+  $("#wf").style.width = Math.max(0, S.water) + "%";
+  $("#wtxt").textContent = Math.round(Math.max(0, S.water)) + "%";
+  const wr = $("#waterrow");
+  wr.classList.toggle("low", S.water <= 35 && S.water > 0);
+  wr.classList.toggle("dry", S.water <= 0);
+
+  const sd = seedOf(S.seed);
+  const main = $("#mainbtn");
+  let cls, html, off;
+  if(S.stage >= 5){
+    cls = "gbtn g-gold full";
+    html = ICO_HARVEST + "Собрать · +" + sd.pay;
+    off = false;
+  } else {
+    const auto = autoWater();
+    off = auto || S.water > 92;
+    cls = "gbtn full " + (off ? "g-cream calm" : "g-green");
+    html = ICO_CAN + (auto ? "Автополив работает" : off ? "Земля влажная" : "Полить");
+  }
+  // тик идёт раз в секунду; переписывать разметку кнопки, когда она не менялась,
+  // значит раз в секунду пересобирать SVG на ровном месте
+  if(html !== lastMainHtml){ main.innerHTML = html; lastMainHtml = html; }
+  if(cls !== main.className) main.className = cls;
+  main.disabled = off;
+
+  let st, em;
+  if(S.stage >= 5){ st = `<b>${sd.nm}</b> распустился. Соберите — и посадите следующее семя.`; em = "🌸"; }
+  else if(S.water <= 0){ st = "Земля пересохла. Полейте, иначе рост почти встал."; em = "🏜️"; }
+  else if(S.stage === 4){ st = "Бутон набирает силу. Раскроется к утру — загляните завтра."; em = "🪴"; }
+  else if(night && !S.lamp){ st = "Ночь. Растёт медленно — фитолампа это исправит."; em = "🌙"; }
+  else if(S.taps >= TAP_LIMIT){ st = "Солнце на сегодня отдало всё. Дальше растёт само."; em = "😌"; }
+  else { st = `Нажмите на ${night ? "лампу" : "солнце"} — растение потянется к свету.`; em = STAGE_EM[S.stage]; }
+  if(st !== lastStatusHtml){ $("#statustx").innerHTML = st; lastStatusHtml = st; }
+  $("#statusem").textContent = em;
+
+  renderBadges();
+}
+
+/* точки «есть что посмотреть» */
+function affordableCount(){
+  let n = 0;
+  const fertActive = S.fertUntil > Date.now();
+  for(const cat in SHOP) for(const it of SHOP[cat].items){
+    const owned = S.owned.includes(it.id) || it.own;
+    if(owned) continue;
+    if(it.temp && fertActive) continue;   // подкормка уже действует — не зовём покупать вторую
+    if(S.coins >= it.price) n++;
+  }
+  return n;
+}
+function plantableSeeds(){
+  return SEEDS.filter(s => S.seedsOwned.includes(s.id) && s.id !== S.seed).length;
+}
+function renderBadges(){
+  const shopN = affordableCount() + (S.stage >= 5 ? plantableSeeds() : 0);
+  const sb = $("#shopbadge");
+  sb.hidden = shopN === 0; sb.textContent = shopN > 9 ? "9+" : shopN;
+  const taskN = TASKS.filter(t => !S.tasksDone.includes(t.id)).length;
+  const tb = $("#taskbadge");
+  tb.hidden = taskN === 0; tb.textContent = taskN;
+}
+
+/* ════ ТИК ════════════════════════════════ */
+function tick(){
+  const now = Date.now();
+  let dt = (now - (S.last || now)) / 1000;
+  if(dt < 0) dt = 0;
+  // цикл теперь суточный, поэтому потолок отсутствия — двое суток, а не полдня:
+  // с прежними двенадцатью часами вернувшийся наутро терял половину ночи
+  if(dt > 60 * 60 * 48) dt = 60 * 60 * 48;
+  S.last = now;
+
+  if(S.tapDay !== today()){ S.tapDay = today(); S.taps = 0; }
+
+  const was = S.stage;
+  if(S.stage < 5){
+    S.prog += growthOver(dt);   // считается до полива: влага нужна прежняя
+    advance();
+  }
+
+  if(autoWater()) S.water = 100;
+  else S.water = Math.max(0, S.water - dt * WATER_DRAIN * waterSlow());
+
+  // ответный корешок от соседа: приходит и тогда, когда игра была закрыта
+  if(S.giftBack && now >= S.giftBack){ S.giftBack = 0; receiveCutting(); }
+
+  if(S.stage > was && dt < 30) stageUp();
+  render();
+}
+
+/* Стадии стоят по-разному: последняя вчетверо дороже, поэтому бутон
+   не раскрывается в ту же сессию, сколько по нему ни тапай. */
+function advance(){
+  while(S.stage < 5 && S.prog >= need(S.stage)){ S.prog -= need(S.stage); S.stage++; }
+  if(S.stage >= 5) S.prog = 0;
+}
+
+function stageUp(){
+  SFX.stage();
+  const p = $("#plantwrap");
+  if(p){
+    const [x,y] = sceneXY(p, 0, -20);
+    sparks(x, y, 10, ["#a8f0c0","#ffe89a","#ffffff"]);
+  }
+  if(S.stage >= 5) toast("Цветок распустился. Можно собирать.");
+}
+
+/* ════ ДЕЙСТВИЯ ═══════════════════════════ */
+function tapSun(){
+  SFX.unlock();
+  if(isNight() && !S.lamp){ SFX.deny(); toast("Солнце зашло. Ночью помогает только фитолампа."); return; }
+  if(S.taps >= TAP_LIMIT){ SFX.deny(); toast("Сегодня света достаточно. Растение растёт само."); return; }
+  if(S.stage >= 5){ SFX.deny(); toast("Цветок уже готов — соберите его."); return; }
+
+  SFX.tap(S.taps);
+  S.taps++;
+  S.prog += TAP_GAIN;
+  const was = S.stage;
+  advance();
+
+  const b = $("#burst"); b.classList.remove("go"); void b.offsetWidth; b.classList.add("go");
+
+  if(!calm()){
+    const f = document.createElement("div");
+    f.className = "floaty"; f.textContent = "+" + TAP_GAIN;
+    // стартуем от центра солнца: выше по сцене числу некуда лететь, оно обрежется
+    const r = $("#orb").getBoundingClientRect(), sr = $("#scene").getBoundingClientRect();
+    f.style.left = (r.left - sr.left + r.width / 2 - 16) + "px";
+    f.style.top = (r.top - sr.top + r.height / 2 - 10) + "px";
+    $("#scene").appendChild(f);
+    setTimeout(() => f.remove(), 1100);
+  }
+
+  const [ox,oy] = sceneXY($("#orb"));
+  sparks(ox, oy, 5, ["#fff3b0","#ffd76b","#ffffff"]);
+
+  const pl = $("#plantwrap").querySelector(".nodwrap");
+  if(pl){
+    pl.classList.remove("nod"); void pl.getBoundingClientRect(); pl.classList.add("nod");
+    setTimeout(() => pl.classList.remove("nod"), 520);
+  }
+
+  if(navigator.vibrate) navigator.vibrate(8);
+  if(S.stage > was) stageUp();
+  save(); render();
+}
+
+function mainAction(){
+  SFX.unlock();
+  if(S.stage >= 5){ harvest(); return; }
+  S.water = 100;
+  SFX.water();
+  const [x,y] = sceneXY($("#plantwrap"), 0, 30);
+  sparks(x, y, 8, ["#9edcff","#d8f2ff","#57b8e8"]);
+  toast("Полито. Земля влажная.");
+  save(); render();
+}
+
+function harvest(){
+  const sd = seedOf(S.seed);
+  S.coins += sd.pay;
+  S.kegli = (S.kegli || 0) + KEGLI_PER_FLOWER;
+  S.album[sd.id] = (S.album[sd.id] || 0) + 1;
+  S.stage = 0; S.prog = 0;
+
+  SFX.harvest();
+  const [x,y] = sceneXY($("#plantwrap"), 0, -35);
+  petalRain(x, y, sd.petal);
+  sparks(x, y, 14, ["#ffe89a","#ffffff",sd.petal]);
+  coinsToPurse(Math.min(8, Math.max(4, Math.round(sd.pay / 60))));
+
+  const kb = $("#keglibox");
+  kb.classList.add("bump"); setTimeout(() => kb.classList.remove("bump"), 520);
+
+  toast(`${sd.nm} собран. +${KEGLI_PER_FLOWER} КеГЛей на карту и ${sd.pay} росинок.`);
+  save(); render();
+  // магазин предлагаем сам, но только если игрок за это время никуда не ушёл
+  setTimeout(() => {
+    if(document.querySelector(".sheet.on")) return;
+    openSheet("shop"); shopTab("seed");
+  }, 900);
+}
+
+/* ════ МАГАЗИН ════════════════════════════ */
+let curTab = "seed";
+const TABS = [["seed","Семена"],["pot","Горшки"],["can","Лейки"],["fert","Удобрения"],["light","Свет"]];
+
+function rarBadge(r){
+  const R = RAR[r];
+  return `<span class="dots" style="color:${R.c}">${'<i></i>'.repeat(R.n)}</span>`;
+}
+function coinSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" fill="rgba(255,255,255,.45)"/><circle cx="12" cy="12" r="6.5" fill="#fff"/></svg>`;
+}
+function lockSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="10.5" width="14" height="10" rx="3"/><path d="M8.5 10.5V8a3.5 3.5 0 0 1 7 0v2.5"/></svg>`;
+}
+function checkSvg(){
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12.5l4.5 4.5L19 7"/></svg>`;
+}
+function icTile(rar, inner){
+  const R = RAR[rar];
+  return `<span class="ic" style="background:linear-gradient(180deg,${R.g[0]},${R.g[1]})">${inner}</span>`;
+}
+
+function tabDot(id){
+  if(id === "seed") return (S.stage >= 5 && plantableSeeds()) ? `<span class="dot"></span>` : "";
+  const grp = SHOP[id]; if(!grp) return "";
+  const fertActive = S.fertUntil > Date.now();
+  const can = grp.items.some(it =>
+    !(S.owned.includes(it.id) || it.own) && !(it.temp && fertActive) && S.coins >= it.price);
+  return can ? `<span class="dot"></span>` : "";
+}
+function shopTab(t){
+  curTab = t;
+  $("#shoptabs").innerHTML = TABS.map(([id,nm]) =>
+    `<button class="tab ${id===curTab?"on":""}" data-tab="${id}">${nm}${tabDot(id)}</button>`).join("");
+  $("#shopbody").innerHTML = curTab === "seed" ? seedList() : itemList(curTab);
+}
+
+function seedList(){
+  return `<p class="hint">Семечко сажают в горшок один раз — вырастет, соберёте, посадите следующее.</p>` +
+  SEEDS.map(sd => {
+    const has = S.seedsOwned.includes(sd.id);
+    const planted = S.seed === sd.id;
+    const R = RAR[sd.rar];
+    return `<div class="card ${has?"":"locked"}">
+      <span class="rar" style="background:linear-gradient(180deg,${R.c},${R.c}99)"></span>
+      ${icTile(sd.rar, has ? seedIcon(sd,.95) : ghostIcon(sd,.95))}
+      <span class="tx">
+        <span class="nm">${sd.nm} ${rarBadge(sd.rar)}</span>
+        <span class="ds">${has ? (R.t + " · " + sd.pay + " росинок за цветок") : sd.how}</span>
+      </span>
+      ${planted ? `<span class="owned">${checkSvg()}Растёт</span>`
+        : has ? `<button class="gbtn g-green sm" data-plant="${sd.id}">Посадить</button>`
+        : `<span class="lockchip">${lockSvg()}Закрыто</span>`}
+    </div>`;
+  }).join("");
+}
+
+function itemList(cat){
+  const grp = SHOP[cat];
+  return grp.items.map(it => {
+    const owned = S.owned.includes(it.id) || it.own;
+    const equipped = (cat === "pot" && S.pot === it.id) || (cat === "can" && S.can === it.id) || (cat === "light" && S.lamp && it.lamp);
+    const consumable = !!it.temp;
+    const active = consumable && S.fertUntil > Date.now() && S.fertMult === it.fert;
+    // переставлять можно только горшок и лейку; вечная подкормка и лампа
+    // работают сами по себе, и кнопка «Поставить» у них была бы мёртвой
+    const swappable = cat === "pot" || cat === "can";
+    let right;
+    if(equipped) right = `<span class="owned">${checkSvg()}В деле</span>`;
+    else if(active) right = `<span class="owned">${checkSvg()}Действует</span>`;
+    else if(owned && !consumable && swappable) right = `<button class="gbtn g-blue sm" data-use="${it.id}" data-cat="${cat}">Поставить</button>`;
+    else if(owned && !consumable) right = `<span class="owned">${checkSvg()}Действует</span>`;
+    else if(S.coins < it.price) right = `<button class="gbtn sm" disabled><span class="pricetag">${it.price}${coinSvg()}</span></button>`;
+    else right = `<button class="gbtn g-gold sm" data-buy="${it.id}" data-cat="${cat}"><span class="pricetag">${it.price}${coinSvg()}</span></button>`;
+    return `<div class="card ${(!owned && S.coins < it.price) ? "locked":""}">
+      <span class="rar" style="background:linear-gradient(180deg,${RAR[it.rar].c},${RAR[it.rar].c}99)"></span>
+      ${icTile(it.rar, ICONS[cat] || ICONS.pot)}
+      <span class="tx">
+        <span class="nm">${it.nm} ${rarBadge(it.rar)}</span>
+        <span class="ds">${it.ds}</span>
+      </span>${right}
+    </div>`;
+  }).join("");
+}
+
+const ICONS = {
+  pot:`<svg viewBox="0 0 24 24" fill="none" stroke="#5d5040" stroke-width="1.9" stroke-linejoin="round"><path d="M4 8h16l-1.6 11.2a1 1 0 0 1-1 .8H6.6a1 1 0 0 1-1-.8L4 8z"/><path d="M3 6h18v2H3z"/></svg>`,
+  can:`<svg viewBox="0 0 24 24" fill="none" stroke="#40525d" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 10h9v8a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-8z"/><path d="M15 12l5-4"/><path d="M8 10V8a2 2 0 0 1 4 0v2"/></svg>`,
+  fert:`<svg viewBox="0 0 24 24" fill="none" stroke="#4a5d40" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20c0-6 3-9 10-10-1 7-4 10-10 10z"/><path d="M7 20c-1-3 0-6 2-8"/></svg>`,
+  light:`<svg viewBox="0 0 24 24" fill="none" stroke="#a8478c" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4h12l-2 8H8L6 4z"/><path d="M12 12v5"/><path d="M9.5 20h5"/></svg>`
+};
+
+function buy(id, cat){
+  const it = itemOf(id);
+  if(!it) return;
+  if(S.coins < it.price){ SFX.deny(); toast("Не хватает росинок. Соберите цветок."); return; }
+  S.coins -= it.price;
+  SFX.buy();
+  if(it.temp){
+    S.fertUntil = Date.now() + it.temp * 3600 * 1000;
+    S.fertMult = it.fert;
+    toast(`${it.nm} внесён. Действует ${it.temp} ч.`);
+  } else if(it.fert){
+    S.fertPerm = it.fert;
+    S.owned.push(id);
+    toast(`${it.nm} — теперь навсегда.`);
+  } else if(it.lamp){
+    S.lamp = true; S.owned.push(id);
+    toast("Фитолампа над подоконником. Ночь больше не помеха.");
+  } else {
+    S.owned.push(id);
+    if(cat === "pot") S.pot = id;
+    if(cat === "can") S.can = id;
+    toast(`${it.nm} — куплено и поставлено.`);
+  }
+  prevStage = -1;
+  save(); shopTab(curTab); render();
+}
+
+function use(id, cat){
+  if(cat === "pot") S.pot = id;
+  if(cat === "can") S.can = id;
+  SFX.press();
+  prevStage = -1;
+  save(); shopTab(curTab); render();
+}
+
+function plant(id){
+  if(S.stage > 0 && S.stage < 5){ SFX.deny(); toast("Сначала дорастите то, что уже в горшке."); return; }
+  S.seed = id; S.stage = 0; S.prog = 0;
+  SFX.plant();
+  toast(seedOf(id).nm + " посажен.");
+  save(); shopTab("seed"); render();
+  closeSheets(true);
+}
+
+/* ════ КОРЕШКИ ════════════════════════════
+   Обмен без бэкенда и без выбора адресата: отдаёшь случайному соседу,
+   узнаёшь только имя. Ответ приходит сам — это и есть путь к сортам,
+   которые иначе не открыть. */
+const neighbour = () => NEIGHBOURS[Math.floor(Math.random() * NEIGHBOURS.length)];
+
+/* Номер карты превращается в человека детерминированно: один и тот же
+   номер — всегда одно и то же имя. Так подарок «по карте» ощущается
+   адресным, хотя никакого сервера за ним нет. */
+function nameFromCard(digits){
+  let h = 2166136261;
+  for(let i = 0; i < digits.length; i++){ h ^= digits.charCodeAt(i); h = Math.imul(h, 16777619); }
+  return NEIGHBOURS[(h >>> 0) % NEIGHBOURS.length];
+}
+const cardDigits = v => (v || "").replace(/\D/g, "").slice(0, 16);
+const cardPretty = d => d.replace(/(.{4})/g, "$1 ").trim();
+
+function giftCutting(to){
+  const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
+  if(!grown){ SFX.deny(); toast("Сначала вырастите первый цветок."); return; }
+  if(S.giftBack){ SFX.deny(); toast("Один корешок уже в пути. Дождитесь ответа."); return; }
+  S.gifted = (S.gifted || 0) + 1;
+  S.giftBack = Date.now() + GIFT_BACK_MS;
+  S.lastCard = to && to.card ? to.card : "";
+  SFX.task();
+  toast(`Корешок ушёл ${(to && to.who ? to.who : neighbour()).d}.`);
+  save(); renderGift();
+}
+
+/* по номеру карты */
+function giftByCard(){
+  const d = cardDigits($("#cardin") ? $("#cardin").value : "");
+  if(d.length < 8){
+    SFX.deny(); toast("Номер карты — не меньше восьми цифр.");
+    if($("#cardin")) $("#cardin").focus();
+    return;
+  }
+  giftCutting({ who: nameFromCard(d), card: cardPretty(d) });
+}
+
+function receiveCutting(){
+  const from = neighbour();
+  const locked = SEEDS.filter(s => !S.seedsOwned.includes(s.id));
+  S.received = (S.received || 0) + 1;
+  if(locked.length){
+    const sd = locked[Math.floor(Math.random() * locked.length)];
+    S.seedsOwned.push(sd.id);
+    SFX.task();
+    toast(`Корешок от ${from.g} — ${sd.nm.toLowerCase()}. Семена в магазине.`);
+  } else {
+    S.coins += 120;
+    SFX.coin();
+    toast(`Корешок от ${from.g}. Все сорта уже есть — прислали горсть росинок.`);
+  }
+  save();
+  if($("#album").classList.contains("on")) renderAlbum();
+  if($("#shop").classList.contains("on")) shopTab(curTab);
+}
+
+function renderGift(){
+  const el = $("#giftbox");
+  if(!el) return;
+  const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
+  let inner;
+  if(S.giftBack){
+    const to = S.lastCard ? ` на карту ${S.lastCard}` : "";
+    inner = `<span class="gifttx"><b>Корешок в пути${to}.</b> Вам ответят тем же — загляните позже.</span>`;
+  } else if(grown > 0){
+    inner = `<span class="gifttx">Лишний отросток не пропадает. Отдайте его тому, кто тоже растит — вам ответят тем же.</span>
+      <div class="giftform">
+        <input class="cardin" id="cardin" type="tel" inputmode="numeric" autocomplete="off"
+               maxlength="19" placeholder="Номер карты КуулКлевер" aria-label="Номер карты получателя">
+        <button class="gbtn g-pink sm" id="giftbtn">Отправить</button>
+      </div>
+      <button class="linkbtn" id="giftrnd">или случайному соседу</button>`;
+  } else {
+    inner = `<span class="gifttx">Вырастите первый цветок — будет чем делиться.</span>`;
+  }
+  const stat = (S.gifted || S.received)
+    ? `<span class="giftstat">Отдано ${S.gifted || 0} · получено ${S.received || 0}</span>` : "";
+  el.innerHTML = inner + stat;
+}
+
+/* ════ АЛЬБОМ И ЗАДАНИЯ ═══════════════════ */
+function renderAlbum(){
+  renderGift();
+  $("#albumgrid").innerHTML = SEEDS.map(sd => {
+    const n = S.album[sd.id] || 0;
+    const R = RAR[sd.rar];
+    if(n > 0) return `<div class="cell" style="background:linear-gradient(180deg,${R.g[0]},${R.g[1]})">
+      <span class="rb" style="background:${R.c}"></span>
+      ${seedIcon(sd,.8)}<span class="cn">${sd.nm}</span><span class="cnt">${n}</span></div>`;
+    return `<div class="cell lock">${ghostIcon(sd,.8)}<span class="cn">${sd.nm}</span></div>`;
+  }).join("");
+}
+function renderTasks(){
+  $("#tasklist").innerHTML = TASKS.map(t => {
+    const done = S.tasksDone.includes(t.id);
+    const sd = seedOf(t.seed);
+    return `<div class="task ${done?"done":""}">
+      <div class="th">${t.nm}</div>
+      <div class="td">${t.ds}</div>
+      <div class="tr">
+        <svg viewBox="0 0 100 100">${flowerHead(sd,50,50,1.5)}</svg>
+        <span>${done ? "Семена получены" : "Награда: семена «" + sd.nm + "»"}</span>
+        ${done ? `<span class="owned" style="margin-left:auto">${checkSvg()}</span>`
+               : `<button class="gbtn g-blue sm" style="margin-left:auto" data-task="${t.id}">Выполнено</button>`}
+      </div></div>`;
+  }).join("");
+}
+function completeTask(id){
+  const t = TASKS.find(x => x.id === id);
+  if(!t || S.tasksDone.includes(id)) return;
+  S.tasksDone.push(id);
+  if(!S.seedsOwned.includes(t.seed)) S.seedsOwned.push(t.seed);
+  SFX.task();
+  toast(`Семена «${seedOf(t.seed).nm}» — в магазине.`);
+  save(); renderTasks(); render();
+}
+
+/* ════ ШИТЫ ═══════════════════════════════ */
+function openSheet(id){
+  SFX.unlock();
+  const already = $("#" + id).classList.contains("on");
+  closeSheets(true);
+  $("#" + id).classList.add("on");
+  $("#scrim").classList.add("on");
+  if(!already) SFX.open();
+  if(id === "album") renderAlbum();
+  if(id === "tasks") renderTasks();
+  if(id === "shop") shopTab(curTab);
+  if(id === "devsheet") renderDev();
+}
+function closeSheets(silent){
+  const any = document.querySelector(".sheet.on");
+  document.querySelectorAll(".sheet").forEach(s => s.classList.remove("on"));
+  $("#scrim").classList.remove("on");
+  if(any && !silent) SFX.close();
+}
+
+/* ════ ДЕВ ════════════════════════════════ */
+function renderDev(){
+  const opts = [["Утро",7],["День",13],["Вечер",19],["Ночь",23],["Сейчас",null]];
+  $("#devtime").innerHTML = opts.map(([nm,h]) =>
+    `<button class="gbtn sm ${S.hourOverride === h ? "g-violet" : "g-cream"}" data-hour="${h}">${nm}</button>`).join("");
+}
+
+/* ════ СОБЫТИЯ ════════════════════════════ */
+$("#orb").addEventListener("click", tapSun);
+$("#mainbtn").addEventListener("click", mainAction);
+$("#shopbtn").addEventListener("click", () => openSheet("shop"));
+$("#albumbtn").addEventListener("click", () => openSheet("album"));
+$("#tasksbtn").addEventListener("click", () => openSheet("tasks"));
+$("#devbtn").addEventListener("click", () => openSheet("devsheet"));
+$("#scrim").addEventListener("click", () => closeSheets());
+$("#soundbtn").addEventListener("click", () => {
+  SFX.setMuted(S.sound);          // передаём «стало ли выключено»
+  renderSound(); save();
+  if(S.sound) SFX.press();
+});
+
+document.addEventListener("click", e => {
+  if(e.target.closest("#giftbtn")) return giftByCard();
+  if(e.target.closest("#giftrnd")) return giftCutting();
+  const el = e.target.closest("[data-close],[data-tab],[data-buy],[data-use],[data-plant],[data-task],[data-hour],[data-dev],[data-sfx]");
+  if(!el) return;
+  if(el.hasAttribute("data-close")) return closeSheets();
+  if(el.dataset.tab){ SFX.tabc(); return shopTab(el.dataset.tab); }
+  if(el.dataset.buy) return buy(el.dataset.buy, el.dataset.cat);
+  if(el.dataset.use) return use(el.dataset.use, el.dataset.cat);
+  if(el.dataset.plant) return plant(el.dataset.plant);
+  if(el.dataset.task) return completeTask(el.dataset.task);
+  if(el.dataset.sfx){ const k = el.dataset.sfx; (SFX[k === "tap" ? "tap" : k] || SFX.press)(3); return; }
+  if(el.hasAttribute("data-hour")){
+    const v = el.dataset.hour;
+    S.hourOverride = (v === "null" || v === "") ? null : parseInt(v, 10);
+    SFX.press(); save(); renderDev(); render(); return;
+  }
+  if(el.dataset.dev){
+    const a = el.dataset.dev;
+    if(a === "coins") S.coins += 1000;
+    if(a === "taps") S.taps = 0;
+    if(a === "stage"){ if(S.stage < 5){ S.stage++; S.prog = 0; } }
+    if(a === "bud"){ S.stage = 4; S.prog = 0; }
+    if(a === "hour"){ S.last -= 3600 * 1000; tick(); }   // промотать час реального роста
+    if(a === "ready"){ S.stage = 5; S.prog = 0; }
+    if(a === "dry") S.water = 0;
+    if(a === "kegli") S.kegli = (S.kegli || 0) + KEGLI_PER_FLOWER;
+    if(a === "giftnow"){
+      if(S.giftBack){ S.giftBack = 0; receiveCutting(); }
+      else toast("Сначала подарите корешок из альбома.");
+    }
+    if(a === "seeds"){ SEEDS.forEach(s => { if(!S.seedsOwned.includes(s.id)) S.seedsOwned.push(s.id); }); }
+    if(a === "all"){
+      for(const cat in SHOP) SHOP[cat].items.forEach(it => { if(!S.owned.includes(it.id)) S.owned.push(it.id); });
+      S.lamp = true;
+    }
+    if(a === "reset"){ const snd = S.sound; S = JSON.parse(JSON.stringify(DEFAULTS)); S.sound = snd; }
+    prevStage = -1;
+    SFX.press();
+    save(); render(); if($("#shop").classList.contains("on")) shopTab(curTab); toast("Готово");
+  }
+});
+
+/* номер карты: цифры группами по четыре, Enter отправляет */
+document.addEventListener("input", e => {
+  if(e.target.id !== "cardin") return;
+  const before = e.target.selectionStart, raw = e.target.value;
+  e.target.value = cardPretty(cardDigits(raw));
+  // курсор не должен прыгать в конец при правке середины
+  const added = e.target.value.length - raw.length;
+  if(before !== null && before < raw.length) e.target.setSelectionRange(before + added, before + added);
+});
+document.addEventListener("keydown", e => {
+  if(e.target.id === "cardin" && e.key === "Enter"){ e.preventDefault(); giftByCard(); }
+});
+
+/* звёзды */
+(function stars(){
+  let h = "";
+  for(let i = 0; i < 26; i++){
+    const x = ((i * 37) % 97) / 97 * 100, y = ((i * 53) % 61) / 61 * 62;
+    h += `<span class="star" style="left:${x.toFixed(1)}%;top:${y.toFixed(1)}%;animation-delay:-${(i * 0.618 % 1 * 4).toFixed(2)}s"></span>`;
+  }
+  $("#stars").innerHTML = h;
+})();
+
+/* разблокировка звука по первому касанию где угодно */
+document.addEventListener("pointerdown", function once(){
+  SFX.unlock();
+  document.removeEventListener("pointerdown", once);
+}, {once:true});
+
+if(S.tapDay !== today()){ S.tapDay = today(); S.taps = 0; }
+renderSound();
+render();
+tick();
+setInterval(tick, 1000);
+setInterval(save, 5000);
+document.addEventListener("visibilitychange", () => {
+  if(document.hidden){ SFX.pause(); }
+  else { SFX.resume(); tick(); }
+});
+</script>
+</body>
+</html>
