@@ -418,13 +418,13 @@ ok("оборот ускоряет календарь, но не больше ч�
   S.lastRev = было.rev; S.era = было.era;
   return пол === 1 && норма > 1.9 && норма < 2.1 && потолок === 3;
 }));
-ok("событий на игровой месяц столько же, сколько было в бете", await page.evaluate(() => {
-  // Месяц вырос вдесятеро, значит и все таймеры событий должны считать
-  // вдесятеро медленнее. Проверяем через сам месяц: сколько «старых
-  // секунд» укладывается в один игровой месяц при обычном темпе.
+ok("цена тапа привязана к длине месяца, а не к секунде", await page.evaluate(() => {
+  // Длину месяца ещё будут крутить. Важно не конкретное число, а связь:
+  // «месяц работы руками» обязан стоить здоровья столько же, сколько
+  // стоил при калибровке. Отвяжется — выгорание поедет вместе с темпом.
   const G = window.GAME;
-  return Math.abs(G.MONTH / 90 - 1) < 1e-9 && Math.abs(G.BURN_TAP - 0.05) < 1e-9;
-}));
+  return Math.abs(G.BURN_TAP * G.MONTH - 4.5) < 1e-9;
+}), await page.evaluate(() => ({ месяц: window.GAME.MONTH, тап: window.GAME.BURN_TAP })));
 
 console.log("\nКасса-ключ и волны рынка");
 ok("эпоха не наступает без денег на счету", await page.evaluate(() => {
@@ -523,6 +523,42 @@ ok("состояние переживает перезагрузку", await pag
   const S = window.GAME.S;
   return Math.round(S.cash) >= Math.round(e.cash) && S.month >= e.month;
 }, saved), await page.evaluate(() => ({ cash: window.GAME.S.cash, month: window.GAME.S.month })));
+
+console.log("\nКризисы");
+ok("штраф режется вдвое своим человеком и вдвое верным ответом", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = { era:S.era, llc:S.llc, cash:S.cash, staff:S.staff, hired:{...S.hired}, seen:S.crisesSeen };
+  S.era = 3; S.llc = true; S.cash = 1e8;
+  const c = G.CRISES.find(x => x.id === "fine");
+  S.hired.lawyer = 0; const без = G.krLoss(c);
+  S.hired.lawyer = 1; const сЮристом = G.krLoss(c);
+  S.hired.lawyer = 0;
+  const до = S.cash; G.krOpen(c); G.krAnswer(c.right);
+  const списали = до - S.cash;
+  Object.assign(S, было); S.hired = было.hired; S.crisesSeen = было.seen;
+  document.getElementById("krSheet").classList.remove("on");
+  return без > 0 && Math.abs(сЮристом - без/2) < 2 && Math.abs(списали - без/2) < 2;
+}));
+ok("больше, чем есть на счету, не забирают", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = { era:S.era, llc:S.llc, cash:S.cash, seen:S.crisesSeen };
+  S.era = 3; S.llc = true; S.cash = 1000;
+  const c = G.CRISES.find(x => x.id === "bug");
+  G.krOpen(c); G.krAnswer(c.right === 0 ? 1 : 0);      // нарочно мимо
+  const ушёл = S.cash >= 0;
+  Object.assign(S, было); S.crisesSeen = было.seen;
+  document.getElementById("krSheet").classList.remove("on");
+  return ушёл;
+}));
+ok("юрист появляется в прайсе только после штрафа", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = S.crisesSeen;
+  const law = G.C.roles.find(r => r.id === "lawyer");
+  S.crisesSeen = [];         const до = G.roleSeen(law);
+  S.crisesSeen = ["fine"];   const после = G.roleSeen(law);
+  S.crisesSeen = было;
+  return !до && после;
+}));
 
 console.log("\nТег новой жизни");
 ok("в первой жизни тега нет", await page.evaluate(() => {
