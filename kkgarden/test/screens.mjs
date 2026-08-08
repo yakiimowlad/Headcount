@@ -26,8 +26,8 @@ await page.waitForTimeout(500);
 /* день, растение на середине пути, деньги на весь магазин */
 await page.evaluate(() => {
   S.hourOverride = 13; S.coins = 3000; S.water = 60; S.stage = 3; S.prog = 55; S.taps = 4;
-  SEEDS.forEach(s => { if (!S.seedsOwned.includes(s.id)) S.seedsOwned.push(s.id); });
-  S.album = { clover: 3, chamo: 1 }; S.tasksDone = ['t1'];
+  SEEDS.forEach(s => { if (seedCount(s.id) < 2) addSeed(s.id, 2 - seedCount(s.id)); });
+  S.album = { clover: {n:3, fresh:1}, chamo: {n:1, fresh:0} }; S.tasksDone = ['t1'];
   prevStage = -1; save(); render();
 });
 await page.waitForTimeout(400);
@@ -69,6 +69,7 @@ await shot('10-night');
 const st = await page.evaluate(() => ({
   coins: S.coins,
   album: S.album,
+  seenAt: !!S.seenAt,
   stage: S.stage,
   swayAnim: getComputedStyle(document.querySelector('.sway')).animationName,
   growAnim: getComputedStyle(document.querySelector('.grow')).animationName,
@@ -77,8 +78,9 @@ const st = await page.evaluate(() => ({
 }));
 
 const fail = [];
-if (st.coins !== coinsBefore + 60) fail.push(`сбор не заплатил: ${coinsBefore} -> ${st.coins}`);
-if ((st.album.clover || 0) !== 4) fail.push(`альбом не пополнился: ${JSON.stringify(st.album)}`);
+const paid = st.coins - coinsBefore;
+if (paid !== 60 && paid !== 90) fail.push(`сбор заплатил ${paid}, ожидалось 60 или 90 (свежий)`);
+if ((st.album.clover && st.album.clover.n) !== 4) fail.push(`альбом не пополнился: ${JSON.stringify(st.album)}`);
 if (st.stage !== 0) fail.push(`после сбора стадия ${st.stage}, ожидалась 0`);
 if (st.swayAnim !== 'sway') fail.push(`покачивание сбито: ${st.swayAnim}`);
 if (st.growAnim !== 'pop') fail.push(`появление сбито: ${st.growAnim}`);

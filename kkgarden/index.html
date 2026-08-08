@@ -345,8 +345,9 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .badge{position:absolute;top:-9px;right:-7px;min-width:24px;height:24px;padding:0 6px;border-radius:999px;
   background:linear-gradient(180deg,#ff8fae,#ef3f6e);border:2.5px solid var(--rim);
   display:grid;place-items:center;font-size:12px;font-weight:900;color:#fff;
-  text-shadow:0 1px 0 rgba(0,0,0,.25);box-shadow:0 3px 0 #bd2450;animation:bpulse 2.2s ease-in-out infinite}
-@keyframes bpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+  text-shadow:0 1px 0 rgba(0,0,0,.25);box-shadow:0 3px 0 #bd2450}
+/* пульсации у счётчиков нет намеренно: спокойствие — это позиционирование,
+   а бесконечно дёргающийся бейдж требует внимания круглосуточно */
 
 /* влага */
 .water{display:flex;align-items:center;gap:10px;margin:13px 2px 0;font-size:12.5px;font-weight:700;color:var(--mut)}
@@ -442,6 +443,25 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .card .tx{flex:1;min-width:0}
 .card .nm{font-size:15.5px;font-weight:800;letter-spacing:-.1px;display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .card .ds{font-size:12.5px;color:var(--mut);margin-top:3px;line-height:1.32;font-weight:600}
+/* дегустационная нота и родословная — так о растениях и говорят */
+.card .note{display:block;font-size:12px;font-style:italic;color:var(--ink2);margin-top:5px;line-height:1.3}
+.card .from{display:block;font-size:11px;color:var(--faint);margin-top:3px;line-height:1.3;font-weight:600}
+.seedn{font-size:11px;font-weight:800;color:var(--green);background:rgba(58,166,74,.12);
+  border-radius:999px;padding:2px 8px 3px}
+/* сколько осталось накопить — вместо просто серой кнопки */
+.pricecol{flex:0 0 auto;display:flex;flex-direction:column;align-items:stretch;gap:5px;width:92px}
+.saveline{height:5px;border-radius:999px;background:var(--hair2);overflow:hidden}
+.saveline i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#9edcff,#2b8fe6)}
+.saveleft{font-size:10.5px;font-weight:800;color:var(--mut);text-align:center;font-variant-numeric:tabular-nums}
+/* метка свежести */
+.freshtag{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.5px;
+  background:rgba(255,255,255,.28);border-radius:999px;padding:2px 8px 3px;margin-left:2px}
+.cell.freshmarked{}
+.cell .freshmark{position:absolute;left:5px;top:5px;min-width:22px;height:22px;padding:0 5px;border-radius:999px;
+  display:grid;place-items:center;font-size:11px;font-weight:900;color:#fff;
+  background:linear-gradient(180deg,#7ade7c,#39a44c);border:2px solid var(--rim);
+  text-shadow:0 1px 0 rgba(0,0,0,.2);box-shadow:0 2px 0 #237038}
+.cell.fresh{border-color:#7ade7c}
 .card.locked{opacity:.62}
 .card.locked .ic{background:var(--hair2)!important;border-style:dashed;border-color:var(--faint);box-shadow:none}
 .pricetag{display:inline-flex;align-items:center;gap:5px;font-variant-numeric:tabular-nums}
@@ -639,7 +659,7 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 <div class="sheet" id="album">
   <div class="sh-head"><div class="graber"></div><div class="ribbon"><h2>Альбом</h2></div><button class="x" data-close aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.6" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="sh-body">
-    <p class="hint">Каждый выращенный цветок остаётся здесь навсегда. Серые — ещё не открыты.</p>
+    <p class="hint">Каждый выращенный цветок остаётся здесь навсегда. Серые — ещё не открыты. Зелёная метка — сколько раз сорт собран свежим.</p>
     <div class="giftbox" id="giftbox"></div>
     <div class="album" id="albumgrid"></div>
   </div>
@@ -704,15 +724,26 @@ const RAR = {
   legend:{c:"#f5a017",n:4,t:"Легендарное", g:["#ffe4a8","#ffc257"]}
 };
 
+/* У каждого сорта одна строчка родословной — от кого достался — и одна
+   вкусовая нота. Ровно так садоводы и говорят о растениях: не «редкость
+   три звезды», а «от Валентины из второго подъезда». */
 const SEEDS = [
-  {id:"clover", nm:"Клевер",    rar:"common",  petal:"#ffffff", core:"#e9dcc0", form:"clover", pay:60,  free:true,  how:"Всегда доступен"},
-  {id:"chamo",  nm:"Ромашка",   rar:"common",  petal:"#ffffff", core:"#f5c53d", form:"daisy",  pay:90,  task:"t1", how:"За задание «Молочная новинка»"},
-  {id:"calen",  nm:"Календула", rar:"rare",    petal:"#f79427", core:"#c96a12", form:"daisy",  pay:150, task:"t2", how:"За задание «Суп за 20 минут»"},
-  {id:"cosmos", nm:"Космея",    rar:"rare",    petal:"#f06c9b", core:"#f5c53d", form:"daisy",  pay:170, task:"t3", how:"За задание «Сок дня»"},
-  {id:"corn",   nm:"Василёк",   rar:"special", petal:"#5a7de0", core:"#2c4aa0", form:"daisy",  pay:260, how:"Приходит корешком от соседа"},
-  {id:"lav",    nm:"Лаванда",   rar:"special", petal:"#9b7de0", core:"#6b4fb0", form:"spike",  pay:280, how:"Приходит корешком от соседа"},
-  {id:"poppy",  nm:"Мак",       rar:"legend",  petal:"#e0392b", core:"#2a1a14", form:"daisy",  pay:420, how:"Приходит корешком от соседа"},
-  {id:"pion",   nm:"Пион",      rar:"legend",  petal:"#f28ab0", core:"#e05a8a", form:"peony",  pay:500, how:"Приходит корешком от соседа"}
+  {id:"clover", nm:"Клевер",    rar:"common",  petal:"#ffffff", core:"#e9dcc0", form:"clover", pay:60,  free:true,  how:"Всегда доступен",
+   from:"С поля за Каширой, где дед держал пасеку", note:"Медовый, травяной, с молочной сладостью"},
+  {id:"chamo",  nm:"Ромашка",   rar:"common",  petal:"#ffffff", core:"#f5c53d", form:"daisy",  pay:90,  task:"t1", how:"За задание «Молочная новинка»",
+   from:"Из аптечного огорода под Суздалем", note:"Яблочная кислинка и сухой луг"},
+  {id:"calen",  nm:"Календула", rar:"rare",    petal:"#f79427", core:"#c96a12", form:"daisy",  pay:150, task:"t2", how:"За задание «Суп за 20 минут»",
+   from:"От соседки по даче, четвёртое поколение на одной земле", note:"Смолистая горчинка, шафран, тёплый перец"},
+  {id:"cosmos", nm:"Космея",    rar:"rare",    petal:"#f06c9b", core:"#f5c53d", form:"daisy",  pay:170, task:"t3", how:"За задание «Сок дня»",
+   from:"Самосев с обочины, никто её не сажал", note:"Свежая зелень и капля розовой воды"},
+  {id:"corn",   nm:"Василёк",   rar:"special", petal:"#5a7de0", core:"#2c4aa0", form:"daisy",  pay:260, how:"Приходит корешком от соседа",
+   from:"Из ржаного поля, собран между колосьями", note:"Сухой чай, пыльца, чуть миндаля"},
+  {id:"lav",    nm:"Лаванда",   rar:"special", petal:"#9b7de0", core:"#6b4fb0", form:"spike",  pay:280, how:"Приходит корешком от соседа",
+   from:"Черенок с крымского склона, довезли в мокрой тряпке", note:"Камфора, мёд и нагретый камень"},
+  {id:"poppy",  nm:"Мак",       rar:"legend",  petal:"#e0392b", core:"#2a1a14", form:"daisy",  pay:420, how:"Приходит корешком от соседа",
+   from:"Из бабушкиной жестянки из-под монпансье", note:"Ореховый, хлебный, с горчинкой на выдохе"},
+  {id:"pion",   nm:"Пион",      rar:"legend",  petal:"#f28ab0", core:"#e05a8a", form:"peony",  pay:500, how:"Приходит корешком от соседа",
+   from:"Делёнка куста, которому больше лет, чем дому", note:"Плотный розовый шёлк, мокрая земля, ваниль"}
 ];
 
 const SHOP = {
@@ -780,6 +811,21 @@ const NEIGHBOURS = [
 ];
 const GIFT_BACK_MS = 45 * 1000;   // в тестовой сборке ответ приходит быстро
 
+/* ── СВЕЖЕСТЬ ──────────────────────────────────────────────────────
+   Окно считается не от раскрытия, а от первого взгляда: цветок держит
+   пик, пока его не увидели. Иначе бутон, раскрывшийся в четыре утра,
+   закрывал бы окно до пробуждения, и надбавка за внимание превращалась
+   бы в штраф за сон. Базовая выплата не меняется никогда. */
+const FRESH_MS = 10 * 60 * 1000;
+const FRESH_BONUS = 1.5;          // множитель росинок за собранный вовремя
+
+/* ── СЕМЕНА ────────────────────────────────────────────────────────
+   Посадка тратит семя, сбор возвращает два. Излишек — единственное,
+   что можно отдать соседу: подарить получится только выращенное. */
+const SEEDS_BACK = 2;
+
+const SCHEMA = 2;                 // версия сохранения, см. migrate()
+
 /* ════ СОСТОЯНИЕ ══════════════════════════ */
 const DEFAULTS = {
   coins: 180,
@@ -800,8 +846,10 @@ const DEFAULTS = {
   fertPerm: 1,
   lamp: false,
   owned: ["pot0","can0"],
-  seedsOwned: ["clover"],
-  album: {},
+  seeds: {clover: 1},        // сколько семян каждого сорта на руках
+  album: {},                 // {сорт: {n, fresh}}
+  seenAt: 0,                 // когда игрок впервые увидел раскрывшийся цветок
+  v: SCHEMA,
   tasksDone: [],
   last: Date.now(),
   hourOverride: null,
@@ -809,10 +857,40 @@ const DEFAULTS = {
 };
 let S = load();
 
+/* Первая настоящая миграция: до второй версии альбом хранил число, а
+   семена — список без количеств. Старые сейвы не выбрасываем. */
+function migrate(s){
+  if(!s.v || s.v < 2){
+    const a = {};
+    for(const k in (s.album || {})){
+      const v = s.album[k];
+      a[k] = (typeof v === "number") ? {n:v, fresh:0} : v;
+    }
+    s.album = a;
+    if(!s.seeds){
+      s.seeds = {};
+      (s.seedsOwned || ["clover"]).forEach(id => { s.seeds[id] = 1; });
+    }
+    delete s.seedsOwned;
+    s.seenAt = 0;
+    s.v = 2;
+  }
+  return s;
+}
+
 function load(){
   try{
     const raw = localStorage.getItem("kk-garden");
-    if(raw) return Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), JSON.parse(raw));
+    if(raw){
+      const saved = JSON.parse(raw);
+      const s = Object.assign(JSON.parse(JSON.stringify(DEFAULTS)), saved);
+      // версию и переезжающие поля берём из сейва, а не из умолчаний: иначе
+      // Object.assign подставит свежий номер схемы и миграция решит, что
+      // старый сейв уже новый
+      s.v = saved.v || 0;
+      if(!saved.v){ s.seeds = saved.seeds; s.album = saved.album || {}; }
+      return migrate(s);
+    }
   }catch(e){}
   return JSON.parse(JSON.stringify(DEFAULTS));
 }
@@ -826,6 +904,22 @@ const $ = s => document.querySelector(s);
 const seedOf = id => SEEDS.find(s => s.id === id);
 const itemOf = id => { for(const k in SHOP){ const it = SHOP[k].items.find(i=>i.id===id); if(it) return it; } return null; };
 const today = () => new Date().toISOString().slice(0,10);
+
+/* семена и альбом */
+const seedCount = id => (S.seeds && S.seeds[id]) || 0;
+const seedKnown = id => seedCount(id) > 0 || !!(S.album && S.album[id]) || S.seed === id;
+const addSeed = (id, n) => { S.seeds[id] = seedCount(id) + n; };
+const albumOf = id => (S.album && S.album[id]) || {n:0, fresh:0};
+const albumTotal = () => Object.keys(S.album || {}).reduce((t,k) => t + (S.album[k].n || 0), 0);
+/* сорт, которым не жалко поделиться: одно семя всегда оставляем себе */
+const spareSort = () => {
+  let best = null;
+  for(const id in (S.seeds || {})) if(S.seeds[id] >= 2 && (!best || S.seeds[id] > S.seeds[best])) best = id;
+  return best;
+};
+/* свежесть считается от первого взгляда */
+const freshLeft = () => S.seenAt ? Math.max(0, FRESH_MS - (Date.now() - S.seenAt)) : FRESH_MS;
+const isFresh = () => freshLeft() > 0;
 
 function hour(){ return S.hourOverride !== null ? S.hourOverride : new Date().getHours(); }
 function timeOfDay(){
@@ -1263,6 +1357,9 @@ function render(){
   ring.style.strokeDasharray = RING;
   ring.style.strokeDashoffset = RING * (1 - left / TAP_LIMIT);
 
+  // окно свежести открывается ровно в тот миг, когда игрок увидел цветок
+  if(S.stage >= 5 && !S.seenAt){ S.seenAt = Date.now(); save(); }
+
   if(S.stage !== prevStage || S.seed !== prevSeed){
     $("#plantwrap").innerHTML = plantSvg();
     $("#plantwrap").classList.toggle("ready", S.stage >= 5);
@@ -1288,8 +1385,10 @@ function render(){
   const main = $("#mainbtn");
   let cls, html, off;
   if(S.stage >= 5){
+    const fresh = isFresh();
     cls = "gbtn g-gold full";
-    html = ICO_HARVEST + "Собрать · +" + sd.pay;
+    html = ICO_HARVEST + "Собрать · +" + Math.round(sd.pay * (fresh ? FRESH_BONUS : 1)) +
+           (fresh ? ` <span class="freshtag">свежий</span>` : "");
     off = false;
   } else {
     const auto = autoWater();
@@ -1304,7 +1403,8 @@ function render(){
   main.disabled = off;
 
   let st, em;
-  if(S.stage >= 5){ st = `<b>${sd.nm}</b> распустился. Соберите — и посадите следующее семя.`; em = "🌸"; }
+  if(S.stage >= 5 && isFresh()){ st = `<b>${sd.nm}</b> только раскрылся. Соберите сейчас — попадёт в альбом свежим.`; em = "🌸"; }
+  else if(S.stage >= 5){ st = `<b>${sd.nm}</b> распустился. Соберите — и посадите следующее семя.`; em = "🌸"; }
   else if(S.water <= 0){ st = "Земля пересохла. Полейте, иначе рост почти встал."; em = "🏜️"; }
   else if(S.stage === 4){ st = "Бутон набирает силу. Раскроется к утру — загляните завтра."; em = "🪴"; }
   else if(night && !S.lamp){ st = "Ночь. Растёт медленно — фитолампа это исправит."; em = "🌙"; }
@@ -1329,7 +1429,7 @@ function affordableCount(){
   return n;
 }
 function plantableSeeds(){
-  return SEEDS.filter(s => S.seedsOwned.includes(s.id) && s.id !== S.seed).length;
+  return SEEDS.filter(s => seedCount(s.id) > 0 && s.id !== S.seed).length;
 }
 function renderBadges(){
   const shopN = affordableCount() + (S.stage >= 5 ? plantableSeeds() : 0);
@@ -1411,9 +1511,8 @@ function tapSun(){
     setTimeout(() => f.remove(), 1100);
   }
 
-  const [ox,oy] = sceneXY($("#orb"));
-  sparks(ox, oy, 5, ["#fff3b0","#ffd76b","#ffffff"]);
-
+  // искр на каждый тап нет: конфетти по любому поводу — это чужой язык.
+  // Отдача и так есть — число, кивок растения, нота вверх по ступени.
   const pl = $("#plantwrap").querySelector(".nodwrap");
   if(pl){
     pl.classList.remove("nod"); void pl.getBoundingClientRect(); pl.classList.add("nod");
@@ -1438,10 +1537,14 @@ function mainAction(){
 
 function harvest(){
   const sd = seedOf(S.seed);
-  S.coins += sd.pay;
+  const fresh = isFresh();
+  const pay = Math.round(sd.pay * (fresh ? FRESH_BONUS : 1));
+  S.coins += pay;
   S.kegli = (S.kegli || 0) + KEGLI_PER_FLOWER;
-  S.album[sd.id] = (S.album[sd.id] || 0) + 1;
-  S.stage = 0; S.prog = 0;
+  const a = albumOf(sd.id);
+  S.album[sd.id] = {n: a.n + 1, fresh: a.fresh + (fresh ? 1 : 0)};
+  addSeed(sd.id, SEEDS_BACK);          // цикл замкнут: своё семя, свой цветок
+  S.stage = 0; S.prog = 0; S.seenAt = 0;
 
   SFX.harvest();
   const [x,y] = sceneXY($("#plantwrap"), 0, -35);
@@ -1452,7 +1555,9 @@ function harvest(){
   const kb = $("#keglibox");
   kb.classList.add("bump"); setTimeout(() => kb.classList.remove("bump"), 520);
 
-  toast(`${sd.nm} собран. +${KEGLI_PER_FLOWER} КеГЛей на карту и ${sd.pay} росинок.`);
+  toast(fresh
+    ? `${sd.nm} собран свежим. +${KEGLI_PER_FLOWER} КеГЛей и ${pay} росинок вместо ${sd.pay}.`
+    : `${sd.nm} собран. +${KEGLI_PER_FLOWER} КеГЛей на карту и ${pay} росинок.`);
   save(); render();
   // магазин предлагаем сам, но только если игрок за это время никуда не ушёл
   setTimeout(() => {
@@ -1499,21 +1604,25 @@ function shopTab(t){
 }
 
 function seedList(){
-  return `<p class="hint">Семечко сажают в горшок один раз — вырастет, соберёте, посадите следующее.</p>` +
+  return `<p class="hint">Посадка тратит одно семя, сбор возвращает два. Излишек можно отдать соседу — больше его девать некуда.</p>` +
   SEEDS.map(sd => {
-    const has = S.seedsOwned.includes(sd.id);
+    const known = seedKnown(sd.id);
+    const n = seedCount(sd.id);
     const planted = S.seed === sd.id;
     const R = RAR[sd.rar];
-    return `<div class="card ${has?"":"locked"}">
+    let right;
+    if(planted) right = `<span class="owned">${checkSvg()}Растёт</span>`;
+    else if(n > 0) right = `<button class="gbtn g-green sm" data-plant="${sd.id}">Посадить</button>`;
+    else if(known) right = `<span class="lockchip">${lockSvg()}Нет семян</span>`;
+    else right = `<span class="lockchip">${lockSvg()}Закрыто</span>`;
+    return `<div class="card ${known?"":"locked"}">
       <span class="rar" style="background:linear-gradient(180deg,${R.c},${R.c}99)"></span>
-      ${icTile(sd.rar, has ? seedIcon(sd,.95) : ghostIcon(sd,.95))}
+      ${icTile(sd.rar, known ? seedIcon(sd,.95) : ghostIcon(sd,.95))}
       <span class="tx">
-        <span class="nm">${sd.nm} ${rarBadge(sd.rar)}</span>
-        <span class="ds">${has ? (R.t + " · " + sd.pay + " росинок за цветок") : sd.how}</span>
-      </span>
-      ${planted ? `<span class="owned">${checkSvg()}Растёт</span>`
-        : has ? `<button class="gbtn g-green sm" data-plant="${sd.id}">Посадить</button>`
-        : `<span class="lockchip">${lockSvg()}Закрыто</span>`}
+        <span class="nm">${sd.nm} ${rarBadge(sd.rar)}${n ? `<span class="seedn">семян ${n}</span>` : ""}</span>
+        <span class="ds">${known ? (R.t + " · " + sd.pay + " росинок за цветок") : sd.how}</span>
+        ${known ? `<span class="note">«${sd.note}»</span><span class="from">${sd.from}</span>` : ""}
+      </span>${right}
     </div>`;
   }).join("");
 }
@@ -1533,7 +1642,15 @@ function itemList(cat){
     else if(active) right = `<span class="owned">${checkSvg()}Действует</span>`;
     else if(owned && !consumable && swappable) right = `<button class="gbtn g-blue sm" data-use="${it.id}" data-cat="${cat}">Поставить</button>`;
     else if(owned && !consumable) right = `<span class="owned">${checkSvg()}Действует</span>`;
-    else if(S.coins < it.price) right = `<button class="gbtn sm" disabled><span class="pricetag">${it.price}${coinSvg()}</span></button>`;
+    else if(S.coins < it.price){
+      // честные цены — значит видно, сколько осталось накопить, а не просто серая кнопка
+      const pctSaved = Math.max(0, Math.min(100, S.coins / it.price * 100));
+      right = `<span class="pricecol">
+        <button class="gbtn sm" disabled><span class="pricetag">${it.price}${coinSvg()}</span></button>
+        <span class="saveline"><i style="width:${pctSaved.toFixed(0)}%"></i></span>
+        <span class="saveleft">ещё ${Math.ceil(it.price - S.coins)}</span>
+      </span>`;
+    }
     else right = `<button class="gbtn g-gold sm" data-buy="${it.id}" data-cat="${cat}"><span class="pricetag">${it.price}${coinSvg()}</span></button>`;
     return `<div class="card ${(!owned && S.coins < it.price) ? "locked":""}">
       <span class="rar" style="background:linear-gradient(180deg,${RAR[it.rar].c},${RAR[it.rar].c}99)"></span>
@@ -1590,7 +1707,10 @@ function use(id, cat){
 
 function plant(id){
   if(S.stage > 0 && S.stage < 5){ SFX.deny(); toast("Сначала дорастите то, что уже в горшке."); return; }
-  S.seed = id; S.stage = 0; S.prog = 0;
+  if(seedCount(id) < 1){ SFX.deny(); toast("Семян этого сорта не осталось."); return; }
+  if(S.seed !== id && S.stage === 0) addSeed(S.seed, 1);   // прежнее семечко возвращается в пакет
+  addSeed(id, -1);
+  S.seed = id; S.stage = 0; S.prog = 0; S.seenAt = 0;
   SFX.plant();
   toast(seedOf(id).nm + " посажен.");
   save(); shopTab("seed"); render();
@@ -1615,9 +1735,11 @@ const cardDigits = v => (v || "").replace(/\D/g, "").slice(0, 16);
 const cardPretty = d => d.replace(/(.{4})/g, "$1 ").trim();
 
 function giftCutting(to){
-  const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
-  if(!grown){ SFX.deny(); toast("Сначала вырастите первый цветок."); return; }
+  if(!albumTotal()){ SFX.deny(); toast("Сначала вырастите первый цветок."); return; }
   if(S.giftBack){ SFX.deny(); toast("Один корешок уже в пути. Дождитесь ответа."); return; }
+  const sort = spareSort();
+  if(!sort){ SFX.deny(); toast("Лишних семян нет. Соберите ещё цветок — и будет чем делиться."); return; }
+  addSeed(sort, -1);            // отдаём излишек, последнее семя остаётся себе
   S.gifted = (S.gifted || 0) + 1;
   S.giftBack = Date.now() + GIFT_BACK_MS;
   S.lastCard = to && to.card ? to.card : "";
@@ -1639,11 +1761,11 @@ function giftByCard(){
 
 function receiveCutting(){
   const from = neighbour();
-  const locked = SEEDS.filter(s => !S.seedsOwned.includes(s.id));
+  const locked = SEEDS.filter(s => !seedKnown(s.id));
   S.received = (S.received || 0) + 1;
   if(locked.length){
     const sd = locked[Math.floor(Math.random() * locked.length)];
-    S.seedsOwned.push(sd.id);
+    addSeed(sd.id, 1);
     SFX.task();
     toast(`Корешок от ${from.g} — ${sd.nm.toLowerCase()}. Семена в магазине.`);
   } else {
@@ -1659,13 +1781,16 @@ function receiveCutting(){
 function renderGift(){
   const el = $("#giftbox");
   if(!el) return;
-  const grown = Object.values(S.album).reduce((a, b) => a + b, 0);
+  const grown = albumTotal();
+  const spare = spareSort();
   let inner;
   if(S.giftBack){
     const to = S.lastCard ? ` на карту ${S.lastCard}` : "";
     inner = `<span class="gifttx"><b>Корешок в пути${to}.</b> Вам ответят тем же — загляните позже.</span>`;
+  } else if(grown > 0 && !spare){
+    inner = `<span class="gifttx">Лишних семян нет: последнее всегда остаётся вам. Соберите ещё цветок — сбор возвращает два семени.</span>`;
   } else if(grown > 0){
-    inner = `<span class="gifttx">Лишний отросток не пропадает. Отдайте его тому, кто тоже растит — вам ответят тем же.</span>
+    inner = `<span class="gifttx">Лишний отросток не пропадает. Отдадите <b>${seedOf(spare).nm.toLowerCase()}</b> тому, кто тоже растит — вам ответят тем же.</span>
       <div class="giftform">
         <input class="cardin" id="cardin" type="tel" inputmode="numeric" autocomplete="off"
                maxlength="19" placeholder="Номер карты КуулКлевер" aria-label="Номер карты получателя">
@@ -1684,11 +1809,13 @@ function renderGift(){
 function renderAlbum(){
   renderGift();
   $("#albumgrid").innerHTML = SEEDS.map(sd => {
-    const n = S.album[sd.id] || 0;
+    const a = albumOf(sd.id);
     const R = RAR[sd.rar];
-    if(n > 0) return `<div class="cell" style="background:linear-gradient(180deg,${R.g[0]},${R.g[1]})">
+    if(a.n > 0) return `<div class="cell ${a.fresh ? "fresh" : ""}" style="background:linear-gradient(180deg,${R.g[0]},${R.g[1]})"
+      title="${sd.note}">
       <span class="rb" style="background:${R.c}"></span>
-      ${seedIcon(sd,.8)}<span class="cn">${sd.nm}</span><span class="cnt">${n}</span></div>`;
+      ${seedIcon(sd,.8)}<span class="cn">${sd.nm}</span><span class="cnt">${a.n}</span>
+      ${a.fresh ? `<span class="freshmark" title="Собран свежим: ${a.fresh}">${a.fresh}</span>` : ""}</div>`;
     return `<div class="cell lock">${ghostIcon(sd,.8)}<span class="cn">${sd.nm}</span></div>`;
   }).join("");
 }
@@ -1711,7 +1838,7 @@ function completeTask(id){
   const t = TASKS.find(x => x.id === id);
   if(!t || S.tasksDone.includes(id)) return;
   S.tasksDone.push(id);
-  if(!S.seedsOwned.includes(t.seed)) S.seedsOwned.push(t.seed);
+  addSeed(t.seed, 1);
   SFX.task();
   toast(`Семена «${seedOf(t.seed).nm}» — в магазине.`);
   save(); renderTasks(); render();
@@ -1789,7 +1916,7 @@ document.addEventListener("click", e => {
       if(S.giftBack){ S.giftBack = 0; receiveCutting(); }
       else toast("Сначала подарите корешок из альбома.");
     }
-    if(a === "seeds"){ SEEDS.forEach(s => { if(!S.seedsOwned.includes(s.id)) S.seedsOwned.push(s.id); }); }
+    if(a === "seeds"){ SEEDS.forEach(s => { if(seedCount(s.id) < 2) addSeed(s.id, 2 - seedCount(s.id)); }); }
     if(a === "all"){
       for(const cat in SHOP) SHOP[cat].items.forEach(it => { if(!S.owned.includes(it.id)) S.owned.push(it.id); });
       S.lamp = true;

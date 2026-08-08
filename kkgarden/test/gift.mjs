@@ -30,6 +30,7 @@ if (k.ui !== '30') fail.push(`1. счётчик показывает «${k.ui}»
 await p.evaluate(() => closeSheets(true));
 await p.click('#albumbtn'); await p.waitForTimeout(500);
 await p.screenshot({ path: `${out}/kk-gift-1.png` });
+await p.evaluate(() => { addSeed('clover', 3); renderGift(); });   // нужен излишек
 await p.click('#giftrnd'); await p.waitForTimeout(400);   // случайному соседу
 const sent = await p.evaluate(() => ({ t: window.__t[window.__t.length - 1], gifted: S.gifted, pending: !!S.giftBack }));
 if (!/^Корешок ушёл \S+\.$/.test(sent.t)) fail.push(`2. текст отправки: «${sent.t}»`);
@@ -71,10 +72,10 @@ const second = await p.evaluate(() => !!document.querySelector('#giftbtn'));
 if (second) fail.push('3. кнопка дарения доступна, пока корешок в пути');
 
 /* 4. Ответ приходит и открывает закрытый сорт */
-const before = await p.evaluate(() => S.seedsOwned.length);
+const before = await p.evaluate(() => SEEDS.filter(x => seedKnown(x.id)).length);
 await p.evaluate(() => { S.giftBack = Date.now() - 1; tick(); });
 await p.waitForTimeout(400);
-const got = await p.evaluate(() => ({ t: window.__t[window.__t.length - 1], n: S.seedsOwned.length, received: S.received }));
+const got = await p.evaluate(() => ({ t: window.__t[window.__t.length - 1], n: SEEDS.filter(x => seedKnown(x.id)).length, received: S.received }));
 if (got.n !== before + 1) fail.push(`4. сортов было ${before}, стало ${got.n}`);
 if (!/^Корешок от \S+ — .+\. Семена в магазине\.$/.test(got.t)) fail.push(`4. текст получения: «${got.t}»`);
 if (got.received !== 1) fail.push(`4. счётчик получено: ${got.received}`);
