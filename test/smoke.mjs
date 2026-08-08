@@ -397,6 +397,89 @@ ok("после 2014-го потолка нет", await page.evaluate(() => {
   return до <= G.EARLY_CAP + 1 && после > G.EARLY_CAP;
 }), await page.evaluate(() => ({ год: window.GAME.year(), клик: Math.round(window.GAME.clickVal()) })));
 
+console.log("\nТемп времени");
+ok("оборот ускоряет календарь, но не больше чем втрое", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = { rev: S.lastRev, era: S.era };
+  S.era = 0;
+  S.lastRev = 0;        const пол = G.pace();
+  S.lastRev = 60000;    const норма = G.pace();
+  S.lastRev = 1e12;     const потолок = G.pace();
+  S.lastRev = было.rev; S.era = было.era;
+  return пол === 1 && норма > 1.9 && норма < 2.1 && потолок === 3;
+}));
+ok("событий на игровой месяц столько же, сколько было в бете", await page.evaluate(() => {
+  // Месяц вырос вдесятеро, значит и все таймеры событий должны считать
+  // вдесятеро медленнее. Проверяем через сам месяц: сколько «старых
+  // секунд» укладывается в один игровой месяц при обычном темпе.
+  const G = window.GAME;
+  return Math.abs(G.MONTH / 90 - 1) < 1e-9 && Math.abs(G.BURN_TAP - 0.05) < 1e-9;
+}));
+
+console.log("\nКасса-ключ и волны рынка");
+ok("эпоха не наступает без денег на счету", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = { month: S.month, era: S.era, cash: S.cash, held: S.eraHeld };
+  S.era = 0; S.month = 12*4 + 1; S.cash = 0; S.eraHeld = undefined;   // календарь уже 2011
+  G.checkEra();
+  const держит = S.era === 0 && S.eraHeld !== undefined;
+  S.cash = 1e9; G.checkEra();
+  const пустил = S.era === 1;
+  S.month = было.month; S.era = было.era; S.cash = было.cash; S.eraHeld = было.held;
+  return держит && пустил;
+}));
+ok("ожидание не длится дольше года", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = { month: S.month, era: S.era, cash: S.cash, held: S.eraHeld };
+  S.era = 0; S.month = 12*4 + 1; S.cash = 0; S.eraHeld = undefined;
+  G.checkEra();
+  S.month += 13;               // год терпения прошёл, денег так и нет
+  G.checkEra();
+  const пустил = S.era === 1;
+  S.month = было.month; S.era = было.era; S.cash = было.cash; S.eraHeld = было.held;
+  return пустил;
+}));
+ok("ковид и ИИ множат выработку, ранние эпохи — нет", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = S.era;
+  const at = e => { S.era = e; G.bumpEcon(); return G.revenue(); };
+  const до = at(2), ковид = at(3), ии = at(5);
+  S.era = было; G.bumpEcon();
+  return до > 0 && ковид > до * 1.5 && ии > ковид * 1.9;
+}));
+
+console.log("\nЦикличные улучшения");
+ok("эффект захода тает, а цена растёт", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const l = G.C.loops.find(x => x.id === "lp3");     // Рефакторинг: +15% и вниз
+  const было = { loops: S.loops, click: S.click };
+  S.loops = {};
+  const ц1 = G.loopCost(l), э1 = G.loopMath(l);
+  S.loops = { lp3: 3 };
+  const ц2 = G.loopCost(l), э2 = G.loopMath(l);
+  S.loops = было.loops; S.click = было.click;
+  return ц2 > ц1 * 4 && э2.k < э1.k * 0.5;
+}));
+ok("карточка называет и шаг, и сумму, и потолок", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = S.loops; S.loops = { lp3: 2 };
+  const line = G.loopMath(G.C.loops.find(x => x.id === "lp3")).line;
+  S.loops = было;
+  return /Этот заход/.test(line) && /набрано/.test(line) && /возможных/.test(line);
+}));
+
+console.log("\nГрафик кассы");
+ok("линия появляется, когда накопилась история", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  const было = S.cashHist;
+  S.cashHist = [1000, 5000, 20000, 90000, 300000, 900000, 4000000];
+  G.paintSpark();
+  const есть = !document.getElementById("sparkCard").hidden &&
+               document.getElementById("spark").querySelector("path");
+  S.cashHist = было;
+  return !!есть;
+}));
+
 console.log("\nСохранение");
 ok("старый сейв мигрирует", await page.evaluate(() => {
   const m = window.GAME.migrate({ v: 1, S: { staff: [{ uid: 1, role: "middle" }] } });
@@ -430,6 +513,102 @@ ok("состояние переживает перезагрузку", await pag
   const S = window.GAME.S;
   return Math.round(S.cash) >= Math.round(e.cash) && S.month >= e.month;
 }, saved), await page.evaluate(() => ({ cash: window.GAME.S.cash, month: window.GAME.S.month })));
+
+console.log("\nТег новой жизни");
+ok("в первой жизни тега нет", await page.evaluate(() => {
+  const S = window.GAME.S, было = S.runs;
+  S.runs = 0; window.GAME.paintNg();
+  const пусто = document.getElementById("ngTag").hidden;
+  S.runs = было;
+  return пусто;
+}));
+ok("со второй жизни тег считает заходы", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, было = S.runs;
+  S.runs = 1; G.paintNg();
+  const t = document.getElementById("ngTag");
+  const текст = t.textContent, виден = !t.hidden, простой = !t.classList.contains("gold");
+  S.runs = было; G.paintNg();
+  return виден && текст === "NG+1" && простой;
+}));
+ok("с третьего захода тег золотой", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, было = S.runs;
+  S.runs = 3; G.paintNg();
+  const t = document.getElementById("ngTag");
+  const золото = t.classList.contains("gold") && t.textContent === "NG+3";
+  S.runs = было; G.paintNg();
+  return золото;
+}));
+ok("дата рядом с тегом не затирается", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, было = S.runs;
+  S.runs = 2; G.paint();
+  const sub = document.getElementById("sub");
+  const цел = /\d{4}/.test(sub.textContent) && !!sub.querySelector(".ngp");
+  S.runs = было; G.paint();
+  return цел;
+}));
+
+console.log("\nПауза, вибрация, движение");
+ok("на паузе время стоит", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  S.paused = true; G.applyPause();
+  const было = S.playTime;
+  await new Promise(r => setTimeout(r, 400));
+  const стоит = S.playTime === было;
+  const видно = !document.getElementById("pauseBar").hidden;
+  S.paused = false; G.applyPause();
+  return стоит && видно;
+}));
+ok("снятая пауза возвращает время", await page.evaluate(async () => {
+  const S = window.GAME.S;
+  // Время останавливает не только пауза: раскрытая хроника и модалки
+  // делают то же самое, и предыдущие проверки могли что-то оставить
+  // открытым. Закрываем всё, иначе тест меряет чужую остановку.
+  const $ = id => document.getElementById(id);
+  document.getElementById("chron").classList.remove("open");
+  ["llcSheet","mgSheet","eraSheet"].forEach(id => $(id).classList.remove("on"));
+  const было = S.playTime;
+  await new Promise(r => setTimeout(r, 300));
+  return S.playTime > было;
+}));
+ok("скрытая плашка паузы не занимает место", await page.evaluate(() =>
+  document.getElementById("pauseBar").offsetHeight === 0));
+ok("выключенная вибрация молчит", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  let звали = 0;
+  const orig = navigator.vibrate;
+  try{ Object.defineProperty(navigator, "vibrate", { value: () => { звали++; return true; }, configurable: true }); }
+  catch(e){ return true; }
+  S.vibro = false; G.SFX.hire();
+  const молчал = звали === 0;
+  S.vibro = true;
+  try{ Object.defineProperty(navigator, "vibrate", { value: orig, configurable: true }); }catch(e){}
+  return молчал;
+}));
+ok("«меньше движения» гасит анимации", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.calm = true; G.applyCalm();
+  const есть = document.documentElement.classList.contains("calm");
+  S.calm = false; G.applyCalm();
+  return есть && !document.documentElement.classList.contains("calm");
+}));
+
+console.log("\nПеренос сохранения");
+ok("код переживает круг экспорт → импорт", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.cash = 777777; S.month = 44;
+  const код = btoa(unescape(encodeURIComponent(G.serialize())));
+  S.cash = 1; S.month = 0;
+  const raw = decodeURIComponent(escape(atob(код)));
+  return !!G.restore(raw) && Math.round(S.cash) === 777777 && S.month === 44;
+}));
+ok("мусор вместо кода не ломает игру", await page.evaluate(() => {
+  const G = window.GAME;
+  return G.restore("не код вовсе") === null && G.restore("{}") === null;
+}));
+ok("сейв из будущей версии сравнивается по числам", await page.evaluate(() => {
+  const c = window.GAME.cmpVer;
+  return c("1.10.0", "1.9.0") > 0 && c("1.2.0", "1.2.0") === 0 && c("1.1.9", "1.2.0") < 0;
+}));
 
 console.log("\nСброс прогресса");
 await page.evaluate(() => {
@@ -475,10 +654,25 @@ const run = await page.evaluate(async () => {
   // Год не зависит от того, что оставили предыдущие тесты: сброс прогресса
   // выше нарочно зануляет месяц, поэтому ждём не фиксированное время,
   // а сам переход в 2008-й — так тест не привязан к чужому состоянию.
-  S.speed = 25;
+  // Скорость 250: месяц теперь 90 игровых секунд, на старой скорости
+  // тринадцать месяцев шли бы дольше таймаута.
+  S.speed = 250;
   const started = S.month;
   const t0 = Date.now();
-  while(S.month < started + 13 && Date.now() - t0 < 8000) await new Promise(r => setTimeout(r, 50));
+  const $ = id => document.getElementById(id);
+  while(S.month < started + 13 && Date.now() - t0 < 15000){
+    await new Promise(r => setTimeout(r, 50));
+    // На такой скорости успевают открыться мини-игра, развилка про ООО
+    // и карточка эпохи — все они честно останавливают время. Живой игрок
+    // их закрывает; прогон обязан делать то же, иначе стоит на месте.
+    if($("mgSheet").classList.contains("on")){
+      if(!$("mgOk").hidden) $("mgOk").click();
+      else if(!$("mgDial").hidden && !$("mgHit").disabled) $("mgHit").click();
+      else if(!$("mgPick").hidden) $("mgPick").querySelector(".mgo")?.click();
+    }
+    if($("llcSheet").classList.contains("on")) $("llcNo").click();
+    if($("eraSheet").classList.contains("on")) $("eraOk").click();
+  }
   return { год: G.year(), эпоха: S.era, записей: S.logHistory.length };
 });
 ok("время идёт и эпохи меняются", run.год > 2007, run);
