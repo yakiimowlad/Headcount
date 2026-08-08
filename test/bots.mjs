@@ -47,7 +47,9 @@ async function play(kind, seconds) {
 
   const res = await page.evaluate(async ({ kind, seconds }) => {
     const G = window.GAME, S = G.S, C = G.C;
-    S.speed = 12;                       // ускоряем время, поведение не трогаем
+    S.speed = 60;                       // ускоряем время, поведение не трогаем
+    const curve = {};                   // пик кассы за каждый год
+    const turn  = {};                   // накопленный оборот на конец года
     const buys = [];                    // [момент игрового времени, что купили]
     const marks = {};                   // когда впервые случилось важное
     const mark = k => { if (marks[k] === undefined) marks[k] = Math.round(S.playTime); };
@@ -57,8 +59,11 @@ async function play(kind, seconds) {
     // закрывает, бот обязан делать то же — иначе прогон встанет.
     const dismiss = () => {
       if ($("llcSheet").classList.contains("on")) {
-        // Торопливый регистрирует ООО сразу, методичный — с пятью людьми.
-        const now = kind === "торопливый" || S.staff.length >= 5;
+        // Торопливый регистрирует ООО сразу. Методичный читает то, что
+        // написано на самой развилке: «сейчас это в минус» — значит рано.
+        // Юрлицо с восемью дешёвыми людьми честно убыточно (так и в
+        // документе), и игрок, который этого не прочёл, теряет штат.
+        const now = kind === "торопливый" || G.llcGain() > 0;
         if (now && S.cash >= G.LLC_COST) { $("llcYes").click(); mark("ооо"); }
         else $("llcNo").click();
       }
@@ -96,6 +101,14 @@ async function play(kind, seconds) {
       return out;
     };
 
+    // Тапы считаются от ИГРОВОГО времени, а не от реального. Иначе на
+    // скорости ×60 бот успевает тридцать тапов в игровой месяц, а живой
+    // игрок за те же девяносто секунд — три сотни, и замер клика врёт
+    // на порядок. Плотность взята человеческая: торопливый бьёт 2,5 раза
+    // в игровую секунду, методичный — 1,2 и только пока не жжёт.
+    const RATE = kind === "торопливый" ? 2.5 : 1.2;
+    let taps = 0, tPrev = S.playTime;
+
     const t0 = Date.now();
     while ((Date.now() - t0) / 1000 < seconds) {
       await new Promise(r => setTimeout(r, 50));
@@ -103,13 +116,10 @@ async function play(kind, seconds) {
       if (S.ended) break;
 
       // ── тапы
-      if (kind === "торопливый") {
-        // Долбит без разбора: два тапа за шаг, в ритм не целится.
-        G.doTask(); G.doTask();
-      } else {
-        // Тапает по волне и пропускает то, что дорого жжёт.
-        if (S.burn < 70) G.doTask();
-      }
+      taps += (S.playTime - tPrev) * RATE;
+      tPrev = S.playTime;
+      const canTap = kind === "торопливый" || S.burn < 70;
+      while (taps >= 1) { taps -= 1; if (canTap) G.doTask(); }
 
       // ── покупки
       const take = (what, id) => { buys.push([Math.round(S.playTime), what, id]); };
@@ -133,7 +143,11 @@ async function play(kind, seconds) {
         // Держит подушку в один ФОТ и берёт по одной покупке за раз.
         const cushion = G.payroll() + G.overhead();
         const free = S.cash - cushion;
-        const h = affordableHires()[0];
+        // Думающий игрок видит, что бонус к заказам упёрся в потолок:
+        // до регистрации восьмой человек — последний, кто хоть что-то
+        // даёт. Дальше он копит на юрлицо, а не на девятого «за долю».
+        const capped = !S.llc && G.crewBoost() >= 2.19;
+        const h = capped ? null : affordableHires()[0];
         if (h && G.hireCost(h) <= free) { S.cash -= G.hireCost(h); G.addStaff(h); take("найм", h.id); }
         else {
           const u = affordableUps().find(u => u.cost <= free);
@@ -152,12 +166,19 @@ async function play(kind, seconds) {
       if (S.staff.length) mark("первый наём");
       if (G.year() >= 2011) mark("2011");
       if (G.year() >= 2016) mark("2016");
+      // Пик кассы за год — это самое большое число, которое игрок видит
+      // в шапке. Именно оно отвечает на вопрос «когда на экране появились
+      // миллионы». Мгновенная касса не годится: торопливый тратит всё в
+      // тот же тик, и по ней видно его импульсивность, а не масштаб.
+      const y = G.year();
+      curve[y] = Math.max(curve[y] || 0, Math.round(S.cash));
+      turn[y] = Math.round(S.earned);
     }
 
     return {
       год: G.year(), штат: S.staff.length, касса: Math.round(S.cash),
       заработано: Math.round(S.earned), время: Math.round(S.playTime),
-      покупки: buys, вехи: marks, ошибки: []
+      покупки: buys, вехи: marks, кривая: curve, оборот: turn, ошибки: []
     };
   }, { kind, seconds });
 
@@ -167,7 +188,7 @@ async function play(kind, seconds) {
 }
 
 // Серия — это покупки, между которыми игрок не успел ничего накопить.
-// Порог в 4 игровых секунды: меньше половины игрового месяца.
+// Порог в 45 игровых секунд: половина игрового месяца (месяц — 90 секунд).
 //
 // Считаем отдельно улучшения с повышениями и отдельно найм. Это разные
 // вещи по смыслу: найм подряд — это рост, он и должен быть возможен,
@@ -178,15 +199,15 @@ function series(buys, untilYear2016at, kinds) {
     (untilYear2016at === undefined || b[0] < untilYear2016at) && kinds.includes(b[1]));
   let best = 0, cur = 0, prev = -99;
   early.forEach(([t]) => {
-    if (t - prev <= 4) cur++; else cur = 1;
+    if (t - prev <= 45) cur++; else cur = 1;
     if (cur > best) best = cur;
     prev = t;
   });
   return { длиннейшая: best, всего: early.length };
 }
 
-const SECS = Number(process.env.SECS || 40);
-console.log("\nПрогон по " + SECS + " с реального времени, скорость ×12\n");
+const SECS = Number(process.env.SECS || 150);
+console.log("\nПрогон по " + SECS + " с реального времени, скорость ×60\n");
 
 for (const kind of ["торопливый", "методичный"]) {
   const r = await play(kind, SECS);
@@ -196,6 +217,32 @@ for (const kind of ["торопливый", "методичный"]) {
   console.log("── " + kind);
   console.log("   дошёл до " + r.год + ", штат " + r.штат + ", заработано " + r.заработано.toLocaleString("ru"));
   console.log("   вехи: " + JSON.stringify(r.вехи));
+  // Контрольные точки кривой дохода: не миллионы до 2010-го,
+  // не миллиарды до 2020-го, десятки миллиардов — только после ИИ.
+  const at = y => r.кривая[y] === undefined ? "—" : r.кривая[y].toLocaleString("ru");
+  const ob = y => r.оборот[y] === undefined ? "—" : r.оборот[y].toLocaleString("ru");
+  console.log("   пик кассы:  2010: " + at(2010) + " · 2015: " + at(2015) +
+              " · 2020: " + at(2020) + " · 2024: " + at(2024));
+  console.log("   оборот:     2010: " + ob(2010) + " · 2015: " + ob(2015) +
+              " · 2020: " + ob(2020) + " · 2024: " + ob(2024));
+  // Контрольные точки кривой: не миллионы до 2010-го, не миллиарды до
+  // ковида, десятки миллиардов — только после ИИ-бума.
+  if (r.кривая[2010] !== undefined && r.кривая[2010] >= 1e6){
+    failed++; console.log("   ✗ миллионы уже в 2010-м: ранняя игра слишком щедрая"); }
+  if (r.кривая[2019] !== undefined && r.кривая[2019] >= 1e9){
+    failed++; console.log("   ✗ миллиарды до ковида: волна 2020-го не будет ощущаться"); }
+  // Масштаб компании меряется оборотом, а не кассой: и живой игрок, и
+  // торопливый бот превращают деньги в людей в тот же тик.
+  //
+  // Проверяем РОСТ, а не абсолют. Осторожный игрок к 2015-му честно
+  // беднее торопливого — это разные стили, а не разный баланс. Застой
+  // выглядит иначе: оборот стоит на месте пять лет подряд.
+  const рост = r.оборот[2010] && r.оборот[2015] ? r.оборот[2015] / r.оборот[2010] : null;
+  if (рост !== null) console.log("   рост оборота 2010 → 2015: ×" + рост.toFixed(1));
+  if (рост !== null && рост < 2.5){
+    failed++; console.log("   ✗ за пять лет оборот вырос меньше чем втрое: застой"); }
+  if (r.оборот[2024] !== undefined && r.оборот[2024] < 1e9){
+    failed++; console.log("   ✗ к 2024-му оборот не дошёл до миллиарда: ИИ-бум не читается"); }
   console.log("   до 2016: прокачек " + prog.всего + " (серия " + prog.длиннейшая +
               "), наймов " + hire.всего + " (серия " + hire.длиннейшая + ")");
   if (prog.длиннейшая > 2) { failed++; console.log("   ✗ прокачка серией длиннее двух: копить не нужно"); }
