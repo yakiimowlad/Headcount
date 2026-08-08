@@ -514,6 +514,102 @@ ok("состояние переживает перезагрузку", await pag
   return Math.round(S.cash) >= Math.round(e.cash) && S.month >= e.month;
 }, saved), await page.evaluate(() => ({ cash: window.GAME.S.cash, month: window.GAME.S.month })));
 
+console.log("\nТег новой жизни");
+ok("в первой жизни тега нет", await page.evaluate(() => {
+  const S = window.GAME.S, было = S.runs;
+  S.runs = 0; window.GAME.paintNg();
+  const пусто = document.getElementById("ngTag").hidden;
+  S.runs = было;
+  return пусто;
+}));
+ok("со второй жизни тег считает заходы", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, было = S.runs;
+  S.runs = 1; G.paintNg();
+  const t = document.getElementById("ngTag");
+  const текст = t.textContent, виден = !t.hidden, простой = !t.classList.contains("gold");
+  S.runs = было; G.paintNg();
+  return виден && текст === "NG+1" && простой;
+}));
+ok("с третьего захода тег золотой", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, было = S.runs;
+  S.runs = 3; G.paintNg();
+  const t = document.getElementById("ngTag");
+  const золото = t.classList.contains("gold") && t.textContent === "NG+3";
+  S.runs = было; G.paintNg();
+  return золото;
+}));
+ok("дата рядом с тегом не затирается", await page.evaluate(() => {
+  const G = window.GAME, S = G.S, было = S.runs;
+  S.runs = 2; G.paint();
+  const sub = document.getElementById("sub");
+  const цел = /\d{4}/.test(sub.textContent) && !!sub.querySelector(".ngp");
+  S.runs = было; G.paint();
+  return цел;
+}));
+
+console.log("\nПауза, вибрация, движение");
+ok("на паузе время стоит", await page.evaluate(async () => {
+  const G = window.GAME, S = G.S;
+  S.paused = true; G.applyPause();
+  const было = S.playTime;
+  await new Promise(r => setTimeout(r, 400));
+  const стоит = S.playTime === было;
+  const видно = !document.getElementById("pauseBar").hidden;
+  S.paused = false; G.applyPause();
+  return стоит && видно;
+}));
+ok("снятая пауза возвращает время", await page.evaluate(async () => {
+  const S = window.GAME.S;
+  // Время останавливает не только пауза: раскрытая хроника и модалки
+  // делают то же самое, и предыдущие проверки могли что-то оставить
+  // открытым. Закрываем всё, иначе тест меряет чужую остановку.
+  const $ = id => document.getElementById(id);
+  document.getElementById("chron").classList.remove("open");
+  ["llcSheet","mgSheet","eraSheet"].forEach(id => $(id).classList.remove("on"));
+  const было = S.playTime;
+  await new Promise(r => setTimeout(r, 300));
+  return S.playTime > было;
+}));
+ok("скрытая плашка паузы не занимает место", await page.evaluate(() =>
+  document.getElementById("pauseBar").offsetHeight === 0));
+ok("выключенная вибрация молчит", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  let звали = 0;
+  const orig = navigator.vibrate;
+  try{ Object.defineProperty(navigator, "vibrate", { value: () => { звали++; return true; }, configurable: true }); }
+  catch(e){ return true; }
+  S.vibro = false; G.SFX.hire();
+  const молчал = звали === 0;
+  S.vibro = true;
+  try{ Object.defineProperty(navigator, "vibrate", { value: orig, configurable: true }); }catch(e){}
+  return молчал;
+}));
+ok("«меньше движения» гасит анимации", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.calm = true; G.applyCalm();
+  const есть = document.documentElement.classList.contains("calm");
+  S.calm = false; G.applyCalm();
+  return есть && !document.documentElement.classList.contains("calm");
+}));
+
+console.log("\nПеренос сохранения");
+ok("код переживает круг экспорт → импорт", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.cash = 777777; S.month = 44;
+  const код = btoa(unescape(encodeURIComponent(G.serialize())));
+  S.cash = 1; S.month = 0;
+  const raw = decodeURIComponent(escape(atob(код)));
+  return !!G.restore(raw) && Math.round(S.cash) === 777777 && S.month === 44;
+}));
+ok("мусор вместо кода не ломает игру", await page.evaluate(() => {
+  const G = window.GAME;
+  return G.restore("не код вовсе") === null && G.restore("{}") === null;
+}));
+ok("сейв из будущей версии сравнивается по числам", await page.evaluate(() => {
+  const c = window.GAME.cmpVer;
+  return c("1.10.0", "1.9.0") > 0 && c("1.2.0", "1.2.0") === 0 && c("1.1.9", "1.2.0") < 0;
+}));
+
 console.log("\nСброс прогресса");
 await page.evaluate(() => {
   const S = window.GAME.S;

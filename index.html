@@ -155,6 +155,9 @@ body{
   transition:background-color .5s var(--e),color .5s var(--e);
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* Своя ручка «меньше движения» рядом с системной. Системную включают
+   ради всего телефона, а тут человек может хотеть тише только здесь. */
+.calm *{transition:none!important;animation:none!important}
 .n{font-variant-numeric:tabular-nums}
 button{font:inherit;cursor:pointer;border:0;background:none;color:inherit;
   touch-action:manipulation;user-select:none;-webkit-user-select:none}
@@ -189,6 +192,26 @@ h1{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1.1;
   background:linear-gradient(90deg,var(--acc),var(--wrn));transition:width 1s linear}
 .sub{font-size:12px;color:var(--mut);margin-top:2px;letter-spacing:.3px;
   text-transform:uppercase;font-weight:600}
+/* Тег новой жизни. Стоит рядом с датой, потому что отвечает на тот же
+   вопрос — «когда мы». Инверсный к теме: в светлой чёрный, в тёмной
+   белый. Это единственный элемент, который спорит с фоном намеренно —
+   он должен читаться как штамп на документе, а не как ещё одна
+   подпись. С третьего захода становится золотым: дальше уже коллекция.
+   Цвета заданы прямо, а не переменными: штамп обязан выглядеть
+   одинаково в обеих темах, и «само инвертируется» здесь не годится. */
+.ngp{display:inline-block;margin-left:6px;padding:2px 5px;border-radius:4px;
+  font-size:10px;font-weight:700;letter-spacing:.2px;vertical-align:1px;
+  font-variant-numeric:tabular-nums;background:#111;color:#fff}
+[data-theme=dark] .ngp{background:#f5f5f7;color:#111}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme=light]) .ngp{background:#f5f5f7;color:#111}
+}
+/* Золото не инвертируется — оно одинаково в обеих темах, поэтому его
+   правило обязано перебивать оба верхних. Отсюда :root в селекторе:
+   без него системная тёмная тема (специфичнее по :root:not()) красила
+   бы третий заход обратно в белый. */
+:root .ngp.gold{background:#C9A227;color:#1a1a1a;
+  box-shadow:inset 0 0 0 .5px rgba(0,0,0,.3)}
 .ic{width:38px;height:38px;flex:none;border-radius:19px;border:.5px solid var(--hair);
   background:var(--sf);display:grid;place-items:center;transition:transform .25s var(--e)}
 .ic:active{transform:scale(.92)}
@@ -679,6 +702,39 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .tgrp{font-size:11px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;
   color:var(--mut);padding:14px 16px 6px}
 .tgrp.warn{color:var(--wrn-ink)}
+/* Тумблеры. Форма переключателя — не украшение: у чекбокса и у
+   переключателя разный смысл. Чекбокс отмечает выбор, который
+   применится потом; переключатель меняет мир сразу, и здесь именно так. */
+/* Плашка паузы. Охра, потому что это состояние «что-то не идёт»,
+   а не ошибка и не успех. Кнопка внутри: снять паузу должно быть
+   можно там же, где о ней узнал, не открывая настройки. */
+#pauseBar{max-width:520px;margin:8px auto 0;padding:6px 12px;border-radius:10px;
+  background:var(--wrn-soft);color:var(--wrn-ink);font-size:12px;font-weight:700;
+  letter-spacing:.4px;text-transform:uppercase;
+  display:flex;align-items:center;justify-content:space-between;gap:10px}
+/* display по идентификатору перебивает атрибут hidden — без этой строки
+   скрытая плашка продолжает занимать полосу и выталкивает экран вниз. */
+#pauseBar[hidden]{display:none}
+#pauseBar button{font:inherit;text-transform:none;letter-spacing:0;
+  color:var(--wrn-ink);text-decoration:underline;padding:4px 2px}
+.tgls{margin-top:22px}
+.tgl{display:flex;align-items:center;justify-content:space-between;
+  padding:11px 0;font-size:15px;font-weight:600;cursor:pointer}
+.tgl input{position:absolute;opacity:0;pointer-events:none}
+.tgl i{width:46px;height:28px;border-radius:14px;background:var(--hair);flex:none;
+  position:relative;transition:background .18s var(--e)}
+.tgl i::after{content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;
+  border-radius:11px;background:var(--sf);box-shadow:var(--sh);
+  transition:transform .18s var(--e)}
+.tgl input:checked + i{background:var(--acc)}
+.tgl input:checked + i::after{transform:translateX(18px)}
+.tgl input:focus-visible + i{outline:2px solid var(--acc-ink);outline-offset:2px}
+.sbtns{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:10px}
+.sbtns .act{margin-top:0;text-align:center}
+.sio{width:100%;margin-top:10px;padding:11px 13px;border-radius:12px;
+  border:.5px solid var(--hair);background:var(--bg);color:var(--ink);
+  font-size:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  height:84px;resize:none;-webkit-user-select:text;user-select:text}
 .smeta{margin-top:24px;padding-top:16px;border-top:.5px solid var(--hair)}
 .smeta div{display:flex;justify-content:space-between;align-items:baseline;padding:5px 0}
 .smeta span{font-size:13px;color:var(--mut)}
@@ -794,7 +850,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   <div class="hw">
     <div class="hleft">
       <h1 id="brand">Фриланс</h1>
-      <div class="sub" id="sub">январь 2007</div>
+      <div class="sub" id="sub">январь 2007<span class="ngp" id="ngTag" hidden></span></div>
     </div>
     <!-- Касса видна на любой вкладке: раньше она жила только на «Работе»,
          и на остальных экранах было непонятно, что ты можешь себе позволить. -->
@@ -809,6 +865,9 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   <!-- Сигнатура из документа: полоса показывает движение к 2026 году.
        Ты смотришь на неё как на прогресс, а это просто время, которое проходит. -->
   <div class="era" data-tip="это просто время"><i id="eraBar"></i></div>
+  <!-- Пауза обязана быть видна и обязана сниматься отсюда же: игра,
+       которая молча стоит, неотличима от игры, которая сломалась. -->
+  <div id="pauseBar" hidden>Пауза<button id="pauseGo">Продолжить</button></div>
 </header>
 
 <main>
@@ -1052,6 +1111,35 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <button data-theme="auto">Как в системе</button>
     </div>
 
+    <!-- Тумблеры. Вибрация и анимация — не украшения, а то, от чего
+         часть людей физически устаёт. Системную настройку «меньше
+         движения» игра уважает и без тумблера, но своя ручка нужна:
+         системную включают ради всего телефона, а не ради одной игры. -->
+    <div class="tgls">
+      <label class="tgl"><span>Пауза</span>
+        <input type="checkbox" id="tPause"><i></i></label>
+      <label class="tgl"><span>Вибрация</span>
+        <input type="checkbox" id="tVibro" checked><i></i></label>
+      <label class="tgl"><span>Меньше движения</span>
+        <input type="checkbox" id="tCalm"><i></i></label>
+    </div>
+
+    <div class="k" style="margin-top:26px;padding:0">Итоги</div>
+    <div class="smeta" id="statsBox" style="margin-top:8px;border-top:0;padding-top:0"></div>
+
+    <!-- Перенос сохранения. Игра живёт в localStorage, а его чистят
+         молча: одна кнопка «очистить данные сайта» — и двадцать лет
+         жизни исчезли. Строка переносит прогресс на другой телефон и
+         служит резервной копией: скопировал, отправил себе. -->
+    <div class="k" style="margin-top:26px;padding:0">Сохранение</div>
+    <div class="sbtns">
+      <button class="act dim" id="expBtn">Скопировать код</button>
+      <button class="act dim" id="impBtn">Вставить код</button>
+    </div>
+    <textarea id="saveIO" class="sio" hidden spellcheck="false"
+      aria-label="Код сохранения"></textarea>
+    <div class="cap" id="ioHint" hidden></div>
+
     <div class="smeta">
       <div><span>Сохранено</span><b id="setSaved">—</b></div>
       <div><span>Версия</span><b id="setVer">—</b></div>
@@ -1133,7 +1221,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.2.0";
+const VERSION = "1.2.1";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 90 секунд = 5 часов 42 минуты, если не делать
@@ -1799,7 +1887,11 @@ const S = {
   deleg:0, delegAcc:0, legacy:1, lifetime:0, runs:0,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
-  ended:false, god:false, speed:1
+  ended:false, god:false, speed:1,
+  // Настройки доступности и паузы. Это не прогресс: сброс их не трогает,
+  // и переносить их между жизнями тоже не нужно — они про человека
+  // за экраном, а не про компанию.
+  paused:false, vibro:true, calm:false
 };
 C.roles.forEach(r => S.hired[r.id] = 0);
 // Снимок чистого состояния: престиж собирает новую жизнь из него,
@@ -2021,7 +2113,24 @@ function restore(raw){
   S.god = false; S.ended = false; S.speed = 1;
   if(data.theme) document.documentElement.setAttribute("data-theme", data.theme);
   if(data.at && !S.savedAt) S.savedAt = data.at;
+  // Сохранение из версии новее той, что открыта. Бывает у того, кто
+  // играл на телефоне со свежим кодом, а открыл на компьютере с
+  // закешированным старым. Грузим как есть — данные общие, — но
+  // предупреждаем: часть механик может просто не существовать здесь.
+  if(data.ver && cmpVer(data.ver, VERSION) > 0)
+    setTimeout(() => log("Сохранение сделано в версии "+data.ver+", а открыта "+VERSION+
+      ". Обновите страницу, иначе часть прогресса может не отобразиться.", "bad"), 400);
   return data;
+}
+// Сравнение версий по числам, а не строкой: «1.10.0» больше «1.9.0»,
+// хотя посимвольно меньше.
+function cmpVer(a, b){
+  const x = String(a).split("."), y = String(b).split(".");
+  for(let i=0;i<3;i++){
+    const d = (+x[i]||0) - (+y[i]||0);
+    if(d) return d < 0 ? -1 : 1;
+  }
+  return 0;
 }
 function readSave(){
   try{ const s = localStorage.getItem(SAVE_KEY); if(s) return s; }catch(e){}
@@ -2436,7 +2545,10 @@ function thump(vol, from, to){
   tone("sine", from||85, to||38, .34, vol ?? .55);
   noise(.05, (vol ?? .55)*.25, 260);
 }
-function buzz(ms){ try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){} }
+function buzz(ms){
+  if(S.vibro === false) return;
+  try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){}
+}
 
 const SFX = {
   tap:    () => noise(.03, .10, 2600),
@@ -2682,7 +2794,8 @@ function mgDue(){
    у самой кнопки «Уволиться» их тоже переживает.
    ══════════════════════════════════════════════════════════════ */
 function resetProgress(){
-  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme };
+  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme,
+                 vibro:S.vibro, calm:S.calm };
   const fresh = JSON.parse(S0);
   Object.keys(S).forEach(k => delete S[k]);
   Object.assign(S, fresh, keep);
@@ -2714,7 +2827,7 @@ function doQuit(){
   const keep = {
     lifetime, legacy: legacyOf(lifetime) * offer, runs: (S.runs||0)+1,
     volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, savedAt:S.savedAt,
-    unmissed:S.unmissed
+    vibro:S.vibro, calm:S.calm, unmissed:S.unmissed
   };
   const fresh = JSON.parse(S0);
   Object.keys(S).forEach(k => delete S[k]);
@@ -2802,6 +2915,41 @@ function wireResetBtn(){
     $("resetNo").onclick = () => { $("resetBox").innerHTML = RESET_ASK; wireResetBtn(); };
   };
 }
+/* Тег новой жизни. Первая жизнь тега не имеет: NG+ — это про то, что
+   ты здесь уже был, и в первый раз это неправда. Дальше по числу
+   уходов: ушёл один раз — NG+1. С третьего захода золото. */
+const ngLabel = () => (S.runs||0) > 0 ? "NG+"+S.runs : "";
+function ngHtml(){
+  const t = ngLabel();
+  return t ? '<span class="ngp'+((S.runs||0) >= 3 ? ' gold' : '')+'">'+t+'</span>' : "";
+}
+function paintNg(){
+  const el = $("ngTag"), t = ngLabel();
+  if(!changed("ng", t)) return;
+  el.hidden = !t;
+  el.textContent = t;
+  el.classList.toggle("gold", (S.runs||0) >= 3);
+}
+/* Итоги захода. Числа, которые игра и так считает, но нигде не
+   показывает целиком: сколько заработано, сколько людей прошло через
+   компанию, сколько раз ты сам нажал на кнопку. Последнее — самое
+   честное число в игре: оно про то, сколько времени ушло руками. */
+function paintStats(){
+  const box = $("statsBox");
+  const row = (k, v) => '<div><span>'+k+'</span><b class="n">'+v+'</b></div>';
+  const mins = Math.round(S.playTime/60);
+  box.innerHTML =
+    row("Заработано за жизнь", rub((S.lifetime||0) + S.earned)) +
+    row("Оборот этой компании", rub(S.earned)) +
+    row("Сейчас в штате", S.staff.length + " чел.") +
+    row("Задач закрыто руками", (S.taskCount||0).toLocaleString("ru")) +
+    row("Смен работы", (S.jobs||0)) +
+    row("Повышений выдано", S.done.size) +
+    row("Улучшений куплено", S.bought.size) +
+    row("Времени в игре", mins < 60 ? mins+" мин" : Math.floor(mins/60)+" ч "+(mins%60)+" мин") +
+    row("Выгораний", (S.sickTime||0) > 0 ? Math.max(1, Math.round(S.sickTime/18)) : 0) +
+    row("Жизнь", ((S.runs||0)+1) + (ngLabel() ? " " + ngHtml() : ""));
+}
 function paintSettings(){
   $("setSaved").textContent = savedAgo();
   $("setVer").textContent = "v"+VERSION;
@@ -2811,6 +2959,11 @@ function paintSettings(){
   $("volMusV").textContent = $("volMus").value;
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===(S.theme||"auto")));
+  $("tPause").checked = !!S.paused;
+  $("tVibro").checked = S.vibro !== false;
+  $("tCalm").checked  = !!S.calm;
+  paintStats();
+  $("saveIO").hidden = true; $("ioHint").hidden = true;
   $("resetBox").innerHTML = RESET_ASK;
   wireResetBtn();
 }
@@ -2825,6 +2978,68 @@ $("setClose").onclick = closeSet;
 $("setScrim").onclick = closeSet;
 document.querySelectorAll("#themeSeg button").forEach(b =>
   b.onclick = () => applyTheme(b.dataset.theme));
+
+/* Пауза. Игра идёт в реальном времени, и отойти от неё было нельзя
+   никак: закрыть вкладку — потерять месяцы, оставить открытой — тоже.
+   Пауза видна в шапке отдельной плашкой, иначе она неотличима от
+   зависшей игры. */
+function applyPause(){
+  $("pauseBar").hidden = !S.paused;
+  document.body.classList.toggle("paused", !!S.paused);
+}
+$("tPause").onchange = e => { S.paused = e.target.checked; applyPause(); saveGame(); };
+$("pauseGo").onclick = () => { S.paused = false; applyPause(); saveGame(); };
+$("tVibro").onchange = e => { S.vibro = e.target.checked; if(S.vibro) buzz(12); saveGame(); };
+// «Меньше движения» — тот же выключатель, что системный, только свой.
+// Класс висит на корне: анимации гасятся одним правилом, а не перебором.
+function applyCalm(){ document.documentElement.classList.toggle("calm", !!S.calm); }
+$("tCalm").onchange = e => { S.calm = e.target.checked; applyCalm(); saveGame(); };
+
+/* Перенос сохранения строкой. Base64 не шифрование и не защита от
+   подкрутки чисел — это просто «не редактируй руками, сломаешь».
+   Кто захочет читерить, разберётся за минуту, и пусть: это игра
+   про одного человека, рекордов здесь нет. */
+const b64en = s => btoa(unescape(encodeURIComponent(s)));
+const b64de = s => decodeURIComponent(escape(atob(s)));
+function ioSay(text, bad){
+  const h = $("ioHint");
+  h.hidden = false; h.textContent = text;
+  h.style.color = bad ? "var(--wrn-ink)" : "var(--acc-ink)";
+}
+$("expBtn").onclick = async () => {
+  saveGame();
+  const code = b64en(serialize());
+  const io = $("saveIO");
+  io.hidden = false; io.value = code;
+  try{
+    await navigator.clipboard.writeText(code);
+    ioSay("Код в буфере обмена. Отправьте его себе — это резервная копия");
+  }catch(e){
+    // Буфер может быть недоступен без https или без явного жеста.
+    io.select();
+    ioSay("Скопируйте код вручную: он выделен");
+  }
+  sfx("tap");
+};
+$("impBtn").onclick = () => {
+  const io = $("saveIO");
+  if(io.hidden || !io.value.trim()){
+    io.hidden = false; io.value = ""; io.focus();
+    ioSay("Вставьте код сюда и нажмите «Вставить код» ещё раз");
+    return;
+  }
+  let raw;
+  try{ raw = b64de(io.value.trim()); }catch(e){ raw = io.value.trim(); }
+  const data = restore(raw);
+  if(!data){ ioSay("Это не код сохранения. Проверьте, что скопировали целиком", true); return; }
+  saveGame();
+  closeSet();
+  $("log").innerHTML = ""; renderLogHistory();
+  applyTheme(S.theme || "auto"); applyCalm(); applyPause();
+  bumpEcon(); rollTask(); showTask(); paint();
+  log("Сохранение перенесено. Год " + year() + ", в штате " + S.staff.length + ".", "lore");
+  sfx("era");
+};
 $("volSfx").oninput = e => {
   S.volSfx = e.target.value/100; $("volSfxV").textContent = e.target.value;
   applyVolume(); sfx("tap");           // слышно, что именно крутишь
@@ -3551,7 +3766,10 @@ $("llcNo").onclick = () => {
 function paint(){
   if(S.ended) return;
   checkEra();
-  $("sub").textContent = MON[S.month%12]+" "+year();
+  // Дата пишется в первый текстовый узел, а не в textContent всего блока:
+  // рядом живёт тег новой жизни, и textContent стирал бы его каждый кадр.
+  $("sub").firstChild.nodeValue = MON[S.month%12]+" "+year();
+  paintNg();
   const pr = profit();
 
   // Единственное место, где живут касса и прибыль. Крупная карточка на
@@ -3798,7 +4016,7 @@ setInterval(() => {
   // теряешь настоящее — новый созвон или выгорание мимо экрана.
   // Время стоит, пока читаешь: раскрытая хроника, развилка про ООО и
   // экран смены эпохи — это моменты чтения и решения, а не игры.
-  if(S.ended || chron.classList.contains("open") ||
+  if(S.ended || S.paused || chron.classList.contains("open") ||
      $("llcSheet").classList.contains("on") ||
      $("mgSheet").classList.contains("on") ||
      $("eraSheet").classList.contains("on")) return;
@@ -4187,6 +4405,7 @@ if(restored){
   rollTask();
 }
 applyTheme(S.theme || "auto");
+applyCalm(); applyPause();
 setTeamPane(S.teamPane || "hire");
 showTask(); paint(); measure();
 
@@ -4194,12 +4413,33 @@ showTask(); paint(); measure();
 // beforeunload там ненадёжен, особенно в PWA-режиме с домашнего экрана,
 // который эта игра прямо объявляет своими apple-mobile-web-app-мета-тегами.
 addEventListener("pagehide", saveGame);
+
+/* Ловушка ошибок. До неё любая ошибка в кадре молча останавливала игру:
+   цикл падал, время замирало, и это было неотличимо от «игра такая».
+   Именно так прожил незамеченным NaN в цене найма. Теперь ошибка
+   попадает в хронику — туда, куда игрок и так смотрит, — и сохранение
+   пишется немедленно, чтобы прогресс не утонул вместе с кадром.
+
+   Сообщение показываем одно: если ломается каждый тик, десять раз в
+   секунду об этом писать бессмысленно и жестоко. */
+addEventListener("error", e => {
+  if(S.oops) return;
+  S.oops = true;
+  try{ saveGame(); }catch(_){}
+  try{
+    log("Что-то сломалось: "+(e.message||"неизвестная ошибка")+
+        ". Прогресс сохранён — перезагрузите страницу.", "bad");
+    snack("Ошибка. Прогресс сохранён, перезагрузите страницу");
+  }catch(_){}
+});
 addEventListener("visibilitychange", () => { if(document.hidden) saveGame(); });
 
 window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,addStaff,loseStaff,
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                EARLY_CAP,CAP_YEAR,MONTH,BURN_TAP,pace,checkEra,paintSpark,loopMath,
+               ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,
+               restore,serialize,
                stamp,stampOf,paintBadge,paintPeek,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
                upsPower,upsGrade,upsState,
