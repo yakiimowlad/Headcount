@@ -810,8 +810,12 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
    починил ли вебкит свой баг. */
 .sheet.tall .sh-in{max-height:86dvh;display:flex;flex-direction:column;overflow:hidden}
 .sheet.tall .shead{flex:none}
-.sheet.tall .upstree{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
+.sheet.tall .upstree,
+.sheet.tall .setbody{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;
   margin-top:0;padding-bottom:4px}
+/* Отступ снизу: последняя карточка не должна упираться в край экрана,
+   иначе кажется, что список обрезан. */
+.setbody{padding-bottom:16px}
 .upstree{margin-top:6px}
 .upsgrp{font-size:12px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;
   color:var(--mut);margin:20px 0 2px}
@@ -1155,11 +1159,15 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 </div>
 
 <div class="scrim" id="setScrim"></div>
-<div class="sheet" id="setSheet">
+<div class="sheet tall" id="setSheet">
   <div class="sh-in">
     <div class="grab"></div>
     <div class="shead"><h2>Настройки</h2><button class="xbtn" id="setClose" aria-label="Закрыть">×</button></div>
 
+    <!-- Прокручивается только это. Крестик живёт выше и не уезжает:
+         настройки доросли до двух экранов, и вместе со списком вверх
+         уходила единственная кнопка «закрыть». -->
+    <div class="setbody">
     <div class="srow">
       <label for="volSfx">Звуки</label>
       <input type="range" id="volSfx" min="0" max="100" value="70">
@@ -1220,6 +1228,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
       <p><b>Сбросить прогресс.</b> Удалит компанию, штат и опыт. Отменить нельзя.<br>
         <button class="act dim" id="resetBtn" style="margin-top:10px">Сбросить прогресс</button></p>
+    </div>
     </div>
   </div>
 </div>
@@ -1287,7 +1296,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.3.0";
+const VERSION = "1.3.1";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 90 секунд = 5 часов 42 минуты, если не делать
@@ -1949,6 +1958,9 @@ const S = {
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
+  // Что игре уже разрешено показать. Новое выкладывается по одному,
+  // а не всё сразу при смене эпохи — см. revealTick().
+  seen:[], revealIn:0,
   jobs:0, jobAt:undefined,
   deleg:0, delegAcc:0, legacy:1, lifetime:0, runs:0,
   // ритм
@@ -2175,6 +2187,16 @@ function restore(raw){
   data = migrate(data);
   Object.assign(S, data.S);
   countHired();
+  // Сейв, сделанный до появления очереди показа, ничего о ней не знает.
+  // Прятать у такого игрока половину игры и выдавать обратно по одной
+  // штуке в два месяца было бы издевательством: считаем показанным всё,
+  // что он к этому моменту заслужил.
+  if(!S.seen || !S.seen.length){
+    S.seen = [];
+    S.bought = new Set(data.S.bought||[]);
+    C.roles.forEach(r => { if(roleRipe(r)) S.seen.push(r.id); });
+    C.ups.forEach(u => { if(upRipe(u)) S.seen.push(u.id); });
+  }
   S.bought = new Set(data.S.bought||[]);
   S.done = new Set(data.S.done||[]);
   // Режим тестировщика, ускорение и экран финала никогда не переживают
@@ -3037,6 +3059,42 @@ function paintSettings(){
   $("resetBox").innerHTML = RESET_ASK;
   wireResetBtn();
 }
+/* Новое приходит по одному. Раньше смена эпохи вываливала пять кнопок
+   разом: игрок пролистывал их не читая, и выбор превращался в список.
+   Теперь очередь — примерно одна вещь в два игровых месяца, и каждая
+   попадает в хронику отдельной строкой. Дешёвое вперёд: так лестница
+   читается снизу вверх, а не наугад.
+
+   Первая вещь показывается сразу: таймер стартует с нуля и обнуляется,
+   когда очередь пуста. Ждать пустую очередь незачем. */
+// Полминуты реального времени между открытиями, и вдвое быстрее, когда
+// в очереди скопилось. Два игровых месяца, как было сначала, означали
+// три минуты ожидания первого сотрудника — игрок успевал решить, что
+// игра сломалась.
+const REVEAL_GAP = 6;
+function revealNext(){
+  const role = C.roles.filter(r => roleRipe(r) && !S.seen.includes(r.id))
+                      .sort((a,b) => a.pay - b.pay)[0];
+  const up   = C.ups.filter(u => upRipe(u) && !S.bought.has(u.id) && !S.seen.includes(u.id))
+                    .sort((a,b) => a.cost - b.cost)[0];
+  // Человек вперёд улучшения: компанию строят люди, и открытие профессии
+  // — событие крупнее, чем ещё один пункт в прайсе.
+  const ждут = C.roles.filter(r => roleRipe(r) && !S.seen.includes(r.id)).length +
+               C.ups.filter(u => upRipe(u) && !S.bought.has(u.id) && !S.seen.includes(u.id)).length;
+  const пауза = ждут > 3 ? REVEAL_GAP/2 : REVEAL_GAP;
+  if(role){
+    S.seen.push(role.id);
+    log("Теперь можно нанять: <b>"+role.name.toLowerCase()+"</b>.", "good");
+    sig.hire = null; return пауза;
+  }
+  if(up){
+    S.seen.push(up.id);
+    log("Появилось улучшение: <b>"+up.name.toLowerCase()+"</b>.", "good");
+    return пауза;
+  }
+  return 0;
+}
+
 /* ══════════════════════════════════════════════════════════════
    ОНБОРДИНГ
    Четыре мысли, по одной на экран, в том порядке, в каком они
@@ -3308,8 +3366,11 @@ function gradeTag(t){
 // он написан, не случится вообще.
 const roleSeen = r => !r.viaBlock || S.blocker===r.viaBlock ||
   (S.blockersDone||[]).includes(r.viaBlock);
-const roleLocked = r => (r.era||0) > S.era || !roleSeen(r) ||
-  (r.pay*1.5 > Math.max(60000, S.earned*1.2) && !S.hired[r.id]);
+// Роль созрела: эпоха подошла, нужда возникла, оборот дорос. Это ещё
+// не значит, что её показали, — показ идёт очередью, по одной вещи.
+const roleRipe = r => (r.era||0) <= S.era && roleSeen(r) &&
+  !(r.pay*1.5 > Math.max(60000, S.earned*1.2) && !S.hired[r.id]);
+const roleLocked = r => !roleRipe(r) || !(S.seen||[]).includes(r.id);
 // Открытые роли и ровно одна следующая под замком. Вываливать весь список
 // сразу — значит показать двадцать лет вперёд человеку, у которого пока
 // нет денег даже на стажёра.
@@ -3563,8 +3624,9 @@ function paintTracks(){
   if(can) $("sell").onclick = finish;
   if(canQuit()) $("quit").onclick = startQuit;
 }
-const upLocked = u => (u.era||0) > S.era || (u.req && !S.bought.has(u.req)) ||
-  u.cost > Math.max(40000, S.earned);
+const upRipe = u => (u.era||0) <= S.era && !(u.req && !S.bought.has(u.req)) &&
+  u.cost <= Math.max(40000, S.earned);
+const upLocked = u => !upRipe(u) || !(S.seen||[]).includes(u.id);
 // То же правило, что и в найме: купленное исчезает, доступное показано,
 // из закрытого видна одна ближайшая ступень. Лестница избавления от
 // созвонов перестаёт быть списком из пяти «Сначала: …» в 2007 году.
@@ -4325,6 +4387,12 @@ setInterval(() => {
       // становится невыполнимым по кругу. Проиграть в этой игре нельзя.
       if(next && S.staff.length && p > 0){
         S.blocker = next.id;
+        // Требование блокера нельзя выполнить, если нужного человека
+        // ещё не показали. Очередь тут не ждёт — блокер сам и есть та
+        // нужда, ради которой профессия появляется.
+        const want = next.gate && (next.gate.role ||
+          (next.gate.or||[]).map(g=>g.role).filter(Boolean)[0]);
+        if(want && !S.seen.includes(want)) S.seen.push(want);
         S.blockStart = S.playTime; S.blockTasks = S.taskCount||0;
         sfx("block");
         $("bTitle").textContent = next.title;
@@ -4399,6 +4467,11 @@ setInterval(() => {
     }
     if(S.chaos<=0) log("Перестройка закончилась. Осталось "+S.staff.length+" человек.","lore");
   }
+
+  // Очередь показа нового. Пока очередь пуста, таймер стоит на нуле:
+  // следующая созревшая вещь появится сразу, а не через два месяца.
+  S.revealIn = (S.revealIn||0) - dtE;
+  if(S.revealIn <= 0) S.revealIn = revealNext();
 
   S.noiseIn -= dtE;
   if(S.noiseIn<=0){
@@ -4589,7 +4662,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                EARLY_CAP,CAP_YEAR,MONTH,BURN_TAP,pace,checkEra,paintSpark,loopMath,
                ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,
-               ONB,obOpen,obClose,paintTracks,
+               ONB,obOpen,obClose,paintTracks,revealNext,roleRipe,upRipe,REVEAL_GAP,
                restore,serialize,
                stamp,stampOf,paintBadge,paintPeek,
                snack,sfx,SFX,startMusic,applyVolume,roleLocked,roleSeen,gradeTag,
