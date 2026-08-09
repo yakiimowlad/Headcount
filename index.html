@@ -42,7 +42,8 @@
     "meets:"           созвоны [название, описание, эпоха]
     "noise:"           фоновые строки хроники [эпоха, текст]
     "roles:"           роли найма: dept, tier грейд, pay, out, viaBlock
-    "const MG"         две мини-игры: дозвон (2007+) и промпт (2022+)
+    "const MG"         три мини-игры: дозвон (2007+), смета (2011+), промпт (2022+)
+    "MG_ART"           предметы мини-игр: иконки для полки и шапки
     "tracks:"          пять треков карьеры, ступени с eff и after
     "loops:"           пять зацикленных улучшений: cost, mul, say по заходам
     "ups:"             разовые улучшения: grp, t грейд, era, req, f, after
@@ -63,11 +64,15 @@
     "gateOk"           проверка требований блокера
     "БЛОКЕРЫ"          в тике: выдача и снятие
     "ООО"              llcOffer, регистрация, экономика до и после
-    "МИНИ-ИГРЫ"        mgOpen, mgDue: редкое событие по эпохе
+    "МИНИ-ИГРЫ"        mgOpen, mgDue: событие по эпохе
+    "paintTrain"       полка тренажёра: те же игры, но по своей воле
     "promoCost"        повышение стоит денег сразу, не только в ФОТ
     "checkEra"         смена эпохи · "showEraLike" экран объяснения
 
   ИНТЕРФЕЙС
+    "СКИН «УЮТНЫЙ»"    основное оформление: [data-skin=cozy], разбор в UI.md
+    "applySkin"        переключатель оформления, классика — в архиве
+    "ОКНО"             paintWindow: сезон за стеклом и вещи эпохи
     "function paint()" общая отрисовка, вызывается из тика
     "paintHire"        найм · "paintStaff" штат командами и чипами
     "paintTracks"      треки карьеры · "paintUps" улучшения и циклы
@@ -109,7 +114,11 @@
   --acc:#80BA27; --acc-ink:#5D8A19; --acc-soft:rgba(128,186,39,.13);
   --wrn:#ff9f0a; --wrn-ink:#a86400; --wrn-soft:rgba(255,159,10,.14);
   /* грейды: обычный, редкий, очень редкий, эпический, легендарный */
-  --g0:#b9b9be; --g1:#5fa83a; --g2:#4a7fa5; --g3:#8a6bb8; --g4:#c9a227;
+  /* Редкость взята из цветов программ, в которых эти люди и работают:
+     зелёный таблиц, синий почты, фиолетовый корпоративного мессенджера,
+     оранжевый презентаций. Игроку эти четыре цвета знакомы двадцать лет,
+     и объяснять их не нужно — этим они лучше выдуманной шкалы. */
+  --g0:#b0b0b6; --g1:#217346; --g2:#0F6CBD; --g3:#6264A7; --g4:#D24726;
   --sh:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
   --e:cubic-bezier(.32,.72,0,1);
   --flow:0;
@@ -131,7 +140,7 @@
   --hair:rgba(255,255,255,.14); --hair2:rgba(255,255,255,.06);
   --acc:#9ACD46; --acc-ink:#A8DB55; --acc-soft:rgba(154,205,70,.16);
   --wrn:#e0a458; --wrn-ink:#e8b877; --wrn-soft:rgba(224,164,88,.16);
-  --g0:#6b6b70; --g1:#7cc44f; --g2:#6aa3cc; --g3:#a98cd8; --g4:#e0b840;
+  --g0:#6b6b70; --g1:#4FB07A; --g2:#4CA6E8; --g3:#9092D6; --g4:#F0713F;
   --sh:0 1px 3px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.6);
   color-scheme:dark;}}
 :root[data-theme=dark]{
@@ -140,7 +149,7 @@
   --hair:rgba(255,255,255,.14); --hair2:rgba(255,255,255,.06);
   --acc:#9ACD46; --acc-ink:#A8DB55; --acc-soft:rgba(154,205,70,.16);
   --wrn:#e0a458; --wrn-ink:#e8b877; --wrn-soft:rgba(224,164,88,.16);
-  --g0:#6b6b70; --g1:#7cc44f; --g2:#6aa3cc; --g3:#a98cd8; --g4:#e0b840;
+  --g0:#6b6b70; --g1:#4FB07A; --g2:#4CA6E8; --g3:#9092D6; --g4:#F0713F;
   --sh:0 1px 3px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.6);
   color-scheme:dark;}
 
@@ -332,6 +341,38 @@ main{max-width:520px;margin:0 auto;
 .mgs i{flex:1;height:4px;border-radius:2px;background:var(--faint)}
 .mgs i.win{background:var(--acc)} .mgs i.lose{background:var(--wrn)}
 .later[disabled]{opacity:.4}
+
+/* ── ТРЕНАЖЁР ──────────────────────────────────────────────────────
+   Первое место в игре, где выбор сделан не строкой текста, а предметом:
+   телефон, смета, окно чата. Предмет узнаётся раньше, чем прочитан
+   заголовок, — а мини-игра и есть предмет, с которым возишься.
+
+   Плитка нажимается, как настоящая кнопка: тень снизу — это её высота,
+   и на тапе она садится ровно на эту высоту. Остальная игра плоская
+   намеренно, здесь можно: это единственный уголок, где играют руками. */
+.mgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:4px 14px 16px}
+.mgtile{display:grid;justify-items:center;gap:7px;padding:12px 6px 10px;
+  border-radius:18px;background:var(--sf);border:.5px solid var(--hair);
+  box-shadow:0 3px 0 var(--hair2),var(--sh);
+  transition:transform .1s var(--e),box-shadow .1s var(--e),opacity .3s}
+.mgtile:active{transform:translateY(3px);box-shadow:0 0 0 var(--hair2),var(--sh)}
+.mgobj{width:48px;height:48px;border-radius:16px;display:grid;place-items:center;
+  background:var(--tint,var(--acc-soft))}
+.mgobj svg{width:27px;height:27px;stroke:var(--tink,var(--acc-ink));fill:none;
+  stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.mgtile b{font-size:12.5px;font-weight:600;letter-spacing:-.2px;line-height:1.15;text-align:center}
+.mgtile em{font-style:normal;font-size:10.5px;font-weight:600;color:var(--mut);
+  font-variant-numeric:tabular-nums}
+.mgtile.hot em{color:var(--acc-ink)}
+/* Остыло или ушло с эпохой — плитка остаётся на полке, но выцветает.
+   Убирать её совсем нельзя: полка и показывает, что игра уже прожита. */
+.mgtile.off{opacity:.45} .mgtile.off .mgobj{filter:grayscale(1)}
+.mgtile.off:active{transform:none;box-shadow:0 3px 0 var(--hair2),var(--sh)}
+/* Тот же предмет крупно — в шапке самой мини-игры. */
+.mghero{width:64px;height:64px;border-radius:21px;display:grid;place-items:center;
+  background:var(--tint,var(--acc-soft));margin:2px 0 12px}
+.mghero svg{width:36px;height:36px;stroke:var(--tink,var(--acc-ink));fill:none;
+  stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 /* Две цены клика в одной строке: слева деньги, справа здоровье.
    Полоса выгорания стоит прямо под ними — связь читается без объяснений. */
 .note{margin-top:10px;font-size:13px;color:var(--mut);min-height:18px;
@@ -391,13 +432,15 @@ main{max-width:520px;margin:0 auto;
    хотя это одно из главных чисел экрана. */
 .cnt{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:700;
   color:var(--ink);background:var(--hair2);padding:1px 7px;border-radius:8px}
-.gname{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;
-  text-transform:uppercase;padding:2px 7px;border-radius:7px;vertical-align:2px}
-.gname.t1{color:var(--g1);background:rgba(95,168,58,.14)}
-.gname.t2{color:var(--g2);background:rgba(74,127,165,.16)}
-.gname.t3{color:var(--g3);background:rgba(138,107,184,.16)}
-.gname.t4{color:var(--g4);background:rgba(201,162,39,.16)}
-.stars{color:var(--g4);font-size:11px;letter-spacing:1px}
+/* Редкость — точки, а не слово. «ОЧЕНЬ РЕДКИЙ» капслоком занимает
+   полстроки, спорит с названием и требует чтения; четыре точки цвета
+   считываются боковым зрением и не переводятся на язык. Столько точек,
+   какая ступень: одна — редкий, четыре — легендарный. */
+.gname{display:inline-flex;gap:3px;align-items:center;vertical-align:2px;margin-left:6px}
+.gname i{width:7px;height:7px;border-radius:50%;background:var(--g0)}
+.gname.t1 i{background:var(--g1)} .gname.t2 i{background:var(--g2)}
+.gname.t3 i{background:var(--g3)} .gname.t4 i{background:var(--g4)}
+.gname.t4 i{box-shadow:0 0 0 2px rgba(210,71,38,.18)}
 .pill{display:inline-block;margin-top:7px;font-size:11px;font-weight:600;letter-spacing:.3px;
   padding:3px 10px;border-radius:11px;background:var(--acc-soft);color:var(--acc-ink)}
 .pill.w{background:var(--wrn-soft);color:var(--wrn-ink)}
@@ -495,6 +538,16 @@ main{max-width:520px;margin:0 auto;
 /* шкалы отделов */
 .bar{padding:13px 18px;border-bottom:.5px solid var(--hair2)}
 .bar:last-child{border-bottom:none}
+/* Отдел узнаётся значком раньше, чем прочитано название: на «Компании»
+   пять строк подряд, и глазу нужно за что-то зацепиться. Значок
+   маленький и монохромный — это отчёт, а не витрина. */
+.bar{display:grid;grid-template-columns:26px 1fr;column-gap:11px;align-items:start}
+.dico{width:26px;height:26px;border-radius:9px;display:grid;place-items:center;
+  background:var(--hair2);margin-top:-2px}
+.dico svg{width:16px;height:16px;stroke:var(--mut);fill:none;stroke-width:1.7;
+  stroke-linecap:round;stroke-linejoin:round}
+.bar.live .dico{background:var(--acc-soft)} .bar.live .dico svg{stroke:var(--acc-ink)}
+.bar.warn .dico{background:var(--wrn-soft)} .bar.warn .dico svg{stroke:var(--wrn-ink)}
 .bt{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:7px}
 .bn{font-size:14px;font-weight:600}
 .bv{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
@@ -900,6 +953,402 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .finstep i{width:22px;height:3px;border-radius:2px;background:var(--hair);transition:background .3s}
 .finstep i.on{background:var(--acc)}
 .fin p{margin-bottom:20px}
+/* ══════════════════════════════════════════════════════════════════
+   КАРТОЧКИ: НАЙМ, УЛУЧШЕНИЯ, КОЛЬЦО ОТПУСКА
+   Сетка по две вместо списка строк. Строка отвечает на вопрос «что это»,
+   карточка — на вопрос «брать или нет»: в ней помещается вклад, цена и
+   значок, и всё это видно, не читая описания. Список из двадцати строк
+   пролистывают, сетку из двадцати карточек — рассматривают.
+   ══════════════════════════════════════════════════════════════════ */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.gcard{position:relative;display:grid;gap:6px;padding:13px 12px 12px;text-align:left;
+  background:var(--sf);border:.5px solid var(--hair);border-radius:18px;
+  box-shadow:0 2px 0 var(--hair2);
+  transition:transform .1s var(--e),box-shadow .1s var(--e),opacity .3s}
+.gcard:active{transform:translateY(2px);box-shadow:0 0 0 var(--hair2)}
+.gcard.no,.gcard.lk{opacity:.5;box-shadow:none}
+.gcard.no:active,.gcard.lk:active{transform:none}
+.gcard.done{background:var(--acc-soft);border-color:transparent;box-shadow:none}
+/* Значок роли или группы. Цвет — грейд: он и так язык всей игры. */
+.gico{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
+  background:var(--hair2)}
+.gico svg{width:20px;height:20px;stroke:var(--mut);fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.gcard.can .gico{background:var(--acc-soft)} .gcard.can .gico svg{stroke:var(--acc-ink)}
+.gcard.done .gico svg{stroke:var(--acc-ink)}
+/* Цвет значка = смысл отдела или ветки. Разработка синяя, поддержка
+   зелёная, персонал фиолетовый — те же четыре цвета, что у редкости,
+   и другого набора в игре нет. */
+.gcard .gico.c1{background:rgba(33,115,70,.14)} .gcard .gico.c1 svg{stroke:var(--g1)}
+.gcard .gico.c2{background:rgba(15,108,189,.14)} .gcard .gico.c2 svg{stroke:var(--g2)}
+.gcard .gico.c3{background:rgba(98,100,167,.16)} .gcard .gico.c3 svg{stroke:var(--g3)}
+.gcard .gico.c4{background:rgba(210,71,38,.14)} .gcard .gico.c4 svg{stroke:var(--g4)}
+.cname{font-size:14px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+/* Вклад. Зелёное — деньги в месяц. Синее — меняет условия, а не кассу:
+   рекрутёр и юрист не приносят выручки и не должны выглядеть убыточными,
+   потому что покупают их не за неё. */
+.gnet{font-size:12.5px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.gnet.up{color:var(--acc-ink)} .gnet.side{color:var(--blue)}
+.gnet.down{color:var(--wrn-ink)}
+.gsub{font-size:11.5px;color:var(--mut);line-height:1.3}
+.gprice{margin-top:2px;font-size:14px;font-weight:700;letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.gcard.no .gprice{color:var(--mut)}
+.gcard.done .gprice{color:var(--acc-ink)}
+.gcnt{position:absolute;top:10px;right:10px;min-width:20px;height:20px;padding:0 6px;
+  border-radius:10px;background:var(--hair2);color:var(--ink2);
+  font-size:11px;font-weight:700;line-height:20px;text-align:center;
+  font-variant-numeric:tabular-nums}
+/* Вкладки групп внутри модалки. Прокручиваются вбок: групп бывает шесть,
+   и переносить их в две строки значит съесть треть экрана. */
+.gtabs{display:flex;gap:7px;overflow-x:auto;padding:4px 2px 10px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.gtabs::-webkit-scrollbar{display:none}
+.gtab{flex:none;padding:8px 14px;border-radius:14px;background:var(--hair2);
+  font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap;
+  transition:transform .1s var(--e)}
+.gtab:active{transform:scale(.96)}
+.gtab.on{background:var(--acc);color:#fff}
+:root[data-theme=dark] .gtab.on,:root:not([data-theme=light]) .gtab.on{color:#10210a}
+/* Ветка-лесенка осталась в разметке ради своих классов, но в сетке
+   линия и кружок не нужны: соседство карточек само показывает ветку. */
+.ub.gcard{padding:13px 12px 12px}
+.ub.gcard::before,.ub.gcard::after{display:none}
+.ub.gcard.lk{opacity:.5}
+.gtab i{font-style:normal;opacity:.65;margin-left:5px;font-variant-numeric:tabular-nums}
+
+/* ── Кольцо отпуска ──
+   Кнопка-виджет вместо строки с ценой. Кольцо — это выгорание: оно
+   заполняется, пока ты работаешь, и опустошается в отпуске. Полоса под
+   кнопкой отвечает на тот же вопрос, но её читают как прогресс, то есть
+   как «надо заполнить». Кольцо вокруг кнопки читается как запас. */
+.ring{position:relative;width:56px;height:56px;flex:none;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;width:56px;height:56px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4.5;stroke-linecap:round}
+/* Строка отпуска не должна расти от кольца: кнопка улучшений обязана
+   остаться на первом экране — это проверяет smoke.mjs. */
+#vac{padding-top:7px;padding-bottom:7px}
+.ring .rbg{stroke:var(--hair2)}
+.ring .rfg{stroke:var(--acc);transition:stroke-dashoffset .6s var(--e),stroke .6s}
+.ring.warm .rfg{stroke:var(--wrn)}
+.ring b{position:relative;font-size:14px;font-weight:700;letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;text-align:center;line-height:1.05}
+.ring small{display:block;font-size:8.5px;margin-top:1px;font-weight:600;color:var(--mut);
+  text-transform:uppercase;letter-spacing:.3px}
+.row.tap:active .ring{transform:scale(.94)}
+.ring{transition:transform .12s var(--e)}
+
+/* Чистыми по команде: «+520 · −300» без итога заставляет считать в уме. */
+.tmh .money b.net{font-weight:700;color:var(--acc-ink)}
+.tmh .money b.net.w{color:var(--wrn-ink)}
+
+/* ── Карточка задачи ──
+   Заголовок закреплён по высоте: кнопка «Выполнить» обязана стоять
+   на одном месте от задачи к задаче — по ней бьют не глядя. */
+/* Высота ровно под две строки, и не больше: кнопка «Выполнить» бьётся
+   не глядя, и она обязана стоять на одном месте от задачи к задаче.
+   Кегль ради этого чуть меньше — почти всё влезает в две строки. */
+.ttl{font-size:18px;line-height:1.25;height:2.5em;min-height:0;margin-bottom:12px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.acts{align-items:center}
+/* Отложить — предмет, а не слово: кнопка перемотки рядом с главной.
+   Слово занимало треть строки, в которой теперь помещается кольцо. */
+.skipb{width:50px;height:50px;flex:none;border-radius:16px;background:var(--cz,var(--sf));
+  border:0;box-shadow:0 3px 0 var(--cz-e,var(--hair));display:grid;place-items:center;
+  transition:transform .1s var(--e),box-shadow .1s var(--e)}
+.skipb svg{width:20px;height:20px;stroke:var(--ink2);fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.skipb:active{transform:translateY(3px);box-shadow:0 0 0 var(--cz-e,var(--hair))}
+.skipb[disabled]{opacity:.4}
+.ring.warm .rfg{stroke:var(--wrn)}
+.ring.hot .rfg{stroke:#E0503A}
+.ring.hot b{color:#E0503A}
+.rd.tiny{font-size:12px;color:var(--mut);margin-top:4px}
+.rd.tiny .hotw{color:#E0503A;font-weight:700}
+
+/* Значок рядом с числом. Тот же знак — то же число на другом экране. */
+.ti{width:13px;height:13px;vertical-align:-2px;margin-right:4px;fill:none;
+  stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+/* Два вида карточки найма. Зелёная приносит деньги, фиолетовая меняет
+   условия. Внутри карточки один цвет: спор двух акцентов на площади
+   в полтора сантиметра — это не акцент, а рябь. */
+.gcard.money .gico{background:rgba(33,115,70,.14)} .gcard.money .gico svg{stroke:var(--g1)}
+.gcard.money .gnet.up{color:var(--g1)}
+.gcard.perk .gico{background:rgba(98,100,167,.16)} .gcard.perk .gico svg{stroke:var(--g3)}
+.gcard.perk .gnet.side{color:var(--g3)}
+.gcard.perk{box-shadow:inset 3px 0 0 rgba(98,100,167,.5),0 2px 0 var(--hair2)}
+.gcard.money{box-shadow:inset 3px 0 0 rgba(33,115,70,.4),0 2px 0 var(--hair2)}
+[data-skin=cozy] .gcard.perk{box-shadow:inset 3px 0 0 rgba(98,100,167,.5),0 4px 0 var(--cz-e)}
+[data-skin=cozy] .gcard.money{box-shadow:inset 3px 0 0 rgba(33,115,70,.4),0 4px 0 var(--cz-e)}
+.gsub .ti{opacity:.75}
+/* Подписи чисел на «Компании» со значками — те же, что в карточках. */
+.rn span.wico::before,.rn span.oico::before,.rn span.rico::before{
+  content:"";display:inline-block;width:12px;height:12px;margin-right:4px;
+  vertical-align:-2px;background:currentColor;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-size:contain;mask-size:contain}
+.rn span.wico::before{-webkit-mask-image:var(--m-pay);mask-image:var(--m-pay)}
+.rn span.oico::before{-webkit-mask-image:var(--m-ovh);mask-image:var(--m-ovh)}
+.rn span.rico::before{-webkit-mask-image:var(--m-rev);mask-image:var(--m-rev)}
+:root{
+  --m-pay:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Crect x='3' y='6' width='18' height='12' rx='2'/%3E%3Ccircle cx='12' cy='12' r='2.6'/%3E%3C/svg%3E");
+  --m-ovh:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 20V9l8-5 8 5v11'/%3E%3Cpath d='M9 20v-6h6v6'/%3E%3C/svg%3E");
+  --m-rev:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2'%3E%3Cpath d='M4 18l5-6 4 3.5L20 6'/%3E%3Cpath d='M15 6h5v5'/%3E%3C/svg%3E");
+}
+
+/* ── ОКНО ──────────────────────────────────────────────────────────
+   Рама, стекло и подоконник. За стеклом сезон — он меняется вместе
+   с месяцем и не зависит ни от чего, что делает игрок: время идёт
+   само, и это главная мысль всей игры. По бокам вещи эпохи.
+   ── */
+.wnd{display:grid;grid-template-columns:38px 1fr 38px;gap:7px;align-items:center;
+  margin-top:10px;padding:6px;border-radius:20px;background:var(--cz,var(--sf));
+  box-shadow:0 3px 0 var(--cz-e,var(--hair2)),0 8px 18px rgba(120,96,54,.08)}
+.wglass{position:relative;height:60px;border-radius:16px;overflow:hidden;
+  box-shadow:inset 0 0 0 3px rgba(120,96,54,.18),inset 0 -6px 10px rgba(0,0,0,.06)}
+.wglass svg{width:100%;height:100%;display:block}
+/* Переплёт: две планки поверх стекла — без них это картинка, а не окно. */
+.wglass::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(to right,transparent calc(50% - 1.5px),
+    rgba(120,96,54,.28) calc(50% - 1.5px),rgba(120,96,54,.28) calc(50% + 1.5px),transparent calc(50% + 1.5px)),
+    linear-gradient(to bottom,transparent calc(50% - 1.5px),
+    rgba(120,96,54,.22) calc(50% - 1.5px),rgba(120,96,54,.22) calc(50% + 1.5px),transparent calc(50% + 1.5px))}
+.wcap{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;
+  align-items:baseline;padding:3px 8px 4px;background:linear-gradient(transparent,rgba(0,0,0,.28));
+  color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+.wcap b{font-size:12px;font-weight:700;letter-spacing:-.2px}
+.wcap i{font-style:normal;font-size:11px;font-weight:600;opacity:.9;
+  font-variant-numeric:tabular-nums}
+/* Подоконник: вещи стоят в столбик, по две с каждой стороны. */
+.wside{display:grid;gap:5px;justify-items:center}
+.wside span{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;
+  background:var(--sf);box-shadow:0 2px 0 rgba(120,96,54,.14)}
+.wside svg{width:22px;height:22px}
+/* Частицы за стеклом дышат сами. «Меньше движения» их останавливает
+   общим правилом .calm — отдельной ручки не заводим. */
+@keyframes drift{from{transform:translateY(-10px)}to{transform:translateY(62px)}}
+@keyframes sway{0%,100%{transform:translateX(0)}50%{transform:translateX(6px)}}
+/* Снег и листья крутятся только на своей вкладке: на остальных экранах
+   окна не видно, а компоситор всё равно считал бы каждый кадр. Тем же
+   правилом гасится всё окно, когда вкладка не активна. */
+#t-work:not(.on) .wnd *{animation:none!important}
+.wp{animation:drift 9s linear infinite}
+.wp2{animation:drift 13s linear infinite}
+.wsun{animation:sway 11s ease-in-out infinite}
+
+/* ── Значок события в хронике ──
+   Заменил серую полоску: полоска отвечала только «важное/неважное»,
+   значок отвечает «про что». Лента листается глазами, а вчитываться
+   приходится в выбранное. */
+.lic{width:28px;height:28px;flex:none;align-self:flex-start;border-radius:10px;
+  background:var(--hair2);display:grid;place-items:center;margin-top:1px}
+.lic svg{width:18px;height:18px;stroke:var(--mut);fill:none;stroke-width:2;
+  stroke-linecap:round;stroke-linejoin:round}
+.le.good .lic,.peek.good .lic{background:var(--acc-soft)}
+.le.good .lic svg,.peek.good .lic svg{stroke:var(--acc-ink)}
+.le.bad .lic,.peek.bad .lic{background:var(--wrn-soft)}
+.le.bad .lic svg,.peek.bad .lic svg{stroke:var(--wrn-ink)}
+.le.lore .lic,.peek.lore .lic{background:rgba(15,108,189,.14)}
+.le.lore .lic svg,.peek.lore .lic svg{stroke:var(--g2)}
+.le.noise .lic{background:transparent} .le.noise .lic svg{stroke:var(--faint);width:12px;height:12px}
+.peek .lic{align-self:center;margin-top:0}
+/* Термин механики: слово, за которым стоит кнопка, отличается от слова,
+   за которым стоит шутка. Цвет тот же акцентный — второго не заводим. */
+.le .tm,.peek .tm{font-weight:700;color:var(--acc-ink)}
+.le.bad .tm,.peek.bad .tm,.le.lore .tm{color:var(--wrn-ink)}
+/* Всплывающая цифра над кнопкой: единственный ответ игры на тап,
+   который виден без чтения. Живёт 700 мс и уходит вверх. */
+.acts{position:relative}
+.pop{position:absolute;top:-18px;transform:translateX(-50%);
+  font-size:17px;font-weight:800;color:var(--acc-ink);pointer-events:none;
+  letter-spacing:-.4px;font-variant-numeric:tabular-nums;z-index:2;
+  animation:popup .7s var(--e) forwards}
+@keyframes popup{
+  0%{opacity:0;transform:translate(-50%,10px) scale(.9)}
+  20%{opacity:1;transform:translate(-50%,0) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-30px) scale(1)}}
+
+/* ══════════════════════════════════════════════════════════════════
+   СКИН «УЮТНЫЙ»
+   Второе оформление той же игры: тёплая бумага вместо белого листа,
+   кнопки-предметы вместо строк, заголовок-плашка вместо надписи.
+   Включается в настройках, ставит на <html> data-skin=cozy — и весь
+   блок ниже перестаёт существовать, когда скин выключен. Ни одно
+   правило выше не тронуто: строгий вид обязан остаться байт в байт
+   тем же, иначе «переключатель» превращается в переписывание игры.
+
+   Правило скина: цвет и объём несут смысл. Зелёное — можно взять,
+   синее — действие в списке, охра — потеря, кремовое — фон и покой.
+   Тень снизу у кнопки — её высота: на нажатии кнопка садится ровно
+   на эту высоту, поэтому палец верит, что нажал предмет.
+   ══════════════════════════════════════════════════════════════════ */
+:root[data-skin=cozy]{
+  --bg:#EBE4D2; --sf:#FFFCF3; --glass:rgba(240,234,218,.86);
+  --ink:#3E3524; --ink2:#5C4F38; --mut:#9C8E75; --faint:#D8CCB2;
+  --hair:rgba(120,96,54,.18); --hair2:rgba(120,96,54,.09);
+  --acc:#7CC03C; --acc-ink:#4E8C1B; --acc-soft:rgba(124,192,60,.18);
+  --wrn:#F2A63A; --wrn-ink:#B06B10; --wrn-soft:rgba(242,166,58,.2);
+  --blue:#3DA0F0;
+  --sh:0 2px 0 rgba(120,96,54,.14), 0 10px 22px rgba(120,96,54,.1);
+  /* Кремовая кнопка и её высота — два цвета, из которых собран весь скин. */
+  --cz:#F6EEDA; --cz-e:#DFCDA5; --cz-r:20px;
+  --blue-e:#1E76C4; --acc-e:#3C7A12;
+  /* Скруглённый системный шрифт. Файл остаётся одним: ничего не грузим,
+     на устройствах без него берётся обычный системный. */
+  font-family:ui-rounded,'SF Pro Rounded',-apple-system,system-ui,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root[data-skin=cozy]:not([data-theme=light]){
+  --bg:#241F19; --sf:#332C23; --glass:rgba(36,31,25,.86);
+  --ink:#F4ECD9; --ink2:#DACDB4; --mut:#A0917A; --faint:#5A4E3D;
+  --hair:rgba(255,244,220,.14); --hair2:rgba(255,244,220,.07);
+  --cz:#41382C; --cz-e:#241F19;
+  --sh:0 2px 0 rgba(0,0,0,.4), 0 10px 22px rgba(0,0,0,.45);
+  color-scheme:dark;}}
+:root[data-skin=cozy][data-theme=dark]{
+  --bg:#241F19; --sf:#332C23; --glass:rgba(36,31,25,.86);
+  --ink:#F4ECD9; --ink2:#DACDB4; --mut:#A0917A; --faint:#5A4E3D;
+  --hair:rgba(255,244,220,.14); --hair2:rgba(255,244,220,.07);
+  --cz:#41382C; --cz-e:#241F19;
+  --sh:0 2px 0 rgba(0,0,0,.4), 0 10px 22px rgba(0,0,0,.45);
+  color-scheme:dark;}
+[data-skin=cozy] body{font-family:inherit;font-weight:500}
+
+/* Карточка — лист тёплой бумаги: больше радиус, мягче край. */
+[data-skin=cozy] .card{border-radius:24px;border:0;box-shadow:var(--sh)}
+[data-skin=cozy] .row{border-bottom-color:var(--hair2)}
+
+/* Главная кнопка. Высота 4 пикселя, садится на неё целиком. */
+[data-skin=cozy] .go{border-radius:var(--cz-r);font-weight:700;font-size:17px;
+  box-shadow:0 4px 0 var(--acc-e), 0 8px 16px rgba(120,96,54,.18);
+  transition:transform .08s var(--e),box-shadow .08s var(--e)}
+[data-skin=cozy] .go:active{transform:translateY(4px);
+  box-shadow:0 0 0 var(--acc-e), 0 4px 10px rgba(120,96,54,.15)}
+[data-skin=cozy] .go::after{border-radius:var(--cz-r)}
+[data-skin=cozy] .go[disabled]{box-shadow:0 4px 0 var(--faint)}
+
+/* Кремовая кнопка — вторая по частоте вещь на экране. */
+[data-skin=cozy] .later,[data-skin=cozy] .act,[data-skin=cozy] .gb-r button{
+  border-radius:var(--cz-r);background:var(--cz);border:0;color:var(--ink);
+  font-weight:700;box-shadow:0 4px 0 var(--cz-e);
+  transition:transform .08s var(--e),box-shadow .08s var(--e)}
+[data-skin=cozy] .later:active,[data-skin=cozy] .act:active{
+  transform:translateY(4px);box-shadow:0 0 0 var(--cz-e)}
+
+/* Вариант ответа в мини-игре и опросах — тот же предмет, но во всю ширину.
+   Это единственное место, где игрок читает три строки и выбирает одну:
+   между ними нужен воздух и край, иначе они читаются как абзац текста. */
+[data-skin=cozy] .mgo{border-radius:18px;background:var(--sf);border:0;
+  font-weight:600;padding:15px 17px;margin-top:11px;
+  box-shadow:0 3px 0 var(--cz-e);transition:transform .08s var(--e),box-shadow .08s var(--e)}
+[data-skin=cozy] .mgo:active{transform:translateY(3px);box-shadow:0 0 0 var(--cz-e)}
+
+/* Заголовок шита — плашка, а не надпись: в референсе она и говорит,
+   где ты находишься, раньше текста под ней. */
+[data-skin=cozy] .sheet h2,[data-skin=cozy] .shead h2{
+  display:inline-block;padding:9px 18px 10px;border-radius:17px;color:#fff;
+  background:var(--acc);box-shadow:0 4px 0 var(--acc-e);
+  font-size:24px;font-weight:800;letter-spacing:-.5px;margin-bottom:6px}
+[data-skin=cozy] #setSheet h2,[data-skin=cozy] #sheet h2{
+  background:#9A7BE0;box-shadow:0 4px 0 #6E4FBC}
+[data-skin=cozy] #upsSheet h2{background:#F0A93C;box-shadow:0 4px 0 #C07B15}
+[data-skin=cozy] #bSheet h2,[data-skin=cozy] #krSheet h2{
+  background:#E8813C;box-shadow:0 4px 0 #B85715}
+[data-skin=cozy] #llcSheet h2,[data-skin=cozy] #eraSheet h2,[data-skin=cozy] #ivSheet h2{
+  background:#4FA6E8;box-shadow:0 4px 0 #2073B8}
+[data-skin=cozy] .shead{align-items:flex-start}
+/* Пояснение под заголовком — кремовая панель, как в референсе: текст
+   лежит НА чём-то, а не висит на фоне. */
+[data-skin=cozy] .sheet>.sh-in>p{background:var(--cz);border-radius:18px;
+  padding:14px 16px;color:var(--ink2);font-weight:500}
+[data-skin=cozy] .mgs{margin:14px 2px 0}
+
+/* Крестик — круглая зелёная кнопка, как в референсе. */
+[data-skin=cozy] .xbtn{width:44px;height:44px;border-radius:16px;background:var(--acc);
+  color:#fff;font-size:24px;font-weight:700;box-shadow:0 4px 0 var(--acc-e)}
+[data-skin=cozy] .xbtn:active{transform:translateY(4px);box-shadow:0 0 0 var(--acc-e)}
+
+/* Переключатели разделов — кремовые пилюли, активная залита. */
+[data-skin=cozy] .seg{background:transparent;gap:8px;padding:0}
+[data-skin=cozy] .seg button{background:var(--cz);border-radius:15px;padding:11px 8px;
+  font-weight:700;box-shadow:0 3px 0 var(--cz-e);color:var(--ink2)}
+[data-skin=cozy] .seg button.on{background:var(--acc);color:#fff;
+  box-shadow:0 3px 0 var(--acc-e)}
+[data-skin=cozy] .seg button.on .segn{color:#fff}
+
+/* Полка тренажёра: в уютном скине предметы крупнее и выше. */
+[data-skin=cozy] .mgtile{border-radius:22px;border:0;box-shadow:0 4px 0 var(--cz-e)}
+[data-skin=cozy] .mgtile:active{transform:translateY(4px);box-shadow:0 0 0 var(--cz-e)}
+[data-skin=cozy] .mgobj{width:54px;height:54px;border-radius:18px}
+[data-skin=cozy] .mgobj svg{width:31px;height:31px}
+[data-skin=cozy] .mghero{width:72px;height:72px;border-radius:24px}
+
+/* Шапка и таб-бар: тёплое стекло, активная вкладка — пилюля. */
+[data-skin=cozy] header{border-bottom:0;box-shadow:0 2px 0 var(--hair2)}
+[data-skin=cozy] .ic{border:0;background:var(--cz);box-shadow:0 3px 0 var(--cz-e);
+  width:42px;height:42px;border-radius:15px}
+[data-skin=cozy] .ic:active{transform:translateY(3px);box-shadow:0 0 0 var(--cz-e)}
+[data-skin=cozy] nav{border-top:0;box-shadow:0 -2px 0 var(--hair2)}
+[data-skin=cozy] nav button.on{background:var(--acc-soft);border-radius:16px}
+
+/* Прочие мелочи, где строгость мешает уюту. */
+/* ── Уютный скин, часть вторая: вложенность ──
+   Первый заход поменял цвет и тени, но язык остался прежним — список
+   строк с разделителями. Коузи-интерфейс устроен иначе: экран это
+   лоток, в лотке лежат предметы, у каждого свой край. Разделительных
+   линий в нём нет вообще — расстояние между предметами и есть граница.
+   Ниже именно это: строки становятся плитками, карточка — лотком,
+   заголовок раздела — ярлыком на лотке. */
+/* ИЕРАРХИЯ ПОВЕРХНОСТЕЙ. Три уровня, и путать их нельзя:
+   · бумага — фон экрана, он никуда не нажимается;
+   · лоток — карточка раздела, лежит на бумаге, чуть светлее её;
+   · предмет — белый, с тенью и высотой, и только он нажимается.
+   До этого лоток был белым, а предметы кремовыми — то есть ровно
+   наоборот: нажималось то, что выглядело фоном. */
+[data-skin=cozy] .card{padding:6px;background:var(--cz);
+  box-shadow:0 3px 0 var(--cz-e),0 8px 18px rgba(120,96,54,.08)}
+[data-skin=cozy] .card>.row,[data-skin=cozy] .card>.team,[data-skin=cozy] .card>.gauge,
+[data-skin=cozy] .card>.bar{background:var(--sf);border-radius:16px;border:0;margin:4px;
+  padding:13px 15px;box-shadow:0 2px 0 rgba(120,96,54,.12)}
+[data-skin=cozy] .card>.row+.row,[data-skin=cozy] .card>.bar+.bar{margin-top:6px}
+[data-skin=cozy] .card>.task{background:var(--sf);border-radius:18px;margin:4px;
+  padding:12px 14px 10px;box-shadow:0 2px 0 rgba(120,96,54,.12)}
+[data-skin=cozy] .card>.row.tap:active{transform:translateY(2px);box-shadow:0 0 0 rgba(120,96,54,.12)}
+[data-skin=cozy] .card>.row{transition:transform .1s var(--e),box-shadow .1s var(--e)}
+/* Заголовок раздела — ярлык, а не набранная капслоком строка. */
+[data-skin=cozy] .k,[data-skin=cozy] .tgrp,[data-skin=cozy] .upsgrp{
+  display:inline-block;background:var(--cz);color:var(--ink2);
+  padding:6px 13px;border-radius:12px;letter-spacing:.3px;
+  box-shadow:0 2px 0 var(--cz-e);margin-bottom:10px}
+/* Карточка внутри лотка: чуть крупнее радиус и своя высота. */
+[data-skin=cozy] .gcard{border-radius:20px;border:0;background:var(--sf);
+  box-shadow:0 4px 0 var(--cz-e)}
+[data-skin=cozy] .gcard:active{transform:translateY(4px);box-shadow:0 0 0 var(--cz-e)}
+[data-skin=cozy] .gcard.done{background:var(--acc-soft);box-shadow:0 4px 0 rgba(124,192,60,.35)}
+[data-skin=cozy] .gico{width:38px;height:38px;border-radius:14px}
+[data-skin=cozy] .gtab{border-radius:16px;padding:10px 16px;box-shadow:0 3px 0 var(--cz-e);
+  background:var(--cz)}
+[data-skin=cozy] .gtab.on{box-shadow:0 3px 0 var(--acc-e)}
+/* Хроника: строки тоже предметы. Разделители убраны — их роль играет
+   расстояние, как и везде в скине. */
+[data-skin=cozy] .le{border-bottom:0;margin:5px 8px;padding:10px 12px;
+  background:var(--sf);border-radius:16px;box-shadow:0 2px 0 rgba(120,96,54,.1)}
+[data-skin=cozy] .le.noise{background:transparent}
+[data-skin=cozy] .le.lore{background:var(--wrn-soft);border-radius:18px}
+[data-skin=cozy] .lic{border-radius:11px;width:30px;height:30px;background:var(--cz)}
+[data-skin=cozy] .peek{padding:12px 14px}
+/* Таб-бар: активная вкладка приподнята, как ярлык на лотке. */
+[data-skin=cozy] nav button.on{box-shadow:0 3px 0 var(--cz-e)}
+[data-skin=cozy] .ring .rbg{stroke:var(--cz-e)}
+[data-skin=cozy] .gauge .bl,[data-skin=cozy] .bl{border-radius:8px}
+
+[data-skin=cozy] .chip{border-radius:12px;font-weight:600}
+[data-skin=cozy] .bl2{height:12px;border-radius:6px}
+[data-skin=cozy] .bl2 i{border-radius:6px}
+[data-skin=cozy] .dico{border-radius:12px}
+[data-skin=cozy] .delta{border-radius:15px;font-weight:700}
+[data-skin=cozy] .bneed{border-radius:18px}
+[data-skin=cozy] .tgl{border-radius:16px}
 </style>
 </head>
 <body>
@@ -937,6 +1386,20 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
          улучшения за нижний край: чтобы дойти до кнопки, приходилось
          скроллить мимо суммы, которая и так висит над головой. -->
 
+    <!-- ОКНО. Единственное место в игре, где ничего не происходит: за
+         стеклом идёт год, на подоконнике стоят вещи эпохи. Двадцать лет
+         в дашборде читаются числами, а в окне — снегом и листьями.
+         Предметы по бокам — пародии на то, чем в эти годы пользовались:
+         узнаваемая форма и цвет, не логотип. -->
+    <div class="wnd" id="wnd">
+      <div class="wside" id="wndL"></div>
+      <div class="wglass">
+        <svg id="wndSky" viewBox="0 0 140 62" preserveAspectRatio="none"></svg>
+        <div class="wcap"><b id="wndSeason">Весна</b><i id="wndYear">2016</i></div>
+      </div>
+      <div class="wside" id="wndR"></div>
+    </div>
+
     <!-- Задача и выгорание — один блок. Волна на кнопке снижает прирост
          выгорания, и увидеть эту связь можно, только когда полоса стоит
          прямо под кнопкой: раздельными карточками они читались как две
@@ -947,21 +1410,28 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
           <span class="tkey" id="tkey">TASK-1042</span>
           <span class="diff d0" id="tdiff">мелочь</span>
         </div>
+        <!-- Высота заголовка закреплена под две строки: без этого кнопка
+             уезжала вниз на длинной задаче и палец промахивался. -->
         <div class="ttl" id="ttl">Сделать сайт как у Лебедева, но за пять тысяч</div>
+        <!-- Три предмета в ряд: сделать, отложить, отдохнуть. Кольцо и есть
+             выгорание — отдельная полоса под кнопкой говорила то же самое,
+             но занимала целую строку и читалась как «надо заполнить». -->
         <div class="acts">
           <button class="go" id="do">Выполнить</button>
-          <button class="later" id="skip">Отложить</button>
+          <button class="skipb" id="skip" aria-label="Отложить" title="Отложить">
+            <svg viewBox="0 0 24 24"><path d="M5 5l8 7-8 7zM17 5v14"/></svg>
+          </button>
+          <button class="ring" id="vacRing" title="Взять отпуск">
+            <svg viewBox="0 0 56 56" aria-hidden="true">
+              <circle class="rbg" cx="28" cy="28" r="23"/>
+              <circle class="rfg" cx="28" cy="28" r="23" id="vacArc"
+                      stroke-dasharray="145" stroke-dashoffset="145"/>
+            </svg>
+            <b class="n" id="vacPrice">—<small>отпуск</small></b>
+          </button>
         </div>
         <div class="note" id="donote">+5 000 ₽</div>
-        <div class="gauge tight" data-tip="ровный ритм задач замедляет вдвое">
-          <div class="gt"><span class="gn" id="burnName">Выгорание</span><span class="gv n" id="burnVal">0%</span></div>
-          <div class="bl"><i id="burnBar"></i></div>
-        </div>
-      </div>
-      <div class="row tap" id="vac">
-        <div class="rl"><div class="rn2">Взять отпуск</div>
-          <div class="rd">Две недели. Выручка встанет, выгорание уйдёт</div></div>
-        <div class="rp" id="vacPrice">—</div>
+        <div class="rd tiny" id="vacHint">Две недели. Выручка встанет, выгорание уйдёт</div>
       </div>
     </div>
 
@@ -989,6 +1459,20 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
         </div>
         <div class="rp">›</div>
       </div>
+    </div>
+
+    <!-- Тренажёр. Мини-игры перестали быть только событием: сюда игрок
+         заходит сам — потренироваться до того, как припечёт, или просто
+         размяться. Предметы, а не список названий: полка, на которой
+         видно, во что уже играли. -->
+    <div class="card" id="trainCard" hidden style="margin-top:12px">
+      <div class="row">
+        <div class="rl">
+          <div class="rn2">Тренажёр</div>
+          <div class="rd" id="trainHint">Размяться, пока не припекло</div>
+        </div>
+      </div>
+      <div class="mgrid" id="mgGrid"></div>
     </div>
   </div>
 
@@ -1026,10 +1510,10 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
     </div>
     <div class="card read">
       <div class="rn">
-        <div data-tip="сколько приносят люди"><b class="n" id="rev">0</b><span>выручка</span></div>
-        <div data-tip="зарплаты всего штата"><b class="n" id="pay">0</b><span>ФОТ</span>
+        <div data-tip="сколько приносят люди"><b class="n" id="rev">0</b><span class="rico">выручка</span></div>
+        <div data-tip="зарплаты всего штата"><b class="n" id="pay">0</b><span class="wico">зарплаты</span>
           <em class="sub2" id="payShare">—</em></div>
-        <div data-tip="42 тысячи на человека"><b class="n" id="ovh">0</b><span>накладные</span>
+        <div data-tip="42 тысячи на человека"><b class="n" id="ovh">0</b><span class="oico">накладные</span>
           <em class="sub2" id="ovhShare">—</em></div>
       </div>
     </div>
@@ -1141,6 +1625,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   <div class="sh-in">
     <div class="grab"></div>
     <div class="erayear n" id="mgStep"></div>
+    <div class="mghero" id="mgIcon"></div>
     <h2 id="mgT"></h2>
     <p id="mgD"></p>
     <div id="mgDial" hidden>
@@ -1210,6 +1695,16 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <button data-theme="light">Светлая</button>
       <button data-theme="dark">Тёмная</button>
       <button data-theme="auto">Как в системе</button>
+    </div>
+
+    <!-- Оформление. Не тема, а именно скин: та же игра, другой язык
+         поверхностей. Строгий — дашборд, каким игра была; уютный —
+         тёплая бумага и кнопки-предметы. Обе живут в одном файле, и
+         переключение ничего не пересобирает: меняется один атрибут. -->
+    <div class="seg" id="skinSeg" role="group" aria-label="Оформление"
+         style="grid-template-columns:repeat(2,1fr)">
+      <button data-skin="cozy">Уютный</button>
+      <button data-skin="plain">Классика</button>
     </div>
 
     <!-- Тумблеры. Вибрация и анимация — не украшения, а то, от чего
@@ -1298,7 +1793,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
       <span class="chx down" aria-hidden="true"><svg class="chv" viewBox="0 0 24 24"><path d="M6 15l6-6 6 6"/></svg></span>
     </div>
     <div class="peek" id="chPeek">
-      <i></i><time><span class="m"></span><span class="y"></span></time>
+      <i class="lic"></i><time><span class="m"></span><span class="y"></span></time>
       <p></p>
       <span class="chx" id="chBadge"></span>
     </div>
@@ -1323,7 +1818,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.4.0";
+const VERSION = "1.4.2";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 60 секунд = 3 часа 48 минут, если не делать
@@ -1558,86 +2053,58 @@ const C = {
     ["Питч для инвестора","Сорок слайдов. Читают четвёртый и последний.",4]
   ],
 
+  // Фон. Прополото вдвое: в ленте, которую пролистывают, лишняя строка
+  // не «добавляет атмосферы», а прячет соседнюю. Осталось то, что
+  // помнят наизусть, — и ни одной шутки в двух вариантах.
   noise:[
-   [0,"Заказчик прислал правки в вордовском файле. Скриншоты внутри."],
    [0,"Оська отвалилась. Опять."],
    [0,"«А можно как на этом сайте, только лучше?»"],
-   [0,"Заказчик хочет «как у Лебедева». Прислал ссылку на сайт на Жмуле."],
-   [0,"Дёнвер поднялся с третьего раза. Никто не понял почему."],
    [0,"Интернет-Разведчик 6 рисует вёрстку иначе. Заказчик смотрит только в нём."],
-   [0,"Залил по фтп Тотальным Командиром. Половина файлов доехала."],
-   [1,"Кто-то поставил реакцию на твоё сообщение трёхдневной давности."],
-   [1,"Кофемашина сломалась. Опять."],
-   [1,"В переговорке остались стикеры с прошлой ретроспективы."],
-   [1,"«Мы же семья», — сказал человек, который не знает твоей фамилии."],
-   [1,"Завели Рудник. Задачи теперь теряются организованно."],
-   [1,"Трепло переехало на вторую доску. Первую закрыть забыли."],
-   [1,"Женькинс собрал зелёное, через час — красное. Ничего не меняли."],
-   [2,"Жира тормозит. Все написали в Шлак, что Жира тормозит."],
-   [2,"На кухне обсуждают грейды. Никто не называет цифр."],
-   [2,"Пришло письмо про важность обратной связи. Без обратной связи."],
-   [2,"Конфуз обновили. Страницу с онбордингом больше не находит поиск."],
-   [2,"Подняли Кубарем. Теперь падает всё то же самое, но масштабируемо."],
-   [2,"Графин показывает ровную линию. Метрику отключили ещё в марте."],
-   [2,"Дизайн переехал в Фигню. Макеты позапрошлого года остались в Скотче."],
-   [3,"Сосед сверху начал ремонт ровно в десять утра."],
-   [3,"Кот прошёл по клавиатуре во время демо. Всем понравилось."],
-   [3,"«Ты на мьюте». Ты был на мьюте."],
-   [3,"Зум-квиз в пятницу. Присутствие добровольное, отсутствие заметное."],
-   [3,"Анзум просит оценить качество связи. Связь была отличная."],
-   [3,"Раздор завели для неформального общения. В нём три рабочих канала."],
-   [3,"Все процессы перенесли в Ничто. Ссылку на Ничто потеряли."],
-   [4,"Шлак закрыл доступ. Переехали в ВК Тимзы: всё то же, только поиск не ищет."],
-   [4,"Купили ЧатЖПТ на команду. Первым делом сгенерировали регламент про ЧатЖПТ."],
-   [5,"Курсач написал функцию целиком. Ревьюить её будет тоже Курсач."],
-   [5,"В вакансии написали «вайбкодинг». В требованиях — пять лет опыта."],
-   [5,"Сгенерировали лендинг за вечер. Правки к нему идут третью неделю."],
-   [4,"В чате коллега получил оффер на плюс сорок процентов."],
-   [4,"Знакомый ушёл в наставники на курсах. Говорит, стало спокойнее."],
-   [4,"Рекрутер написал третий раз за неделю. Вакансия та же."],
-   [5,"На вакансию пришло триста откликов. Резюме смотрел не человек."],
-   [5,"Знакомый ищет работу пятый месяц. У него восемь лет опыта."],
-   [5,"Письмо про возврат в офис назвали «культурой сотрудничества»."],
-   [5,"Собеседование в семь этапов. На третьем спросили про сортировку."],
-   [4,"Продакт спросил, нельзя ли «просто попросить нейросеть»."],
-   [4,"Кто-то сгенерировал спецификацию. Читать её будет тоже нейросеть."],
-   [4,"На конференции все доклады про ИИ. Кофе-брейк тоже."],
-   [4,"Джун закоммитил код, который не может объяснить. Код работает."],
-   [4,"В вакансиях появилось «опыт работы с LLM от трёх лет»."],
-   [5,"Сопроводительное письмо написал ИИ. Отбор проводил тоже ИИ."],
-   [5,"Отчёт сгенерировали, саммари отчёта сгенерировали, читать не стали."],
-   [5,"Руководство внедряет ИИ, потому что его внедряют конкуренты."],
-   [5,"«Мы не сокращаем, мы повышаем эффективность за счёт технологий»."],
-   [5,"Токены за месяц вышли дороже, чем зарплата джуна."],
-   [5,"Модель обновили. Всё, что вчера работало, теперь отвечает иначе."],
-   [0,"Заказчик звонит на мобильный в воскресенье. «Вы же не спите?»"],
    [0,"Сервер стоит под столом у Сергея. Уборщица знает, что его не трогать."],
-   [0,"Домен продлевали с личной карты. Чья карта — уже не помнит никто."],
+   [0,"Заказчик звонит на мобильный в воскресенье. «Вы же не спите?»"],
+   [0,"Залил по фтп Тотальным Командиром. Половина файлов доехала."],
    [0,"Правки прислали факсом. Факс у соседей."],
-   [0,"Виндовс попросил перезагрузку. Аська переподключалась сорок минут."],
-   [1,"Купили лицензию на Фотожоп. Дизайнер всё равно работает в своей."],
+
+   [1,"«Мы же семья», — сказал человек, который не знает твоей фамилии."],
+   [1,"Женькинс собрал зелёное, через час — красное. Ничего не меняли."],
    [1,"Первый сотрудник вышел на испытательный. Договор напишем на неделе."],
    [1,"Заказчик перевёл деньги на карту и попросил закрывающие документы."],
+   [1,"Поставили доску с задачами. Через месяц на ней стикеры за март."],
+   [1,"Завели Рудник. Задачи теперь теряются организованно."],
    [1,"Сняли офис. В смете он идёт строкой «прочее»."],
-   [1,"Поставили доску с задачами. Через месяц на ней висят стикеры за март."],
-   [2,"Внедрили код-ревью. Первый пулреквест висит одиннадцатый день."],
-   [2,"Сборка падает только по пятницам. Никто не смотрел почему."],
+
+   [2,"Жира тормозит. Все написали в Шлак, что Жира тормозит."],
+   [2,"Сотрудник спросил про грейд. Ему ответили, что вопрос хороший."],
    [2,"Завели ретро. Первым пунктом записали «завести ретро»."],
    [2,"Прод положили миграцией. Откат тоже был миграцией."],
-   [2,"Сотрудник спросил про грейд. Ему ответили, что вопрос хороший."],
-   [3,"Собеседование через Анзум. У кандидата отвалился звук на четвёртой минуте."],
-   [3,"Курьер привёз ноутбук новому сотруднику. Пароль передали в тот же чат."],
-   [3,"Онлайн-корпоратив. Всем разослали промокод на доставку."],
+   [2,"Внедрили код-ревью. Первый пулреквест висит одиннадцатый день."],
+   [2,"Подняли Кубарем. Падает всё то же самое, но масштабируемо."],
+   [2,"Графин показывает ровную линию. Метрику отключили ещё в марте."],
+
+   [3,"«Ты на мьюте». Ты был на мьюте."],
+   [3,"Кот прошёл по клавиатуре во время демо. Всем понравилось."],
    [3,"Кто-то поставил статус «на созвоне» и не снял его третий день."],
-   [4,"Оффер отозвали через день после подписания. Написали, что «пересмотрели приоритеты»."],
-   [4,"Половина команды в чате обсуждает, у кого какой оффер."],
-   [4,"Ввели грейд между сеньором и лидом. Вилка та же."],
-   [4,"Купили лицензию на аналитику. Смотреть её будет один человек."],
-   [5,"Онбординг теперь ведёт бот. На третьем вопросе он предложил обратиться в поддержку."],
-   [5,"Внутренний ИИ-помощник отвечает по устаревшей вики. Вики никто не обновляет."],
-   [5,"Провели день без совещаний. Перенесли всё на четверг."],
-   [5,"Уволенного попросили передать дела ассистенту. Ассистент — модель."]
+   [3,"Все процессы перенесли в Ничто. Ссылку на Ничто потеряли."],
+   [3,"Онлайн-корпоратив. Всем разослали промокод на доставку."],
+   [3,"Курьер привёз ноутбук новичку. Пароль передали в тот же чат."],
+
+   [4,"Купили ЧатЖПТ на команду. Первым делом сгенерировали регламент про ЧатЖПТ."],
+   [4,"Оффер отозвали через день после подписания. «Пересмотрели приоритеты»."],
+   [4,"Джун закоммитил код, который не может объяснить. Код работает."],
+   [4,"Рекрутер написал третий раз за неделю. Вакансия та же."],
+   [4,"Знакомый ушёл в наставники на курсах. Говорит, стало спокойнее."],
+   [4,"Шлак закрыл доступ. Переехали в ВК Тимзы: поиск не ищет."],
+   [4,"Продакт спросил, нельзя ли «просто попросить нейросеть»."],
+
+   [5,"Курсач написал функцию целиком. Ревьюить её будет тоже Курсач."],
+   [5,"На вакансию пришло триста откликов. Резюме смотрел не человек."],
+   [5,"Знакомый ищет работу пятый месяц. У него восемь лет опыта."],
+   [5,"«Мы не сокращаем, мы повышаем эффективность за счёт технологий»."],
+   [5,"Токены за месяц вышли дороже, чем зарплата джуна."],
+   [5,"Уволенного попросили передать дела ассистенту. Ассистент — модель."],
+   [5,"Письмо про возврат в офис назвали «культурой сотрудничества»."]
   ],
+
 
   // что происходит, пока ИИ ходит на встречи вместо тебя
   missed:[
@@ -1673,7 +2140,7 @@ const C = {
     {id:"senior", dept:"eng",   tier:2, era:2, name:"Сеньор",            pay:400000, out:720000,
      desc:"Спрашивает «зачем» до того, как начнёт"},
     {id:"qa",     dept:"eng",   tier:1, era:1, name:"Тестировщик",       pay:200000, out:110000,
-     desc:"+15% разработке, дальше отдача падает"},
+     gain:"Ошибок на проде меньше", desc:"+15% разработке, дальше отдача падает"},
     {id:"support",dept:"ops",   tier:0, era:1, name:"Оператор поддержки",pay:65000,  out:140000,
      desc:"Первая линия. Слышит о продукте больше всех"},
     // Две роли, без которых блокеры были бы требованием невозможного.
@@ -1684,7 +2151,7 @@ const C = {
     {id:"design", dept:"eng",   tier:1, era:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
      desc:"Рисует то, на что потом смотрят все и молча"},
     {id:"recruit",dept:"people",tier:1, era:1, name:"Рекрутер",          pay:130000, out:0,
-     desc:"Найм дешевле на 20%. Сам не приносит ничего"},
+     gain:"Найм дешевле", desc:"Найм дешевле на 20%. Сам не приносит ничего"},
     // Название по профессии, а не по ощущению: в списке вакансий рядом
     // с «мидлом» и «тестировщиком» «тот самый коллега» читался как шутка
     // не на своём месте. Шутка теперь в описании, где ей и место.
@@ -1695,7 +2162,7 @@ const C = {
     {id:"agent",  dept:"eng",   tier:3, era:4, name:"ИИ-агент",        pay:90000,  out:240000,
      desc:"Работает круглосуточно. Токены дорожают, а смотреть за ним всё равно человеку"},
     {id:"assist", dept:"ops",   tier:1, era:4, name:"Ассистент",       pay:90000,  out:60000,
-     desc:"Ходит на созвоны вместо тебя. Созвоны реже и короче"},
+     gain:"Созвоны реже и короче", desc:"Ходит на созвоны вместо тебя. Созвоны реже и короче"},
     // Человек, который в 2007-м держал на себе сервер, роутер и принтер.
     // Он был в каждой конторе, и его никто не считал айтишником.
     {id:"admin",  dept:"ops",   tier:0, name:"Системный администратор", pay:90000, out:150000,
@@ -1703,9 +2170,9 @@ const C = {
     {id:"sales",  dept:"ops",   tier:1, era:1, viaBlock:"b14", name:"Менеджер по продажам", pay:120000, out:340000,
      desc:"Приносит заказы. И сроки, о которых вас не спросили"},
     {id:"lawyer", dept:"ops",   tier:2, era:2, viaCrisis:"fine", name:"Юрист", pay:250000, out:120000,
-     desc:"Читает договоры до подписания. Штрафы и неустойки вдвое меньше"},
+     gain:"Штрафы вдвое меньше", desc:"Читает договоры до подписания. Штрафы и неустойки вдвое меньше"},
     {id:"pr",     dept:"ops",   tier:2, era:3, viaCrisis:"rep", name:"PR-менеджер", pay:210000, out:140000,
-     desc:"Отвечает на отзывы раньше, чем их прочитают. Удар по репутации вдвое короче"},
+     gain:"Отзывы гаснут быстрее", desc:"Отвечает на отзывы раньше, чем их прочитают. Удар по репутации вдвое короче"},
     {id:"content",dept:"ops",   tier:0, era:1, name:"Контент-менеджер",  pay:95000,  out:160000,
      desc:"Пишет тексты. Заказчик перепишет их сам, но позже"},
     {id:"writer", dept:"eng",   tier:1, era:2, viaBlock:"b17", name:"Технический писатель", pay:170000, out:210000,
@@ -1987,7 +2454,11 @@ const S = {
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
   blocker:null, blockersDone:[], blockIn:75, blockStart:0, blockTasks:0, taskCount:0,
-  mgIn:210, mgDone:[],
+  mgIn:210, mgDone:[], mgAt:{},
+  // Оформление: "plain" — дашборд, "cozy" — уютный скин. Настройка, не прогресс.
+  // Уютный — основное оформление игры. Строгий дашборд остался
+  // в архиве: на нём игра выросла, и выбрасывать его незачем.
+  skin:"cozy",
   // ООО: пока false, экономики компании не существует — только заказы
   llc:false, llcOpen:false, llcAskedAt:undefined,
   loops:{}, spanUp:0, teamMul:1, payMul:1,
@@ -2053,11 +2524,39 @@ function timeHTML(e){
   const t = stampOf(e);
   return '<time><span class="m">'+t.m+'</span><span class="y">'+t.y+'</span></time>';
 }
+/* Значок типа вместо серой полоски. Лента листается быстрее, чем
+   читается: по значку видно, деньги это, беда или просто фон, — и
+   вчитываться приходится только в то, что выбрал сам. */
+const LOG_ART = {
+  good:'<path d="M4 13l5 5L20 7"/>',
+  bad:'<path d="M12 8v5M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
+  lore:'<path d="M5 5.5A1.5 1.5 0 0 1 6.5 4H18v16H6.5A1.5 1.5 0 0 1 5 18.5z"/><path d="M9 8.5h6M9 12h4"/>',
+  noise:'<circle cx="12" cy="12" r="2.2"/>'
+};
+/* Игровые термины в тексте набраны жирным и цветом: слово, за которым
+   стоит механика, должно отличаться от слова, за которым стоит шутка.
+   По одному разу на строку и не больше двух на всю — иначе подсветка
+   перестаёт что-либо значить и превращается в рябь. */
+const TERMS = ["выгорани\\S*","созвон\\S*","блокер\\S*","ООО","накладны\\S*","ФОТ",
+  "повышени\\S*","делегировани\\S*","тренажёр\\S*","больничн\\S*","отпуск\\S*",
+  "кассов\\S* разрыв\\S*","выручк\\S*","оборот\\S*"];
+const TERM_RE = new RegExp("(?<![>\\wА-Яа-яЁё])(" + TERMS.join("|") + ")", "i");
+function hlTerms(html){
+  let left = 2, out = html;
+  for(const t of TERMS){
+    if(!left) break;
+    const re = new RegExp("(?<![>\\wА-Яа-яЁё])(" + t + ")(?![^<]*</b>)", "i");
+    if(re.test(out)){ out = out.replace(re, '<b class="tm">$1</b>'); left--; }
+  }
+  return out;
+}
 function log(text, type){
   const t = stamp();
   const d = document.createElement("div");
   d.className = "le " + (type || "");
-  d.innerHTML = '<i></i>'+timeHTML(t)+'<div><p>'+text+'</p></div>';
+  const art = LOG_ART[type] || LOG_ART.noise;
+  d.innerHTML = '<i class="lic"><svg viewBox="0 0 24 24">'+art+'</svg></i>'+
+    timeHTML(t)+'<div><p>'+hlTerms(text)+'</p></div>';
   $("log").prepend(d);
   while($("log").children.length > 40) $("log").lastChild.remove();
   // Хроника — часть прогресса не меньше кассы: живёт внутри S, поэтому
@@ -2079,7 +2578,9 @@ function paintPeek(){
   box.className = "peek " + (e.type||"");
   box.querySelector("time .m").textContent = t.m;
   box.querySelector("time .y").textContent = t.y;
-  box.querySelector("p").innerHTML = e.text;
+  box.querySelector("p").innerHTML = hlTerms(e.text);
+  box.querySelector("i").innerHTML =
+    '<svg viewBox="0 0 24 24">'+(LOG_ART[e.type] || LOG_ART.noise)+'</svg>';
 }
 let sigTimer = 0;
 function signal(text, type){
@@ -2127,7 +2628,9 @@ function renderLogHistory(){
   (S.logHistory||[]).forEach(e => {
     const d = document.createElement("div");
     d.className = "le " + (e.type||"");
-    d.innerHTML = '<i></i>'+timeHTML(e)+'<div><p>'+e.text+'</p></div>';
+    d.innerHTML = '<i class="lic"><svg viewBox="0 0 24 24">'+
+      (LOG_ART[e.type] || LOG_ART.noise)+'</svg></i>'+
+      timeHTML(e)+'<div><p>'+hlTerms(e.text)+'</p></div>';
     box.appendChild(d);
   });
 }
@@ -2532,6 +3035,22 @@ function clickVal(){
   return year() < CAP_YEAR ? Math.min(v, EARLY_CAP) : v;
 }
 
+/* Цифра, вылетающая из кнопки. Единственный ответ на тап, который
+   виден боковым зрением: цену клика игрок и так не читает, а рост
+   кассы в шапке слишком далеко от пальца. Уважает «меньше движения»:
+   там, где анимации выключены, цифры просто нет. */
+function popValue(btn, text){
+  if(S.calm || document.body.classList.contains("calm")) return;
+  // Летит НАД кнопкой, а не внутри неё: у самой кнопки overflow скрыт
+  // ради волны, и цифра внутри перечёркивала бы надпись. Родитель —
+  // строка кнопок, отсюда позиция считается от кнопки в пикселях.
+  const host = btn.parentElement; if(!host) return;
+  const el = document.createElement("span");
+  el.className = "pop"; el.textContent = text;
+  el.style.left = (btn.offsetLeft + btn.offsetWidth/2) + "px";
+  host.appendChild(el);
+  setTimeout(() => el.remove(), 720);
+}
 function doTask(){
   if(!canWork()) return;
   const btn = $("do");
@@ -2546,6 +3065,7 @@ function doTask(){
 
   const v = clickVal();
   S.cash += v; S.earned += v;
+  popValue(btn, "+"+rub(v));
   S.burn += BURN_TAP * C.diffBurn[task.diff] * S.burnRate * burnMul() * (onCall() ? 1.5 : 1);
 
   S.taskCount = (S.taskCount||0) + 1;
@@ -2571,7 +3091,7 @@ function skipTask(){
 $("do").addEventListener("pointerdown", e => { e.preventDefault(); doTask(); });
 $("skip").addEventListener("pointerdown", e => { e.preventDefault(); skipTask(); });
 
-$("vac").onclick = () => {
+$("vacRing").onclick = () => {
   const c = vacCost();
   if(S.cash < c || S.vacLeft > 0) return;
   // Не до нуля: ты проверял почту дважды в день. Отпуск перестал быть
@@ -2680,52 +3200,114 @@ function buzz(ms){
   try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){}
 }
 
+/* Каждый звук отвечает на вопрос «что сейчас случилось», а не «нажали».
+   Хорошее идёт вверх по мажорному трезвучию, тяжёлое — вниз и телом.
+   Ноты берутся из того же фа мажора, что и музыка: сигнал не спорит
+   с подложкой, а ложится в неё. */
+const NOTE = {F:349.23, A:440, C:523.25, D:587.33, F2:698.46, A2:880};
+// Аккорд по нотам: короткое арпеджио вверх, 45 мс между голосами.
+function arp(list, vol, dur){
+  list.forEach((f,i) => setTimeout(() =>
+    tone("triangle", f, f, dur||.22, (vol||.14)*(1-i*.12)), i*45));
+}
 const SFX = {
-  tap:    () => noise(.03, .10, 2600),
-  hit:    () => { tone("triangle", 660, 880, .09, .16); noise(.02,.06,3200); },
-  miss:   () => { tone("sine", 190, 120, .10, .13); },
-  buy:    () => { tone("triangle", 520, 780, .10, .17); tone("triangle", 780, 1040, .12, .11); },
-  hire:   () => { tone("triangle", 420, 620, .12, .17); },
-  promote:() => { tone("triangle", 520, 700, .13, .17); setTimeout(()=>tone("triangle",700,940,.16,.14),90); },
-  // тяжёлое — телом
-  lose:   () => { thump(.6, 90, 34); buzz(38); },
-  gap:    () => { thump(.55, 70, 30); buzz([26,60,26]); },
-  block:  () => { thump(.6, 100, 42); tone("sine",300,180,.22,.12); buzz(45); },
-  sick:   () => { thump(.5, 60, 26); tone("sine",150,80,.6,.10); buzz([50,80,50]); },
-  era:    () => { tone("sine", 220, 330, .5, .12); setTimeout(()=>tone("sine",330,440,.6,.09),140); },
-  call:   () => { tone("square", 480, 480, .1, .07); setTimeout(()=>tone("square",480,480,.1,.07),160); },
-  good:   () => { tone("triangle", 600, 900, .14, .15); }
+  tap:    () => { noise(.025, .07, 2400); tone("sine", 900, 1100, .04, .05); },
+  hit:    () => { tone("triangle", NOTE.A, NOTE.C, .1, .15); noise(.02,.05,3200); },
+  miss:   () => { tone("sine", 200, 130, .11, .12); },
+  buy:    () => arp([NOTE.F, NOTE.A, NOTE.C], .16, .26),
+  hire:   () => arp([NOTE.C, NOTE.F2], .17, .3),
+  promote:() => arp([NOTE.F, NOTE.A, NOTE.C, NOTE.F2], .16, .34),
+  // Тяжёлое по-прежнему говорит телом, но короче и без гнетущего хвоста:
+  // игра ведёт счёт, а не наказывает.
+  lose:   () => { thump(.5, 90, 40); buzz(34); },
+  gap:    () => { thump(.5, 72, 34); buzz([26,60,26]); },
+  block:  () => { thump(.5, 100, 46); tone("sine",280,190,.2,.1); buzz(42); },
+  sick:   () => { thump(.45, 62, 30); tone("sine",150,90,.5,.09); buzz([50,80,50]); },
+  // Эпоха — единственное место, где звучит целый аккорд: событие того стоит.
+  era:    () => { arp([NOTE.F, NOTE.A, NOTE.C, NOTE.F2], .13, .7);
+                  setTimeout(()=>tone("sine", NOTE.A2, NOTE.A2, .9, .07), 220); },
+  call:   () => { tone("square", 480, 480, .09, .06); setTimeout(()=>tone("square",480,480,.09,.06),160); },
+  good:   () => arp([NOTE.A, NOTE.D], .15, .2)
 };
+
 function sfx(name){
   if(!(S.volSfx ?? .7)) return;
   const f = SFX[name]; if(!f) return;
   try{ audio(); applyVolume(); f(); }catch(e){}
 }
 
-/* Фоновая музыка — тоже синтез. Медленный минорный дрон с редкими
-   нотами сверху: не мелодия, а гул опенспейса, под который можно
-   не отвлекаясь работать. Ровно то, чем притворяется вся игра. */
-const SCALE = [220, 261.63, 293.66, 349.23, 392];
-let musTimer = 0;
+/* ФОНОВАЯ МУЗЫКА
+   Была расстроенная пила на 110 Гц — «космический гул»: он давит и не
+   двигается. Стало то, подо что действительно работают: тёплая
+   мажорная подложка с медленным дыханием и редкими нотами сверху.
+
+   Три вещи делают её живой, и все три бесплатны:
+   · четыре аккорда по кругу — движение есть, а мелодии, которая
+     привяжется и надоест, нет;
+   · дыхание — громкость подложки медленно ходит вверх-вниз, поэтому
+     звук не превращается в ровную стену;
+   · эхо — одна линия задержки на всю музыку. Она и есть «глубина»:
+     без неё синтез звучит плоско, с ней — как в комнате.
+   ══════════════════════════════════════════════════════════════ */
+// Фа мажор: I – vi – IV – V. Круг, который никуда не приходит, —
+// ровно то, чем занимается игрок.
+const CHORDS = [
+  [174.61, 220.00, 261.63],   // F
+  [220.00, 261.63, 329.63],   // Am
+  [233.08, 293.66, 349.23],   // B♭
+  [261.63, 329.63, 392.00]    // C
+];
+const LEAD = [523.25, 587.33, 698.46, 783.99, 880.00];   // пентатоника сверху
+let musTimer = 0, musChord = 0;
+function musEcho(){
+  const ac = audio();
+  const dl = ac.createDelay(1.0), fb = ac.createGain(), wet = ac.createGain();
+  dl.delayTime.value = .38; fb.gain.value = .3; wet.gain.value = .3;
+  dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(musBus);
+  return dl;
+}
 function startMusic(){
   const ac = audio(); if(!ac || musicOn) return;
   musicOn = true;
-  // дрон: две расстроенные пилы через фильтр
-  [110, 110.4].forEach(f => {
+  const echo = musEcho();
+  // Подложка: три голоса аккорда, мягкий фильтр, общее дыхание.
+  const breath = ac.createGain(); breath.gain.value = .5;
+  breath.connect(musBus); breath.connect(echo);
+  const lfo = ac.createOscillator(), lfoG = ac.createGain();
+  lfo.frequency.value = .06; lfoG.gain.value = .22;
+  lfo.connect(lfoG); lfoG.connect(breath.gain); lfo.start();
+  const voices = CHORDS[0].map(f => {
     const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
-    o.type = "sawtooth"; o.frequency.value = f;
-    lp.type = "lowpass"; lp.frequency.value = 380;
-    g.gain.value = .05;
-    o.connect(lp); lp.connect(g); g.connect(musBus); o.start();
+    o.type = "triangle"; o.frequency.value = f;
+    lp.type = "lowpass"; lp.frequency.value = 1400;
+    g.gain.value = .045;
+    o.connect(lp); lp.connect(g); g.connect(breath); o.start();
+    return o;
   });
-  // редкие ноты: раз в 6–14 секунд, чтобы не превратиться в мелодию
+  // Смена аккорда: голоса переезжают плавно, за полторы секунды.
+  const turn = () => {
+    if(!musicOn) return;
+    musChord = (musChord + 1) % CHORDS.length;
+    const c = CHORDS[musChord];
+    voices.forEach((o,i) =>
+      o.frequency.exponentialRampToValueAtTime(c[i], ac.currentTime + 1.5));
+    musTimer = setTimeout(turn, 7000);
+  };
+  musTimer = setTimeout(turn, 7000);
+  // Ноты сверху: не мелодия, а капли поверх подложки.
   const ping = () => {
     if(!musicOn) return;
-    if((S.volMus ?? .35) > 0 && !S.ended)
-      tone("sine", pick(SCALE)*2, pick(SCALE)*2, 2.2, .05, musBus);
-    musTimer = setTimeout(ping, 6000 + Math.random()*8000);
+    if((S.volMus ?? .35) > 0 && !S.ended){
+      const f = pick(LEAD);
+      tone("sine", f, f, 1.6, .035, musBus);
+      // Вторая нота через терцию — от неё звук становится мажорным
+      // на слух, а не «просто высоким».
+      if(Math.random() < .5)
+        setTimeout(() => musicOn && tone("sine", f*1.5, f*1.5, 1.3, .022, musBus), 320);
+    }
+    setTimeout(ping, 4500 + Math.random()*5000);
   };
-  musTimer = setTimeout(ping, 3000);
+  setTimeout(ping, 2500);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -2840,9 +3422,21 @@ const CRISES = [
    lose:"Отзывы разошлись дальше. Заказы идут медленнее."}
 ];
 
+/* У каждой мини-игры есть предмет: телефон, смета, окно чата. Он стоит
+   на полке тренажёра и он же встречает в шапке самой игры — так плитка
+   и экран читаются как одна вещь, а не как кнопка и текст под ней.
+   Пути нарисованы здесь, рядом с содержанием: иконка — часть контента,
+   как и заголовок. */
+const MG_ART = {
+  dial:'<path d="M4 6a2 2 0 0 1 2-2h2l1.4 3.6-2 1.3a11.5 11.5 0 0 0 5.7 5.7l1.3-2L18 14v2a2 2 0 0 1-2 2A12.5 12.5 0 0 1 4 6z"/><path d="M14 4.2a6 6 0 0 1 5.8 5.8"/>',
+  smeta:'<rect x="5" y="3" width="14" height="18" rx="2.5"/><path d="M8.5 7.5h7M8.5 11.5h3M8.5 15.5h3M15 11.5v5M12.5 14h5"/>',
+  prompt:'<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h13A1.5 1.5 0 0 1 20 5.5v9a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 4v-4H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M12 7.2l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z"/>'
+};
+
 const MG = {
   dial: {
-    era:[0,1], rounds:3,
+    era:[0,1], rounds:3, short:"Дозвон",
+    tint:"rgba(255,159,10,.16)", tink:"var(--wrn-ink)",
     title:"Дозвониться до заказчика",
     desc:"Модем берёт линию не всегда. Три попытки, между ними линия занята.",
     win:"Соединение установилось", lose:"Занято",
@@ -2850,8 +3444,36 @@ const MG = {
     mid:"Дозвонились с третьего раза. Заказчик уже уехал, но всё передал.",
     bad:"Не дозвонились. Правки пришли в понедельник, и половина устарела."
   },
+  /* Середина игры была без мини-игры вовсе: дозвон кончался с модемом,
+     а промпт начинался с ИИ, и десять лет между ними полка стояла
+     пустой. Смета — то, чем в эти годы и занимаются: обещание,
+     которое называют оценкой. */
+  smeta: {
+    era:[1,3], rounds:3, short:"Смета",
+    tint:"rgba(74,127,165,.16)", tink:"#4a7fa5",
+    title:"Свести смету",
+    desc:"Заказчик просит вилку. Вилка — это обещание, даже когда называется оценкой.",
+    ok:"Смету приняли без торга. Сроки впервые за год сошлись с реальностью.",
+    mid:"Смету приняли со второго круга. Пару этапов отдали по себестоимости.",
+    bad:"Смету свели вниз до неприличия. Разницу команда доработала вечерами.",
+    qs:[
+      {q:"«Ну примерно, навскидку, ни к чему не обязывает»",
+       a:["Назвать число вслух прямо на созвоне",
+          "Дать вилку письмом: что входит, что нет, до какого числа держится",
+          "Написать «от 500 тысяч» и надеяться на лучшее"], right:1},
+      {q:"Разработчик оценил задачу в три дня",
+       a:["Поставить три дня: он же профессионал",
+          "Заложить его три дня плюс приёмку, правки и чужой отпуск",
+          "Умножить на три и никому не объяснять почему"], right:1},
+      {q:"Клиент просит минус тридцать процентов — объём большой",
+       a:["Дать тридцать: объём и правда большой",
+          "Убрать из сметы работ на тридцать и показать, что осталось",
+          "Отказать и не объяснять"], right:1}
+    ]
+  },
   prompt: {
-    era:[4,5], rounds:3,
+    era:[4,5], rounds:3, short:"Промпт",
+    tint:"rgba(138,107,184,.16)", tink:"#8a6bb8",
     title:"Уговорить модель",
     desc:"Задача простая. Формулировка — нет. Три попытки, один заход каждая.",
     win:"То, что нужно", lose:"Не то",
@@ -2874,20 +3496,32 @@ const MG = {
     ]
   }
 };
-let mgKey = null, mgRound = 0, mgHits = [];
+let mgKey = null, mgRound = 0, mgHits = [], mgSelf = false;
 
 // Награда считается от текущей экономики, а не фиксированной суммой:
 // иначе к 2020-му мини-игра платит меньше одного тапа и становится
 // не событием, а помехой.
 function mgPrize(){ return Math.max(clickVal()*35, revenue()*0.8, 60000); }
 
-function mgOpen(key){
-  mgKey = key; mgRound = 0; mgHits = [];
+// Заход по своей воле платит вдвое меньше, чем то же самое случившееся
+// само: иначе «потренироваться» станет основным способом зарабатывать,
+// а тренажёр — таймером, у которого сидят. Выгорание он снимает так же,
+// как событие: ради этого туда и заходят.
+const MG_SELF = 0.5;
+const MG_COOL = 10;                          // месяцев между заходами
+const mgWait  = k => Math.max(0, MG_COOL - (S.month - ((S.mgAt||{})[k] ?? -MG_COOL)));
+const mgNow   = k => S.era >= MG[k].era[0] && S.era <= MG[k].era[1];
+
+function mgOpen(key, self){
+  mgKey = key; mgRound = 0; mgHits = []; mgSelf = !!self;
   const g = MG[key];
   $("mgT").textContent = g.title;
   $("mgOk").hidden = true;
   $("mgDial").hidden = key !== "dial";
-  $("mgPick").hidden = key !== "prompt";
+  $("mgPick").hidden = key === "dial";
+  const ic = $("mgIcon");
+  ic.innerHTML = '<svg viewBox="0 0 24 24">' + MG_ART[key] + '</svg>';
+  ic.style.setProperty("--tint", g.tint); ic.style.setProperty("--tink", g.tink);
   mgDraw();
   sfx("block");
   $("mgSheet").classList.add("on"); $("mgScrim").classList.add("on");
@@ -2925,17 +3559,18 @@ function mgStep(hit){
   mgFinish();
 }
 function mgFinish(){
-  const g = MG[mgKey], n = mgHits.filter(Boolean).length;
+  const g = MG[mgKey], n = mgHits.filter(Boolean).length, k = mgSelf ? MG_SELF : 1;
+  S.mgAt = {...(S.mgAt||{}), [mgKey]: S.month};
   $("mgDial").hidden = true; $("mgPick").hidden = true;
   $("mgStep").textContent = "ИТОГ";
   $("mgOk").hidden = false;
   if(n === g.rounds){
-    const v = mgPrize()*2.2;
+    const v = mgPrize()*2.2*k;
     S.cash += v; S.earned += v; S.burn = Math.max(0, S.burn-8);
     $("mgD").innerHTML = g.ok + mgDots();
     log(g.ok + " <b>+"+rub(v)+"</b>", "good"); sfx("buy");
   } else if(n > 0){
-    const v = mgPrize()*0.8;
+    const v = mgPrize()*0.8*k;
     S.cash += v; S.earned += v;
     $("mgD").innerHTML = g.mid + mgDots();
     log(g.mid + " <b>+"+rub(v)+"</b>", "good");
@@ -2966,10 +3601,49 @@ $("mgOk").onclick = () => { sfx("tap"); mgClose(); };
 // дозвон в 2024-м был бы не шуткой, а ошибкой.
 function mgDue(){
   const done = S.mgDone || [];
-  return Object.keys(MG).find(k => {
-    const [a,b] = MG[k].era;
-    return S.era >= a && S.era <= b && (done.filter(x=>x===k).length < 2);
+  return Object.keys(MG).find(k =>
+    mgNow(k) && !mgWait(k) && done.filter(x=>x===k).length < 2);
+}
+
+/* ── Полка тренажёра ──
+   Открывается не по эпохе, а по факту работы: показывать её человеку,
+   который сделал три задачи, — значит уводить его с первого экрана
+   куда-то ещё. Плитка остаётся на полке навсегда: дозвон в 2024-м уже
+   не сыграть, но видно, что он был. Перерисовываем только когда
+   изменилась подпись — тик идёт десять раз в секунду и съедал бы тап
+   между нажатием и отпусканием. */
+let mgSig = "";
+function paintTrain(){
+  const card = $("trainCard"), on = (S.taskCount||0) >= 12;
+  card.hidden = !on;
+  if(!on) return;
+  if(!S.trainSeen){
+    S.trainSeen = true;
+    snack("Тренажёр открыт: мини-игру теперь можно затеять самому");
+  }
+  const keys = Object.keys(MG).filter(k => S.era >= MG[k].era[0]);
+  // Созвон, блокер и больничный уже занимают экран и время. Затевать
+  // поверх них ещё одну игру — складывать окна друг на друга.
+  const busy = onCall() || !!activeBlocker() || S.sick > 0;
+  const sig = (busy?"b|":"") + keys.map(k => k + (mgNow(k) ? mgWait(k) : "x")).join("|");
+  if(sig === mgSig) return;
+  mgSig = sig;
+  $("mgGrid").innerHTML = keys.map(k => {
+    const g = MG[k], gone = !mgNow(k), wait = mgWait(k), ready = !gone && !wait && !busy;
+    return '<button class="mgtile'+(ready?" hot":"")+((gone||wait)?" off":"")+'"'+
+      (ready?'':' disabled')+' data-mg="'+k+'">'+
+      '<span class="mgobj" style="--tint:'+g.tint+';--tink:'+g.tink+'">'+
+      '<svg viewBox="0 0 24 24">'+MG_ART[k]+'</svg></span>'+
+      '<b>'+g.short+'</b>'+
+      '<em>'+(gone ? "было" : wait ? wait+" мес" : busy ? "не сейчас" : "готово")+'</em></button>';
+  }).join("");
+  $("mgGrid").querySelectorAll(".mgtile").forEach(b => {
+    b.onclick = () => { sfx("tap"); mgOpen(b.dataset.mg, true); };
   });
+  $("trainHint").textContent =
+    busy ? "Сейчас не до тренировок" :
+    keys.some(k => mgNow(k) && !mgWait(k))
+      ? "Размяться, пока не припекло" : "Пока остывает. Само тоже случится";
 }
 /* ══════════════════════════════════════════════════════════════
    СБРОС ПРОГРЕССА
@@ -2981,7 +3655,7 @@ function mgDue(){
    у самой кнопки «Уволиться» их тоже переживает.
    ══════════════════════════════════════════════════════════════ */
 function resetProgress(){
-  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme,
+  const keep = { volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, skin:S.skin,
                  vibro:S.vibro, calm:S.calm, onboarded:S.onboarded };
   const fresh = JSON.parse(S0);
   Object.keys(S).forEach(k => delete S[k]);
@@ -2991,7 +3665,7 @@ function resetProgress(){
   clearSave();
   $("log").innerHTML = "";
   S.logHistory = [];
-  applyTheme(S.theme || "auto");
+  applyTheme(S.theme || "auto"); applySkin(S.skin || "cozy");
   // Данные уже чистые, но экран — нет: если сброс случился посреди
   // созвона, блокера или карточки новой эпохи, эти окна ссылаются на
   // состояние, которого больше нет, и без явного закрытия провисят
@@ -3013,7 +3687,7 @@ function doQuit(){
   const offer = 1 + ivScore * 0.06;
   const keep = {
     lifetime, legacy: legacyOf(lifetime) * offer, runs: (S.runs||0)+1,
-    volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, savedAt:S.savedAt,
+    volSfx:S.volSfx, volMus:S.volMus, theme:S.theme, skin:S.skin, savedAt:S.savedAt,
     vibro:S.vibro, calm:S.calm, unmissed:S.unmissed
   };
   const fresh = JSON.parse(S0);
@@ -3024,7 +3698,7 @@ function doQuit(){
   bumpEcon();
   $("log").innerHTML = "";
   S.logHistory = [];
-  applyTheme(S.theme || "auto");
+  applyTheme(S.theme || "auto"); applySkin(S.skin || "cozy");
   document.querySelector('nav button[data-tab=work]').click();
   rollTask(); showTask();
   sfx("era"); buzz([25,70,25]);
@@ -3082,6 +3756,19 @@ function applyTheme(mode){
   S.theme = mode;
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===mode));
+}
+/* Скин — не тема. Тема отвечает на вопрос «светло или темно», скин —
+   «строго или уютно», и они независимы: уютный бывает ночным. Поэтому
+   отдельный атрибут и отдельная настройка, а не четыре кнопки в одной
+   строке. Оформление переживает сброс прогресса: это настройка, а не
+   достижение. */
+function applySkin(mode){
+  const r = document.documentElement;
+  if(mode==="cozy") r.setAttribute("data-skin","cozy");
+  else r.removeAttribute("data-skin");
+  S.skin = mode;
+  document.querySelectorAll("#skinSeg button").forEach(b =>
+    b.classList.toggle("on", b.dataset.skin===mode));
 }
 // Разметка первого шага — снята с самой карточки один раз при загрузке,
 // чтобы paintSettings() могла вернуть кнопку в исходное состояние: сброс
@@ -3146,6 +3833,8 @@ function paintSettings(){
   $("volMusV").textContent = $("volMus").value;
   document.querySelectorAll("#themeSeg button").forEach(b =>
     b.classList.toggle("on", b.dataset.theme===(S.theme||"auto")));
+  document.querySelectorAll("#skinSeg button").forEach(b =>
+    b.classList.toggle("on", b.dataset.skin===(S.skin||"cozy")));
   $("tPause").checked = !!S.paused;
   $("tVibro").checked = S.vibro !== false;
   $("tCalm").checked  = !!S.calm;
@@ -3350,6 +4039,8 @@ $("setClose").onclick = closeSet;
 $("setScrim").onclick = closeSet;
 document.querySelectorAll("#themeSeg button").forEach(b =>
   b.onclick = () => applyTheme(b.dataset.theme));
+document.querySelectorAll("#skinSeg button").forEach(b =>
+  b.onclick = () => { sfx("tap"); applySkin(b.dataset.skin); });
 
 /* Пауза. Игра идёт в реальном времени, и отойти от неё было нельзя
    никак: закрыть вкладку — потерять месяцы, оставить открытой — тоже.
@@ -3407,7 +4098,7 @@ $("impBtn").onclick = () => {
   saveGame();
   closeSet();
   $("log").innerHTML = ""; renderLogHistory();
-  applyTheme(S.theme || "auto"); applyCalm(); applyPause();
+  applyTheme(S.theme || "auto"); applySkin(S.skin || "cozy"); applyCalm(); applyPause();
   bumpEcon(); rollTask(); showTask(); paint();
   log("Сохранение перенесено. Год " + year() + ", в штате " + S.staff.length + ".", "lore");
   sfx("era");
@@ -3532,11 +4223,13 @@ function upsGrade(o){
        : p >= 1.5  ? 2
        : p >= 1.15 ? 1 : 0;
 }
-function gradeTag(t){
-  if(!t) return "";
-  return ' <span class="gname t'+t+'">'+GRADE[t]+
-    (t===4 ? ' <span class="stars">★★★</span>' : '')+'</span>';
-}
+/* Редкость больше не рисуется. Шкала «обычный → легендарный» — костыль
+   из чужого жанра: она отвечает на вопрос «насколько это круто», а
+   игроку нужен ответ на «что это мне даст», и он теперь написан прямо
+   на карточке. Функция осталась пустой заглушкой, чтобы не разбирать
+   вызовы: сама шкала (upsGrade) по-прежнему считает силу эффекта и
+   участвует в балансе. */
+function gradeTag(){ return ""; }
 // Профессия появляется, когда появляется нужда. Дизайнера и аналитика
 // нельзя нанять до того, как проект в них упрётся: иначе игрок наймёт их
 // впрок, блокер отфильтруется как уже выполненный, и момент, ради которого
@@ -3555,6 +4248,28 @@ const roleLocked = r => !roleRipe(r) || !(S.seen||[]).includes(r.id);
 // Открытые роли и ровно одна следующая под замком. Вываливать весь список
 // сразу — значит показать двадцать лет вперёд человеку, у которого пока
 // нет денег даже на стажёра.
+/* Кто сколько приносит. Выработка минус зарплата — это и есть ответ
+   на вопрос «зачем он». У пятерых он отрицательный, и это не ошибка
+   баланса: рекрутёра, юриста и тестировщика берут не за выручку.
+   Поэтому вклад показывается двумя разными цветами, а не одним со
+   знаком минус: зелёное — деньги, синее — условия. */
+/* Значки-подписи. Цифре нужен не заголовок, а знак: «ФОТ 150 тыс»
+   читается как аббревиатура, «💰 −150 тыс» — как зарплата. Те же
+   значки стоят на «Компании», поэтому число узнаётся между экранами
+   без единого слова. */
+const TAG_ART = {
+  pay:'<path d="M3 7.5A1.5 1.5 0 0 1 4.5 6h15A1.5 1.5 0 0 1 21 7.5v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 16.5z"/><circle cx="12" cy="12" r="2.6"/>',
+  cost:'<path d="M12.5 3H20v7.5L11 19.5 3.5 12z"/><circle cx="16.6" cy="7.4" r="1.2"/>',
+  up:'<path d="M12 19V6M6 11.5L12 5.5l6 6"/>',
+  ovh:'<path d="M4 20V9l8-5 8 5v11"/><path d="M9 20v-6h6v6"/>',
+  rev:'<path d="M4 18l5-6 4 3.5L20 6"/><path d="M15 6h5v5"/>'
+};
+const tagIcon = (k,cls) => '<svg class="ti '+(cls||"")+'" viewBox="0 0 24 24">'+TAG_ART[k]+'</svg>';
+const roleNet = r => (r.out||0) - (r.pay||0);
+const DEPT_HUE = {eng:"c2", ops:"c1", people:"c3"};
+// Те же значки отделов, что на «Компании»: разработка, поддержка, персонал.
+// Ссылкой, а не копией — иначе рано или поздно разъедутся.
+const ROLE_ART = () => ({eng:DEPT_ART.eng, ops:DEPT_ART.ops, people:DEPT_ART.hr});
 function paintHire(){
   const all  = C.roles.filter(r => (r.era||0) <= S.era);
   const open = all.filter(r => !roleLocked(r));
@@ -3567,34 +4282,43 @@ function paintHire(){
   }).join("|")+"|"+(next?next.id:"-");
   if(!changed("hire", key)) return;
   const box = $("hire"); box.innerHTML = "";
+  const grid = document.createElement("div");
+  grid.className = "grid2";
   open.forEach(r => {
-    const c = hireCost(r);
-    const ok = S.cash >= c;
-    const d = document.createElement("div");
-    d.className = "row " + (ok ? "tap" : "no");
+    const c = hireCost(r), ok = S.cash >= c, net = roleNet(r);
+    const d = document.createElement("button");
+    // Два вида людей — два цвета, и третьего в карточке нет. Зелёный:
+    // приносит деньги, и все числа на карточке зелёные. Фиолетовый:
+    // меняет условия, и тогда фиолетовые и текст, и значок. Раньше
+    // здесь спорили синий эффект, зелёный доход и синяя точка редкости
+    // на одной карточке — три цвета на две строки.
+    const kind = net > 0 ? "money" : "perk";
+    d.className = "gcard " + kind + " " + (ok ? "can" : "no");
     d.innerHTML =
-      '<div class="tier t'+r.tier+'"></div>'+
-      '<div class="rl"><div class="rn2">'+r.name+
-        (S.hired[r.id] ? ' <span class="cnt">'+S.hired[r.id]+'</span>' : '')+
-        gradeTag(r.tier)+'</div>'+
-      // Зарплата уехала из описания в колонку цены: вместе с шуткой она
-      // разгоняла строку на три ряда, и список переставал читаться.
-      '<div class="rd">'+r.desc+'</div></div>'+
-      // Только ФОТ. Будущая цена найма на 393 пикселях стоила больше, чем
-      // давала: она разгоняла колонку и зажимала описание в три строки.
-      '<div class="rp">'+rub(c)+'<small>ФОТ '+fmt(r.pay)+'</small></div>';
+      (S.hired[r.id] ? '<span class="gcnt">'+S.hired[r.id]+'</span>' : '')+
+      '<span class="gico"><svg viewBox="0 0 24 24">'+
+        (ROLE_ART()[r.dept]||DEPT_ART.eng)+'</svg></span>'+
+      '<span class="cname">'+r.name+'</span>'+
+      (net > 0
+        ? '<span class="gnet up">'+tagIcon("up")+'+'+fmt(net)+' ₽/мес</span>'
+        : '<span class="gnet side">'+(r.gain || "меняет условия")+'</span>')+
+      '<span class="gsub">'+tagIcon("pay")+'−'+fmt(r.pay)+' ₽/мес</span>'+
+      '<span class="gprice">'+tagIcon("cost")+rub(c)+'</span>';
     if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sfx("hire"); sig.hire=sig.staff=null; paint(); };
-    box.appendChild(d);
+    grid.appendChild(d);
   });
   if(next){
     const d = document.createElement("div");
-    d.className = "row lk";
-    d.innerHTML = '<div class="rl"><div class="rn2">'+LOCK+next.name+'</div>'+
-      '<div class="rd">'+next.desc+'</div>'+
-      '<div class="need">Откроется, когда компания заработает '+
-      rub(Math.round(next.pay*1.25/1000)*1000)+'</div></div>';
-    box.appendChild(d);
+    d.className = "gcard lk";
+    d.innerHTML =
+      '<span class="gico '+DEPT_HUE[next.dept]+'"><svg viewBox="0 0 24 24">'+
+        (ROLE_ART()[next.dept]||DEPT_ART.eng)+'</svg></span>'+
+      '<span class="cname">'+LOCK+next.name+'</span>'+
+      '<span class="gsub">Откроется при обороте '+
+        rub(Math.round(next.pay*1.25/1000)*1000)+'</span>';
+    grid.appendChild(d);
   }
+  box.appendChild(grid);
   if(!open.length && !next)
     box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Нанимать больше некого.</div></div></div>';
 }
@@ -3663,7 +4387,9 @@ function paintStaff(){
       d.innerHTML =
         '<div class="tmh"><div class="tier t'+r.tier+'" style="height:15px"></div>'+
         '<b>'+r.name+'</b><span class="cnt">'+list.length+'</span>'+
-        '<span class="money"><i>+'+fmt(out)+'</i> · <s>−'+fmt(pay)+'</s></span></div>'+
+        '<span class="money"><i>+'+fmt(out)+'</i> · <s>−'+fmt(pay)+'</s>'+
+          ' · <b class="'+(out-pay>=0?"net":"net w")+'">'+(out-pay>=0?"+":"−")+
+          fmt(Math.abs(out-pay))+'</b></span></div>'+
         '<div class="chips">'+
           shown.map(p=>'<span class="chip">'+p.name+'</span>').join("")+
           (list.length>shown.length
@@ -3884,6 +4610,19 @@ function paintUpsBadge(){
     ? (n===1 ? "Одно можно купить прямо сейчас" : "Можно купить прямо сейчас: "+n)
     : "Инструменты, созвоны, здоровье";
 }
+/* Значок группы улучшений. Ветка узнаётся до чтения: инструмент,
+   календарь, сердце. Ключи — те же названия групп, что в данных. */
+const UPS_ART = {
+  "Задачи":'<path d="M4 7h16v12H4z"/><path d="M8 11h8M8 15h5"/>',
+  "Созвоны":'<rect x="3" y="6" width="12" height="12" rx="2.5"/><path d="M15 12l6-4v8z"/>',
+  "Здоровье":'<path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/>',
+  "Люди":'<rect x="4" y="6" width="16" height="14" rx="2.5"/><circle cx="12" cy="12" r="2"/><path d="M8.6 17.2a3.6 3.6 0 0 1 6.8 0"/>', "Процессы":'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+  "Компания":'<path d="M4 20V8l6-3v15M10 20h10V12l-6-2.5"/><path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01"/>'
+};
+const upsArt = g => UPS_ART[g] || '<circle cx="12" cy="12" r="8"/>';
+const UPS_HUE = {"Задачи":"c2", "Созвоны":"c3", "Здоровье":"c1",
+  "Процессы":"c4", "Люди":"c3", "Компания":"c4"};
+const upsHue = g => UPS_HUE[g] || "c2";
 function paintUpsTree(){
   $("upsCash").textContent = "(" + rub(S.cash) + ")";
   const box = $("upsTree"); box.innerHTML = "";
@@ -3894,40 +4633,60 @@ function paintUpsTree(){
   });
   loopsOpen().forEach(l => (grps[l.grp] = grps[l.grp] || []).push(l));
 
-  Object.keys(grps).forEach(g => {
-    // В ветке показываем купленное, доступное и одну следующую закрытую.
-    const list = grps[g];
-    const shown = [];
-    let lockedShown = false;
+  // Что показываем внутри ветки: купленное, доступное и одну следующую
+  // закрытую. Правило прежнее — поменялась только раскладка.
+  const shownOf = list => {
+    const out = []; let lockedShown = false;
     list.forEach(u => {
       const st = u.loop ? (S.cash>=u.cost ? "can" : "no") : upsState(u);
-      if(st === "lk"){
-        if(lockedShown) return;
-        lockedShown = true;
-      }
-      shown.push({u, st});
+      if(st === "lk"){ if(lockedShown) return; lockedShown = true; }
+      out.push({u, st});
     });
-    if(!shown.length) return;
-    const h = document.createElement("div");
-    h.className = "upsgrp"; h.textContent = g;
-    box.appendChild(h);
-    shown.forEach(({u, st}) => {
-      const d = document.createElement("div");
-      d.className = "ub " + st;
-      const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
-      d.innerHTML =
-        '<div class="un">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(upsGrade(u))+'</div>'+
-        '<div class="ud">'+u.desc+'</div>'+
-        (st==="done" ? '<div class="up" style="color:var(--mut)">куплено</div>'
-         : st==="lk" ? '<div class="need">'+(needs ? "Сначала: "+needs.name.toLowerCase()
-                                                  : "Откроется при обороте "+rub(u.cost))+'</div>'
-         : '<div class="up">'+rub(u.cost)+'</div>');
-      if(st === "can") d.onclick = () => buyUp(u);
-      box.appendChild(d);
-    });
-  });
-  if(!box.children.length)
+    return out;
+  };
+  const names = Object.keys(grps).filter(g => shownOf(grps[g]).length);
+  if(!names.length){
     box.innerHTML = '<div class="ud" style="padding:16px 0">Всё куплено. Работать быстрее уже не выйдет.</div>';
+    return;
+  }
+  // Вкладка помнится между открытиями, но не переживает исчезновение
+  // группы: ветка «Созвоны» кончается, и возвращаться было бы некуда.
+  if(!names.includes(S.upsTab)) S.upsTab = names[0];
+
+  const tabs = document.createElement("div");
+  tabs.className = "gtabs";
+  names.forEach(g => {
+    const can = shownOf(grps[g]).filter(x => x.st === "can").length;
+    const t = document.createElement("button");
+    t.className = "gtab" + (g === S.upsTab ? " on" : "");
+    t.innerHTML = g + (can ? '<i>'+can+'</i>' : '');
+    t.onclick = () => { sfx("tap"); S.upsTab = g; paintUpsTree(); };
+    tabs.appendChild(t);
+  });
+  box.appendChild(tabs);
+
+  const grid = document.createElement("div");
+  grid.className = "grid2";
+  grid.style.padding = "0";
+  shownOf(grps[S.upsTab]).forEach(({u, st}) => {
+    const d = document.createElement("button");
+    // Классы прежние: на них держится правило «купленное ярче некупленного»
+    // и проверка в smoke.mjs. Изменилась раскладка, а не смысл.
+    d.className = "ub gcard " + st;
+    const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
+    d.innerHTML =
+      '<span class="gico '+upsHue(S.upsTab)+'"><svg viewBox="0 0 24 24">'+
+        upsArt(S.upsTab)+'</svg></span>'+
+      '<span class="un cname">'+(st==="lk" ? LOCK : "")+u.name+'</span>'+
+      '<span class="ud gsub">'+u.desc+'</span>'+
+      (st==="done" ? '<span class="up gprice">куплено</span>'
+       : st==="lk" ? '<span class="gsub">'+(needs ? "Сначала: "+needs.name.toLowerCase()
+                                                 : "Откроется при обороте "+rub(u.cost))+'</span>'
+       : '<span class="up gprice">'+tagIcon("cost")+rub(u.cost)+'</span>');
+    if(st === "can") d.onclick = () => buyUp(u);
+    grid.appendChild(d);
+  });
+  box.appendChild(grid);
 }
 function buyUp(u){
   if(S.cash < u.cost) return;
@@ -3990,6 +4749,15 @@ function paintSpark(){
 }
 function share(part, whole){ return whole > 0 ? part/whole : 0; }
 function level(x, ok, warn){ return x <= ok ? "ok" : x <= warn ? "mid" : "bad"; }
+/* Значки отделов: код, наушники, схема подчинения, бейдж, пустой стул.
+   Последний — про твоё отсутствие, и стул тут точнее любого символа. */
+const DEPT_ART = {
+  eng:'<path d="M9 8l-4 4 4 4M15 8l4 4-4 4"/>',
+  ops:'<path d="M4 13a8 8 0 0 1 16 0"/><rect x="3" y="13" width="4" height="6" rx="1.6"/><rect x="17" y="13" width="4" height="6" rx="1.6"/>',
+  lead:'<circle cx="12" cy="5" r="2.4"/><circle cx="5.5" cy="18.5" r="2.4"/><circle cx="18.5" cy="18.5" r="2.4"/><path d="M12 7.4v4.2M5.5 16.1v-2a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v2"/>',
+  hr:'<rect x="4" y="6" width="16" height="14" rx="2.5"/><path d="M9 3.5h6v2.5H9z"/><circle cx="12" cy="12" r="2"/><path d="M8.6 17.2a3.6 3.6 0 0 1 6.8 0"/>',
+  away:'<path d="M7 4v9h10V4M7 13v7M17 13v7M5 13h14"/>'
+};
 function paintCo(){
   paintSpark();
   const rev=revenue(), pay=payroll(), ovh=overhead(), pr=rev-pay-ovh;
@@ -4028,30 +4796,33 @@ function paintCo(){
     d[p.dept]+=v*mA;
   });
   const max = Math.max(1, d.eng, d.ops);
-  const bar = (name,val) =>
-    '<div class="bar"><div class="bt"><span class="bn">'+name+'</span>'+
+  const dico = k => '<span class="dico"><svg viewBox="0 0 24 24">'+DEPT_ART[k]+'</svg></span>';
+  const bar = (k,name,val) =>
+    '<div class="bar'+(val?" live":"")+'">'+dico(k)+'<div><div class="bt"><span class="bn">'+name+'</span>'+
     '<span class="bv">'+(val?rub(val)+"/мес":"нет людей")+'</span></div>'+
-    '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div>';
+    '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div></div>';
   // Отделы поддержки не производят выручку — они меняют её условия.
   const heads = S.staff.filter(p=>p.bonus && p.scope==="all").length;
   const seats = heads*span();
   const cover = S.staff.length ? Math.min(1, seats/S.staff.length) : 0;
-  const eff = (name,val,col,tip) =>
-    '<div class="bar tap" data-tip="'+(tip||"")+'"><div class="bt"><span class="bn">'+name+'</span>'+
+  const eff = (k,name,val,col,tip,mood) =>
+    '<div class="bar tap '+(mood||"")+'" data-tip="'+(tip||"")+'">'+dico(k)+
+    '<div class="bt"><span class="bn">'+name+'</span>'+
     '<span class="bv" style="color:'+col+'">'+val+'</span></div></div>';
   const A = "var(--acc-ink)", W = "var(--wrn-ink)", M = "var(--mut)";
   $("depts").innerHTML =
-    bar("Разработка", d.eng) + bar("Поддержка", d.ops) +
-    eff("Управление", heads
+    bar("eng","Разработка", d.eng) + bar("ops","Поддержка", d.ops) +
+    eff("lead","Управление", heads
       ? "+"+Math.round((mA-1)*100)+"% скорости · "+Math.round(cover*100)+"% штата"
-      : "нет руководителей", heads?A:M, "ускоряет всех исполнителей") +
-    eff("Персонал", S.hired.recruit
+      : "нет руководителей", heads?A:M, "ускоряет всех исполнителей", heads?"live":"") +
+    eff("hr","Персонал", S.hired.recruit
       ? "найм дешевле на "+Math.round((1-S.hireTax*(1-.2))*100)+"%"
-      : "нет рекрутёров", S.hired.recruit?A:M, "рекрутёр удешевляет найм") +
+      : "нет рекрутёров", S.hired.recruit?A:M, "рекрутёр удешевляет найм",
+      S.hired.recruit?"live":"") +
     // Отсутствие — это потеря, а не достижение: знак и охра, даже когда
     // потеря мала. Управление её уменьшает, но не превращает в плюс.
-    eff("Твоё отсутствие", "−"+Math.round(absenceHit()*100)+"% выручки", W,
-      "меньше при сильном управлении");
+    eff("away","Твоё отсутствие", "−"+Math.round(absenceHit()*100)+"% выручки", W,
+      "меньше при сильном управлении", "warn");
 }
 // Что именно поменялось со сменой эпохи. Не «стало интереснее», а список:
 // новые задачи, новые роли, новые требования заказчиков.
@@ -4171,13 +4942,7 @@ function paint(){
   // Полоса времени: 2007 → 2026. Заполняется сама, что бы ты ни делал.
   $("eraBar").style.width = Math.min(100, (S.month/(19*12))*100).toFixed(1)+"%";
 
-  const b = Math.min(100, S.burn);
-  const bar = $("burnBar");
-  bar.style.width = b+"%";
-  bar.className = b>72 ? "hot" : b>40 ? "mid" : "";
-  $("burnVal").textContent = Math.round(b)+"%";
-  $("burnName").textContent = S.sick>0 ? "Больничный" : S.vacLeft>0 ? "Отпуск" : "Выгорание";
-  $("vacPrice").textContent = rub(vacCost());
+  paintRing();
 
   // ритм влияет на скорость волны: в потоке дышится ровнее
   S.beat = 900 + S.flow*420;
@@ -4211,7 +4976,9 @@ function paint(){
   }
   if(S.tab==="career") { paintTracks(); }
   if(S.tab==="work"){
+    paintWindow();
     paintUpsBadge();
+    paintTrain();
     // Смена работы: единственная кнопка, которая двигает личную ставку.
     const ready = jobReady(), wait = jobWait();
     $("jobCard").className = "card" + (ready ? " ready" : "");
@@ -4259,6 +5026,134 @@ function coOpen(){
   return false;
 }
 const LOCK_HINT = {career:"нужны двое в одной роли", co:"нужно открыть ООО"};
+/* ══════════════════════════════════════════════════════════════
+   ОКНО: СЕЗОН И ВЕЩИ ЭПОХИ
+   За стеклом идёт год. Сезон считается от месяца и ни от чего больше:
+   время в этой игре не зависит от игрока, и окно — единственное место,
+   где это видно глазами, а не числом.
+
+   Вещи на подоконнике — пародии: узнаваемая форма и цвет того, чем
+   в эти годы пользовались. Не логотипы: цветок вместо аськи, собака
+   вместо почтового агента, самолётик вместо мессенджера.
+   ══════════════════════════════════════════════════════════════ */
+const SEASONS = [
+  {n:"Зима",  sky:["#BBD7EE","#EAF3FA"], ground:"#F2F6F9", sun:"#F5E6A8"},
+  {n:"Весна", sky:["#9FD3F0","#E8F6E4"], ground:"#B9DE9A", sun:"#FFE066"},
+  {n:"Лето",  sky:["#6FC2EE","#DDF1FB"], ground:"#8CCB5E", sun:"#FFD43B"},
+  {n:"Осень", sky:["#A8C4D8","#F3E6CE"], ground:"#D9AE6A", sun:"#FFC46B"}
+];
+const seasonOf = m => [0,0,1,1,1,2,2,2,3,3,3,0][((m%12)+12)%12];
+
+/* Вещи эпохи. По две на сторону; цвет — половина узнавания. */
+const ERA_THINGS = [
+  // 2007: аська, почтовый агент, дискета, модем
+  [{c:"#5AA02C", d:'<path d="M12 4c1.6 0 2.4 1.6 2 3 1.4-.6 3 .2 3.4 1.8.4 1.5-.6 2.9-2 3.2 1.2 1 1.3 2.8.2 3.9-1 1-2.7 1-3.7 0-.3 1.5-1.8 2.4-3.2 2-1.5-.4-2.3-2-1.8-3.4-1.5.4-3-.5-3.4-2-.4-1.5.5-3 2-3.4C5 7.7 5.8 6.1 7.3 5.7c1.4-.4 2.9.5 3.2 1.9.3-2 .8-3.6 1.5-3.6z"/><circle cx="12" cy="12" r="2.2" fill="#fff"/>'},
+   {c:"#F5A623", d:'<circle cx="12" cy="12" r="8"/><path d="M15 9.5a3.6 3.6 0 1 0 .6 4.2c.7.9 2.4.6 2.4-1.7A6.5 6.5 0 1 0 14 18.2" fill="none" stroke="#fff" stroke-width="1.6"/>'},
+   {c:"#8A8A90", d:'<rect x="4" y="4" width="16" height="16" rx="1.5"/><rect x="8" y="4" width="8" height="6" fill="#fff"/><rect x="7" y="13" width="10" height="7" fill="#fff"/>'},
+   {c:"#4A7FA5", d:'<rect x="3" y="9" width="18" height="8" rx="2"/><circle cx="7" cy="13" r="1.3" fill="#7CE07C"/><circle cx="11" cy="13" r="1.3" fill="#FFD43B"/>'}],
+  // 2011: синяя соцсеть, звонки, оранжевые одноклассники, ноутбук
+  [{c:"#4C75A3", d:'<rect x="3" y="3" width="18" height="18" rx="5"/><path d="M7 10c.6 3 2.6 5 5.4 5H14v-2c1 .6 1.8 1.4 2.3 2H18c-.5-1.4-1.6-2.6-2.7-3 1-.6 1.9-1.8 2.2-3h-1.7c-.5 1.3-1.5 2.3-2.4 2.6V9h-3l1 1.2v2c-1-.5-2-1.6-2.4-3z" fill="#fff"/>'},
+   {c:"#00AFF0", d:'<circle cx="12" cy="12" r="9"/><path d="M9 14.4c.7 1 1.9 1.5 3.2 1.5 1.7 0 2.8-.8 2.8-1.9 0-1.2-1-1.6-3-2-2.2-.5-3.4-1.2-3.4-2.9C8.6 7.6 10 6.6 12 6.6c1.4 0 2.5.4 3.2 1.2" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>'},
+   {c:"#EE8208", d:'<circle cx="12" cy="8" r="3.6"/><path d="M7 14c1.5 1.4 3.2 2 5 2s3.5-.6 5-2M12 16v4M12 20l-3 2M12 20l3 2" fill="none" stroke="#EE8208" stroke-width="2.2" stroke-linecap="round"/>'},
+   {c:"#5C6670", d:'<rect x="4" y="6" width="16" height="10" rx="1.5"/><path d="M2 18h20l-1.5 2h-17z"/>'}],
+  // 2016: мессенджер-самолётик, камера, трекер, кофе
+  [{c:"#2AABEE", d:'<circle cx="12" cy="12" r="9"/><path d="M7 12.4l9-3.6-1.4 8-2.6-2-1.5 1.6-.3-2.6z" fill="#fff"/>'},
+   {c:"#D6336C", d:'<rect x="4" y="4" width="16" height="16" rx="5"/><circle cx="12" cy="12" r="4" fill="none" stroke="#fff" stroke-width="1.8"/><circle cx="16.6" cy="7.4" r="1.1" fill="#fff"/>'},
+   {c:"#0F6CBD", d:'<path d="M12 2l7 7-3.4 3.4L12 8.8 8.4 12.4 5 9z"/><path d="M12 22l-7-7 3.4-3.4L12 15.2l3.6-3.6L19 15z" opacity=".65"/>'},
+   {c:"#8B5E3C", d:'<path d="M5 8h11v6a4 4 0 0 1-4 4H9a4 4 0 0 1-4-4z"/><path d="M16 9.5h2.2a2 2 0 0 1 0 4H16" fill="none" stroke="#8B5E3C" stroke-width="1.8"/>'}],
+  // 2020: видеозвонок, маска, дом, кот
+  [{c:"#2D8CFF", d:'<rect x="3" y="7" width="12" height="10" rx="2.5"/><path d="M15 11l6-3.5v9L15 13z"/>'},
+   {c:"#7FC7D9", d:'<path d="M4 10c3-1.5 13-1.5 16 0 0 5-2.5 7-8 7s-8-2-8-7z"/><path d="M2 9l2 1.4M22 9l-2 1.4" stroke="#7FC7D9" stroke-width="1.8" fill="none"/>'},
+   {c:"#E8813C", d:'<path d="M3 12l9-7 9 7"/><path d="M6 11v9h12v-9" fill="none" stroke="#E8813C" stroke-width="2"/><rect x="10" y="14" width="4" height="6" fill="#E8813C"/>'},
+   {c:"#6E6A66", d:'<path d="M5 20c0-4 3-7 7-7s7 3 7 7z"/><path d="M6 12l-.6-4 3.4 2.2M18 12l.6-4-3.4 2.2"/><circle cx="10" cy="17" r=".9" fill="#fff"/><circle cx="14" cy="17" r=".9" fill="#fff"/>'}],
+  // 2022: корпоративный мессенджер, облако-обход, чемодан, оффер
+  [{c:"#6264A7", d:'<rect x="3" y="5" width="12" height="12" rx="3"/><path d="M6.5 8.5h5M6.5 11.5h5M6.5 14.5h3" stroke="#fff" stroke-width="1.6"/><circle cx="18" cy="9" r="3"/>'},
+   {c:"#3DA0F0", d:'<path d="M7 17a4 4 0 0 1 .6-8 5.5 5.5 0 0 1 10.3 1.6A3.4 3.4 0 0 1 17.5 17z"/><path d="M12 9.5v6M12 15.5l-2.2-2.2M12 15.5l2.2-2.2" stroke="#fff" stroke-width="1.6" fill="none"/>'},
+   {c:"#B0653A", d:'<rect x="3" y="8" width="18" height="11" rx="2.5"/><path d="M9 8V6.5A1.5 1.5 0 0 1 10.5 5h3A1.5 1.5 0 0 1 15 6.5V8" fill="none" stroke="#B0653A" stroke-width="2"/>'},
+   {c:"#D24726", d:'<path d="M12 3l2.5 5.6 6.1.7-4.5 4.1 1.2 6-5.3-3-5.3 3 1.2-6L3.4 9.3l6.1-.7z"/>'}],
+  // 2024: искра ИИ, чат-облако, робот, график вверх
+  [{c:"#8A6BB8", d:'<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M18.5 15l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/>'},
+   {c:"#0F6CBD", d:'<path d="M4 6.5A1.5 1.5 0 0 1 5.5 5h13A1.5 1.5 0 0 1 20 6.5v8a1.5 1.5 0 0 1-1.5 1.5H10l-4.5 3.5V16H5.5A1.5 1.5 0 0 1 4 14.5z"/><path d="M8.5 10.5h7" stroke="#fff" stroke-width="1.8"/>'},
+   {c:"#5C6670", d:'<rect x="5" y="8" width="14" height="10" rx="3"/><circle cx="9.5" cy="13" r="1.6" fill="#fff"/><circle cx="14.5" cy="13" r="1.6" fill="#fff"/><path d="M12 8V4.5M9.5 4.5h5" fill="none" stroke="#5C6670" stroke-width="2"/>'},
+   {c:"#217346", d:'<path d="M4 19l5-6 3.5 3L20 7"/><path d="M15 7h5v5" fill="none" stroke="#217346" stroke-width="2.2"/>'}]
+];
+
+let wndSig = "";
+function paintWindow(){
+  const box = $("wnd"); if(!box) return;
+  const se = seasonOf(S.month), era = Math.max(0, S.era);
+  const sig = se + "|" + era + "|" + year();
+  if(sig === wndSig) return;
+  wndSig = sig;
+  const S1 = SEASONS[se];
+  // Небо, солнце, земля и то, что летит: снег зимой, лепестки весной,
+  // ничего летом (в жару за окном ничего не происходит), листья осенью.
+  const drop = se===0 ? {n:9, c:"#fff", r:1.7}
+             : se===1 ? {n:6, c:"#FFC7DE", r:1.5}
+             : se===3 ? {n:7, c:"#C1622B", r:2}
+             : null;
+  let bits = "";
+  if(drop) for(let i=0;i<drop.n;i++){
+    const x = 6 + (i*137)%128, d = (i%2?"wp2":"wp"), del = -(i*1.7).toFixed(1);
+    bits += '<circle class="'+d+'" cx="'+x+'" cy="0" r="'+drop.r+'" fill="'+drop.c+
+            '" opacity=".85" style="animation-delay:'+del+'s"/>';
+  }
+  $("wndSky").innerHTML =
+    '<defs><linearGradient id="wsky" x1="0" y1="0" x2="0" y2="1">'+
+    '<stop offset="0" stop-color="'+S1.sky[0]+'"/><stop offset="1" stop-color="'+S1.sky[1]+'"/>'+
+    '</linearGradient></defs>'+
+    '<rect width="140" height="62" fill="url(#wsky)"/>'+
+    '<circle class="wsun" cx="108" cy="15" r="8" fill="'+S1.sun+'" opacity=".92"/>'+
+    bits +
+    '<path d="M0 48 Q26 40 52 47 T104 45 T140 50 V62 H0 Z" fill="'+S1.ground+'"/>'+
+    // Дальний город: он растёт вместе с эпохой — к 2024-му за окном
+    // не гаражи, а башни. Ещё одно место, где виден масштаб.
+    '<g fill="rgba(90,100,120,'+(0.18+era*0.05).toFixed(2)+')">'+
+      Array.from({length:4+era}, (_,i) => {
+        const w = 8+((i*7)%7), h = 8+((i*11)%(11+era*3)), x = 3+i*14;
+        return '<rect x="'+x+'" y="'+(48-h)+'" width="'+w+'" height="'+h+'" rx="1.5"/>';
+      }).join("")+
+    '</g>';
+  $("wndSeason").textContent = S1.n;
+  $("wndYear").textContent = year();
+  const things = ERA_THINGS[Math.min(era, ERA_THINGS.length-1)];
+  const cell = t => '<span><svg viewBox="0 0 24 24" fill="'+t.c+'">'+t.d+'</svg></span>';
+  $("wndL").innerHTML = cell(things[0]) + cell(things[1]);
+  $("wndR").innerHTML = cell(things[2]) + cell(things[3]);
+}
+/* Кольцо отпуска. Три состояния одной кнопки: копится выгорание,
+   идёт отпуск, идёт больничный. Больше ничего показывать не нужно —
+   цена и так внутри. */
+function paintRing(){
+  const ring = $("vacRing"), arc = $("vacArc"), lab = $("vacPrice");
+  if(!ring) return;
+  const L = 145;                                   // длина окружности r=23
+  const b = Math.min(100, S.burn) / 100;
+  arc.style.strokeDashoffset = (L * (1 - b)).toFixed(1);
+  // Кольцо и есть шкала выгорания: зелёное, пока всё хорошо, охряное
+  // на середине, красное перед больничным. Цвет — единственное, что
+  // игрок замечает боковым зрением, поэтому шкала живёт в нём.
+  ring.classList.toggle("warm", S.burn > 45 && S.burn <= 75);
+  ring.classList.toggle("hot", S.burn > 75);
+  if(S.sick > 0)
+    lab.innerHTML = Math.ceil(S.sick) + '<small>болеешь</small>';
+  else if(S.vacLeft > 0)
+    lab.innerHTML = Math.ceil(S.vacLeft) + '<small>дней</small>';
+  else {
+    // «521 тыс» одной строкой шире кольца: число внутри, единицы под ним.
+    const t = fmt(vacCost()).split(" ");
+    lab.innerHTML = t[0] + '<small>' + (t[1] ? t[1]+" ₽" : "₽") + '</small>';
+  }
+  // Подсказка молчит, пока всё в порядке: кольцо и так показывает
+  // запас, а строка под кнопками — самая дорогая недвижимость экрана.
+  const hint = $("vacHint");
+  hint.hidden = !(S.burn > 45 || S.sick > 0 || S.vacLeft > 0);
+  hint.innerHTML =
+    S.sick > 0    ? "Организм взял отпуск сам" :
+    S.vacLeft > 0 ? "В отпуске. Выручка встала, выгорание уходит" :
+    S.burn > 75   ? "<b class=\'hotw\'>Пора в отпуск</b> — дальше начнёшь болеть" :
+                    "Выгорание " + Math.round(S.burn) + "%. Кольцо снимет";
+}
 function paintLocks(){
   const open = {work:true, team:true, career:careerOpen(), co:coOpen()};
   document.querySelectorAll("nav button").forEach(b => {
@@ -4822,6 +5717,7 @@ if(restored){
   rollTask();
 }
 applyTheme(S.theme || "auto");
+applySkin(S.skin || "cozy");
 applyCalm(); applyPause();
 setTeamPane(S.teamPane || "hire");
 showTask(); paint(); measure();
@@ -4859,7 +5755,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                paint,rub,fmt,year,mult,doTask,skipTask,checkCombo,comboMul,loadBal,burnMul,
                log,vacCost,agentDrag,absenceHit,careerOpen,coOpen,gateOk,activeBlocker,
                EARLY_CAP,CAP_YEAR,MONTH,BURN_TAP,pace,checkEra,paintSpark,loopMath,
-               ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,
+               ngLabel,paintNg,paintStats,paintSettings,cmpVer,applyPause,applyCalm,applySkin,
                ONB,obOpen,obClose,paintTracks,revealNext,roleRipe,upRipe,REVEAL_GAP,
                CRISES,krOpen,krAnswer,krDue,krLoss,
                restore,serialize,
@@ -4872,7 +5768,7 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
                startQuit,doQuit,canQuit,legacyOf,migrate,countHired,resetProgress,SAVE_V,
-               MG,mgOpen,mgDue,mgPrize,
+               MG,mgOpen,mgDue,mgPrize,mgWait,paintTrain,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};

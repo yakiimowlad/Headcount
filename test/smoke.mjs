@@ -190,8 +190,20 @@ ok("эпоха выбирает игру", await page.evaluate(() => {
   const G = window.GAME, S = G.S;
   S.mgDone = []; S.era = 0; const early = G.mgDue();
   S.mgDone = []; S.era = 5; const late = G.mgDue();
-  S.mgDone = []; S.era = 3; const none = G.mgDue();
-  return early === "dial" && late === "prompt" && none === undefined;
+  S.mgDone = []; S.era = 3; const mid = G.mgDue();
+  return early === "dial" && late === "prompt" && mid === "smeta";
+}));
+ok("тренажёр открывается на полке и играется по своей воле", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.era = 0; S.taskCount = 20; S.mgAt = {}; S.tab = "work"; G.paint();
+  const shelf = document.getElementById("trainCard");
+  if(shelf.hidden) return "полка спрятана";
+  const tile = document.querySelector('.mgtile[data-mg=dial]');
+  if(!tile) return "нет плитки дозвона";
+  tile.click();
+  const open = document.getElementById("mgSheet").classList.contains("on");
+  document.getElementById("mgOk").click();
+  return open || "шит не открылся";
 }));
 ok("время внутри мини-игры стоит", await page.evaluate(async () => {
   const G = window.GAME, S = G.S;
