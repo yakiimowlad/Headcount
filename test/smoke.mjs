@@ -428,14 +428,16 @@ ok("до 2014-го задача не приносит больше ста тыс
   S.flow = 1; G.bumpEcon();
   return G.year() < G.CAP_YEAR && G.clickVal() <= G.EARLY_CAP + 1;
 }), await page.evaluate(() => ({ год: window.GAME.year(), клик: Math.round(window.GAME.clickVal()) })));
-ok("после 2014-го потолка нет", await page.evaluate(() => {
+ok("после 2014-го потолок эпохи выше раннего, но он есть", await page.evaluate(() => {
   const G = window.GAME, S = G.S;
-  // Ставка заведомо выше потолка при любой сложности задачи: проверяем
-  // сам факт снятия ограничения, а не то, что выпало в этот момент.
-  S.click = 5e6;
+  // Ставка заведомо выше любого потолка: проверяем, что после 2014-го
+  // включается потолок ЭПОХИ (выше раннего), а не что он снимается
+  // совсем — снятый потолок и был причиной миллиардного оборота
+  // к 2015-му, когда клик стал расти через переходы (см. JOB_CLICK_CAP).
+  S.click = 5e9;
   S.month = 6 * 12;  const до = G.clickVal();
-  S.month = 8 * 12;  const после = G.clickVal();
-  return до <= G.EARLY_CAP + 1 && после > G.EARLY_CAP;
+  S.era = 2; S.month = 8 * 12;  const после = G.clickVal();
+  return до <= G.EARLY_CAP + 1 && после > G.EARLY_CAP && после <= G.CLICK_CAP[2] + 1;
 }), await page.evaluate(() => ({ год: window.GAME.year(), клик: Math.round(window.GAME.clickVal()) })));
 
 console.log("\nТемп времени");
