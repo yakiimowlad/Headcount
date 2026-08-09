@@ -202,8 +202,9 @@ h1{font-size:20px;font-weight:700;letter-spacing:-.5px;line-height:1.1;
 /* Полоса времени. Единственный элемент, который двигается сам по себе. */
 .era{max-width:520px;margin:8px auto 0;height:2px;border-radius:1px;
   background:var(--hair2);overflow:hidden}
-.era i{display:block;height:100%;width:0;border-radius:1px;
-  background:linear-gradient(90deg,var(--acc),var(--wrn));transition:width 1s linear}
+.era i{display:block;height:100%;width:100%;border-radius:1px;transform:scaleX(0);
+  background:linear-gradient(90deg,var(--acc),var(--wrn));
+  transform-origin:left;transition:transform 1s linear}
 .sub{font-size:12px;color:var(--mut);margin-top:2px;letter-spacing:.3px;
   text-transform:uppercase;font-weight:600}
 /* Тег новой жизни. Стоит рядом с датой, потому что отвечает на тот же
@@ -552,7 +553,10 @@ main{max-width:520px;margin:0 auto;
 .bn{font-size:14px;font-weight:600}
 .bv{font-size:13px;color:var(--mut);font-variant-numeric:tabular-nums}
 .bl2{height:10px;border-radius:5px;background:var(--hair2);overflow:hidden}
-.bl2 i{display:block;height:100%;border-radius:5px;background:var(--acc);width:0;transition:width .7s var(--e)}
+/* Ширина не анимируется: браузер пересчитывал бы раскладку на каждом
+   кадре. Полоса стоит на всю ширину и сжимается трансформацией. */
+.bl2 i{display:block;height:100%;border-radius:5px;background:var(--acc);width:100%;
+  transform-origin:left;transform:scaleX(0);transition:transform .7s var(--e)}
 
 /* ── хроника: закреплена над таб-баром, видна без прокрутки,
       по тапу разворачивается на весь экран ── */
@@ -1076,10 +1080,9 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .gcard.money .gnet.up{color:var(--g1)}
 .gcard.perk .gico{background:rgba(98,100,167,.16)} .gcard.perk .gico svg{stroke:var(--g3)}
 .gcard.perk .gnet.side{color:var(--g3)}
-.gcard.perk{box-shadow:inset 3px 0 0 rgba(98,100,167,.5),0 2px 0 var(--hair2)}
-.gcard.money{box-shadow:inset 3px 0 0 rgba(33,115,70,.4),0 2px 0 var(--hair2)}
-[data-skin=cozy] .gcard.perk{box-shadow:inset 3px 0 0 rgba(98,100,167,.5),0 4px 0 var(--cz-e)}
-[data-skin=cozy] .gcard.money{box-shadow:inset 3px 0 0 rgba(33,115,70,.4),0 4px 0 var(--cz-e)}
+/* Боковой цветной полосы у карточки нет намеренно: вид роли уже сказан
+   значком и цветом текста, третий повтор того же добавлял шум и делал
+   плитку тяжелее соседней. */
 .gsub .ti{opacity:.75}
 /* Подписи чисел на «Компании» со значками — те же, что в карточках. */
 .rn span.wico::before,.rn span.oico::before,.rn span.rico::before{
@@ -1818,7 +1821,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.4.3";
+const VERSION = "1.4.4";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 60 секунд = 3 часа 48 минут, если не делать
@@ -3783,7 +3786,7 @@ function wireResetBtn(){
     // не туда. «Отмена» возвращает первый шаг, а не закрывает настройки.
     $("resetBox").innerHTML =
       '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>'+
-      '<p><b>Стереть компанию, штат и опыт?</b> Это на самом деле всё.<br>'+
+      '<p><b>Стереть компанию, штат и опыт?</b> Это насовсем.<br>'+
       '<button class="act warn" id="resetGo" style="margin-top:10px">Да, сбросить всё</button> '+
       '<button class="act dim" id="resetNo" style="margin-top:10px">Отмена</button></p>';
     $("resetGo").onclick = resetProgress;
@@ -4400,7 +4403,10 @@ function paintStaff(){
     });
   }
   if(!S.staff.length)
-    box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Штат пустой. Ты и есть штат.</div></div></div>';
+    box.innerHTML = '<div class="row tap" id="toHire"><div class="rl">'+
+      '<div class="rn2">Штат пустой. Ты и есть штат</div>'+
+      '<div class="rd">Люди работают, когда вас нет</div></div><div class="rp">Нанять ›</div></div>';
+    const t = $("toHire"); if(t) t.onclick = () => { sfx("tap"); setTeamPane("hire"); };
 }
 const stepReady = st => (st.era||0) <= S.era && S.staff.some(p=>p.role===st.from && !p.perk);
 // В обычном треке ступень открывает предыдущая. В развилке ступени
@@ -4806,7 +4812,7 @@ function paintCo(){
   const bar = (k,name,val) =>
     '<div class="bar'+(val?" live":"")+'">'+dico(k)+'<div><div class="bt"><span class="bn">'+name+'</span>'+
     '<span class="bv">'+(val?rub(val)+"/мес":"нет людей")+'</span></div>'+
-    '<div class="bl2"><i style="width:'+(val/max*100)+'%"></i></div></div></div>';
+    '<div class="bl2"><i style="transform:scaleX('+(val/max).toFixed(3)+')"></i></div></div></div>';
   // Отделы поддержки не производят выручку — они меняют её условия.
   const heads = S.staff.filter(p=>p.bonus && p.scope==="all").length;
   const seats = heads*span();
@@ -4946,7 +4952,7 @@ function paint(){
   hr.textContent = (pr>=0?"+":"−")+rub(Math.abs(pr))+"/мес";
   hr.className = "n" + (pr>=0?"":" w");
   // Полоса времени: 2007 → 2026. Заполняется сама, что бы ты ни делал.
-  $("eraBar").style.width = Math.min(100, (S.month/(19*12))*100).toFixed(1)+"%";
+  $("eraBar").style.transform = "scaleX("+Math.min(1, S.month/(19*12)).toFixed(3)+")";
 
   paintRing();
 
