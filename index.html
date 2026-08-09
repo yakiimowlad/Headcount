@@ -113,7 +113,11 @@
   --acc:#80BA27; --acc-ink:#5D8A19; --acc-soft:rgba(128,186,39,.13);
   --wrn:#ff9f0a; --wrn-ink:#a86400; --wrn-soft:rgba(255,159,10,.14);
   /* грейды: обычный, редкий, очень редкий, эпический, легендарный */
-  --g0:#b9b9be; --g1:#5fa83a; --g2:#4a7fa5; --g3:#8a6bb8; --g4:#c9a227;
+  /* Редкость взята из цветов программ, в которых эти люди и работают:
+     зелёный таблиц, синий почты, фиолетовый корпоративного мессенджера,
+     оранжевый презентаций. Игроку эти четыре цвета знакомы двадцать лет,
+     и объяснять их не нужно — этим они лучше выдуманной шкалы. */
+  --g0:#b0b0b6; --g1:#217346; --g2:#0F6CBD; --g3:#6264A7; --g4:#D24726;
   --sh:0 1px 3px rgba(0,0,0,.04),0 8px 24px rgba(0,0,0,.06);
   --e:cubic-bezier(.32,.72,0,1);
   --flow:0;
@@ -135,7 +139,7 @@
   --hair:rgba(255,255,255,.14); --hair2:rgba(255,255,255,.06);
   --acc:#9ACD46; --acc-ink:#A8DB55; --acc-soft:rgba(154,205,70,.16);
   --wrn:#e0a458; --wrn-ink:#e8b877; --wrn-soft:rgba(224,164,88,.16);
-  --g0:#6b6b70; --g1:#7cc44f; --g2:#6aa3cc; --g3:#a98cd8; --g4:#e0b840;
+  --g0:#6b6b70; --g1:#4FB07A; --g2:#4CA6E8; --g3:#9092D6; --g4:#F0713F;
   --sh:0 1px 3px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.6);
   color-scheme:dark;}}
 :root[data-theme=dark]{
@@ -144,7 +148,7 @@
   --hair:rgba(255,255,255,.14); --hair2:rgba(255,255,255,.06);
   --acc:#9ACD46; --acc-ink:#A8DB55; --acc-soft:rgba(154,205,70,.16);
   --wrn:#e0a458; --wrn-ink:#e8b877; --wrn-soft:rgba(224,164,88,.16);
-  --g0:#6b6b70; --g1:#7cc44f; --g2:#6aa3cc; --g3:#a98cd8; --g4:#e0b840;
+  --g0:#6b6b70; --g1:#4FB07A; --g2:#4CA6E8; --g3:#9092D6; --g4:#F0713F;
   --sh:0 1px 3px rgba(0,0,0,.5),0 8px 28px rgba(0,0,0,.6);
   color-scheme:dark;}
 
@@ -427,13 +431,15 @@ main{max-width:520px;margin:0 auto;
    хотя это одно из главных чисел экрана. */
 .cnt{font-family:ui-monospace,Menlo,monospace;font-size:13px;font-weight:700;
   color:var(--ink);background:var(--hair2);padding:1px 7px;border-radius:8px}
-.gname{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.4px;
-  text-transform:uppercase;padding:2px 7px;border-radius:7px;vertical-align:2px}
-.gname.t1{color:var(--g1);background:rgba(95,168,58,.14)}
-.gname.t2{color:var(--g2);background:rgba(74,127,165,.16)}
-.gname.t3{color:var(--g3);background:rgba(138,107,184,.16)}
-.gname.t4{color:var(--g4);background:rgba(201,162,39,.16)}
-.stars{color:var(--g4);font-size:11px;letter-spacing:1px}
+/* Редкость — точки, а не слово. «ОЧЕНЬ РЕДКИЙ» капслоком занимает
+   полстроки, спорит с названием и требует чтения; четыре точки цвета
+   считываются боковым зрением и не переводятся на язык. Столько точек,
+   какая ступень: одна — редкий, четыре — легендарный. */
+.gname{display:inline-flex;gap:3px;align-items:center;vertical-align:2px;margin-left:6px}
+.gname i{width:7px;height:7px;border-radius:50%;background:var(--g0)}
+.gname.t1 i{background:var(--g1)} .gname.t2 i{background:var(--g2)}
+.gname.t3 i{background:var(--g3)} .gname.t4 i{background:var(--g4)}
+.gname.t4 i{box-shadow:0 0 0 2px rgba(210,71,38,.18)}
 .pill{display:inline-block;margin-top:7px;font-size:11px;font-weight:600;letter-spacing:.3px;
   padding:3px 10px;border-radius:11px;background:var(--acc-soft);color:var(--acc-ink)}
 .pill.w{background:var(--wrn-soft);color:var(--wrn-ink)}
@@ -969,6 +975,13 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   stroke-linecap:round;stroke-linejoin:round}
 .gcard.can .gico{background:var(--acc-soft)} .gcard.can .gico svg{stroke:var(--acc-ink)}
 .gcard.done .gico svg{stroke:var(--acc-ink)}
+/* Цвет значка = смысл отдела или ветки. Разработка синяя, поддержка
+   зелёная, персонал фиолетовый — те же четыре цвета, что у редкости,
+   и другого набора в игре нет. */
+.gcard .gico.c1{background:rgba(33,115,70,.14)} .gcard .gico.c1 svg{stroke:var(--g1)}
+.gcard .gico.c2{background:rgba(15,108,189,.14)} .gcard .gico.c2 svg{stroke:var(--g2)}
+.gcard .gico.c3{background:rgba(98,100,167,.16)} .gcard .gico.c3 svg{stroke:var(--g3)}
+.gcard .gico.c4{background:rgba(210,71,38,.14)} .gcard .gico.c4 svg{stroke:var(--g4)}
 .cname{font-size:14px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
 /* Вклад. Зелёное — деньги в месяц. Синее — меняет условия, а не кассу:
    рекрутёр и юрист не приносят выручки и не должны выглядеть убыточными,
@@ -1032,17 +1045,17 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
    Заменил серую полоску: полоска отвечала только «важное/неважное»,
    значок отвечает «про что». Лента листается глазами, а вчитываться
    приходится в выбранное. */
-.lic{width:22px;height:22px;flex:none;align-self:flex-start;border-radius:8px;
+.lic{width:28px;height:28px;flex:none;align-self:flex-start;border-radius:10px;
   background:var(--hair2);display:grid;place-items:center;margin-top:1px}
-.lic svg{width:13px;height:13px;stroke:var(--mut);fill:none;stroke-width:2;
+.lic svg{width:18px;height:18px;stroke:var(--mut);fill:none;stroke-width:2;
   stroke-linecap:round;stroke-linejoin:round}
 .le.good .lic,.peek.good .lic{background:var(--acc-soft)}
 .le.good .lic svg,.peek.good .lic svg{stroke:var(--acc-ink)}
 .le.bad .lic,.peek.bad .lic{background:var(--wrn-soft)}
 .le.bad .lic svg,.peek.bad .lic svg{stroke:var(--wrn-ink)}
-.le.lore .lic,.peek.lore .lic{background:var(--wrn-soft)}
-.le.lore .lic svg,.peek.lore .lic svg{stroke:var(--wrn-ink)}
-.le.noise .lic{background:transparent} .le.noise .lic svg{stroke:var(--faint)}
+.le.lore .lic,.peek.lore .lic{background:rgba(15,108,189,.14)}
+.le.lore .lic svg,.peek.lore .lic svg{stroke:var(--g2)}
+.le.noise .lic{background:transparent} .le.noise .lic svg{stroke:var(--faint);width:12px;height:12px}
 .peek .lic{align-self:center;margin-top:0}
 /* Термин механики: слово, за которым стоит кнопка, отличается от слова,
    за которым стоит шутка. Цвет тот же акцентный — второго не заводим. */
@@ -3069,52 +3082,114 @@ function buzz(ms){
   try{ navigator.vibrate && navigator.vibrate(ms); }catch(e){}
 }
 
+/* Каждый звук отвечает на вопрос «что сейчас случилось», а не «нажали».
+   Хорошее идёт вверх по мажорному трезвучию, тяжёлое — вниз и телом.
+   Ноты берутся из того же фа мажора, что и музыка: сигнал не спорит
+   с подложкой, а ложится в неё. */
+const NOTE = {F:349.23, A:440, C:523.25, D:587.33, F2:698.46, A2:880};
+// Аккорд по нотам: короткое арпеджио вверх, 45 мс между голосами.
+function arp(list, vol, dur){
+  list.forEach((f,i) => setTimeout(() =>
+    tone("triangle", f, f, dur||.22, (vol||.14)*(1-i*.12)), i*45));
+}
 const SFX = {
-  tap:    () => noise(.03, .10, 2600),
-  hit:    () => { tone("triangle", 660, 880, .09, .16); noise(.02,.06,3200); },
-  miss:   () => { tone("sine", 190, 120, .10, .13); },
-  buy:    () => { tone("triangle", 520, 780, .10, .17); tone("triangle", 780, 1040, .12, .11); },
-  hire:   () => { tone("triangle", 420, 620, .12, .17); },
-  promote:() => { tone("triangle", 520, 700, .13, .17); setTimeout(()=>tone("triangle",700,940,.16,.14),90); },
-  // тяжёлое — телом
-  lose:   () => { thump(.6, 90, 34); buzz(38); },
-  gap:    () => { thump(.55, 70, 30); buzz([26,60,26]); },
-  block:  () => { thump(.6, 100, 42); tone("sine",300,180,.22,.12); buzz(45); },
-  sick:   () => { thump(.5, 60, 26); tone("sine",150,80,.6,.10); buzz([50,80,50]); },
-  era:    () => { tone("sine", 220, 330, .5, .12); setTimeout(()=>tone("sine",330,440,.6,.09),140); },
-  call:   () => { tone("square", 480, 480, .1, .07); setTimeout(()=>tone("square",480,480,.1,.07),160); },
-  good:   () => { tone("triangle", 600, 900, .14, .15); }
+  tap:    () => { noise(.025, .07, 2400); tone("sine", 900, 1100, .04, .05); },
+  hit:    () => { tone("triangle", NOTE.A, NOTE.C, .1, .15); noise(.02,.05,3200); },
+  miss:   () => { tone("sine", 200, 130, .11, .12); },
+  buy:    () => arp([NOTE.F, NOTE.A, NOTE.C], .16, .26),
+  hire:   () => arp([NOTE.C, NOTE.F2], .17, .3),
+  promote:() => arp([NOTE.F, NOTE.A, NOTE.C, NOTE.F2], .16, .34),
+  // Тяжёлое по-прежнему говорит телом, но короче и без гнетущего хвоста:
+  // игра ведёт счёт, а не наказывает.
+  lose:   () => { thump(.5, 90, 40); buzz(34); },
+  gap:    () => { thump(.5, 72, 34); buzz([26,60,26]); },
+  block:  () => { thump(.5, 100, 46); tone("sine",280,190,.2,.1); buzz(42); },
+  sick:   () => { thump(.45, 62, 30); tone("sine",150,90,.5,.09); buzz([50,80,50]); },
+  // Эпоха — единственное место, где звучит целый аккорд: событие того стоит.
+  era:    () => { arp([NOTE.F, NOTE.A, NOTE.C, NOTE.F2], .13, .7);
+                  setTimeout(()=>tone("sine", NOTE.A2, NOTE.A2, .9, .07), 220); },
+  call:   () => { tone("square", 480, 480, .09, .06); setTimeout(()=>tone("square",480,480,.09,.06),160); },
+  good:   () => arp([NOTE.A, NOTE.D], .15, .2)
 };
+
 function sfx(name){
   if(!(S.volSfx ?? .7)) return;
   const f = SFX[name]; if(!f) return;
   try{ audio(); applyVolume(); f(); }catch(e){}
 }
 
-/* Фоновая музыка — тоже синтез. Медленный минорный дрон с редкими
-   нотами сверху: не мелодия, а гул опенспейса, под который можно
-   не отвлекаясь работать. Ровно то, чем притворяется вся игра. */
-const SCALE = [220, 261.63, 293.66, 349.23, 392];
-let musTimer = 0;
+/* ФОНОВАЯ МУЗЫКА
+   Была расстроенная пила на 110 Гц — «космический гул»: он давит и не
+   двигается. Стало то, подо что действительно работают: тёплая
+   мажорная подложка с медленным дыханием и редкими нотами сверху.
+
+   Три вещи делают её живой, и все три бесплатны:
+   · четыре аккорда по кругу — движение есть, а мелодии, которая
+     привяжется и надоест, нет;
+   · дыхание — громкость подложки медленно ходит вверх-вниз, поэтому
+     звук не превращается в ровную стену;
+   · эхо — одна линия задержки на всю музыку. Она и есть «глубина»:
+     без неё синтез звучит плоско, с ней — как в комнате.
+   ══════════════════════════════════════════════════════════════ */
+// Фа мажор: I – vi – IV – V. Круг, который никуда не приходит, —
+// ровно то, чем занимается игрок.
+const CHORDS = [
+  [174.61, 220.00, 261.63],   // F
+  [220.00, 261.63, 329.63],   // Am
+  [233.08, 293.66, 349.23],   // B♭
+  [261.63, 329.63, 392.00]    // C
+];
+const LEAD = [523.25, 587.33, 698.46, 783.99, 880.00];   // пентатоника сверху
+let musTimer = 0, musChord = 0;
+function musEcho(){
+  const ac = audio();
+  const dl = ac.createDelay(1.0), fb = ac.createGain(), wet = ac.createGain();
+  dl.delayTime.value = .38; fb.gain.value = .3; wet.gain.value = .3;
+  dl.connect(fb); fb.connect(dl); dl.connect(wet); wet.connect(musBus);
+  return dl;
+}
 function startMusic(){
   const ac = audio(); if(!ac || musicOn) return;
   musicOn = true;
-  // дрон: две расстроенные пилы через фильтр
-  [110, 110.4].forEach(f => {
+  const echo = musEcho();
+  // Подложка: три голоса аккорда, мягкий фильтр, общее дыхание.
+  const breath = ac.createGain(); breath.gain.value = .5;
+  breath.connect(musBus); breath.connect(echo);
+  const lfo = ac.createOscillator(), lfoG = ac.createGain();
+  lfo.frequency.value = .06; lfoG.gain.value = .22;
+  lfo.connect(lfoG); lfoG.connect(breath.gain); lfo.start();
+  const voices = CHORDS[0].map(f => {
     const o = ac.createOscillator(), g = ac.createGain(), lp = ac.createBiquadFilter();
-    o.type = "sawtooth"; o.frequency.value = f;
-    lp.type = "lowpass"; lp.frequency.value = 380;
-    g.gain.value = .05;
-    o.connect(lp); lp.connect(g); g.connect(musBus); o.start();
+    o.type = "triangle"; o.frequency.value = f;
+    lp.type = "lowpass"; lp.frequency.value = 1400;
+    g.gain.value = .045;
+    o.connect(lp); lp.connect(g); g.connect(breath); o.start();
+    return o;
   });
-  // редкие ноты: раз в 6–14 секунд, чтобы не превратиться в мелодию
+  // Смена аккорда: голоса переезжают плавно, за полторы секунды.
+  const turn = () => {
+    if(!musicOn) return;
+    musChord = (musChord + 1) % CHORDS.length;
+    const c = CHORDS[musChord];
+    voices.forEach((o,i) =>
+      o.frequency.exponentialRampToValueAtTime(c[i], ac.currentTime + 1.5));
+    musTimer = setTimeout(turn, 7000);
+  };
+  musTimer = setTimeout(turn, 7000);
+  // Ноты сверху: не мелодия, а капли поверх подложки.
   const ping = () => {
     if(!musicOn) return;
-    if((S.volMus ?? .35) > 0 && !S.ended)
-      tone("sine", pick(SCALE)*2, pick(SCALE)*2, 2.2, .05, musBus);
-    musTimer = setTimeout(ping, 6000 + Math.random()*8000);
+    if((S.volMus ?? .35) > 0 && !S.ended){
+      const f = pick(LEAD);
+      tone("sine", f, f, 1.6, .035, musBus);
+      // Вторая нота через терцию — от неё звук становится мажорным
+      // на слух, а не «просто высоким».
+      if(Math.random() < .5)
+        setTimeout(() => musicOn && tone("sine", f*1.5, f*1.5, 1.3, .022, musBus), 320);
+    }
+    setTimeout(ping, 4500 + Math.random()*5000);
   };
-  musTimer = setTimeout(ping, 3000);
+  setTimeout(ping, 2500);
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -4032,8 +4107,8 @@ function upsGrade(o){
 }
 function gradeTag(t){
   if(!t) return "";
-  return ' <span class="gname t'+t+'">'+GRADE[t]+
-    (t===4 ? ' <span class="stars">★★★</span>' : '')+'</span>';
+  return '<span class="gname t'+t+'" title="'+GRADE[t]+'" aria-label="'+GRADE[t]+'">'+
+    '<i></i>'.repeat(t)+'</span>';
 }
 // Профессия появляется, когда появляется нужда. Дизайнера и аналитика
 // нельзя нанять до того, как проект в них упрётся: иначе игрок наймёт их
@@ -4059,6 +4134,7 @@ const roleLocked = r => !roleRipe(r) || !(S.seen||[]).includes(r.id);
    Поэтому вклад показывается двумя разными цветами, а не одним со
    знаком минус: зелёное — деньги, синее — условия. */
 const roleNet = r => (r.out||0) - (r.pay||0);
+const DEPT_HUE = {eng:"c2", ops:"c1", people:"c3"};
 // Те же значки отделов, что на «Компании»: разработка, поддержка, персонал.
 // Ссылкой, а не копией — иначе рано или поздно разъедутся.
 const ROLE_ART = () => ({eng:DEPT_ART.eng, ops:DEPT_ART.ops, people:DEPT_ART.hr});
@@ -4082,7 +4158,8 @@ function paintHire(){
     d.className = "gcard " + (ok ? "can" : "no");
     d.innerHTML =
       (S.hired[r.id] ? '<span class="gcnt">'+S.hired[r.id]+'</span>' : '')+
-      '<span class="gico"><svg viewBox="0 0 24 24">'+(ROLE_ART()[r.dept]||DEPT_ART.eng)+'</svg></span>'+
+      '<span class="gico '+DEPT_HUE[r.dept]+'"><svg viewBox="0 0 24 24">'+
+        (ROLE_ART()[r.dept]||DEPT_ART.eng)+'</svg></span>'+
       '<span class="cname">'+r.name+gradeTag(r.tier)+'</span>'+
       (net > 0
         ? '<span class="gnet up">+'+fmt(net)+' ₽/мес</span>'
@@ -4096,7 +4173,8 @@ function paintHire(){
     const d = document.createElement("div");
     d.className = "gcard lk";
     d.innerHTML =
-      '<span class="gico"><svg viewBox="0 0 24 24">'+(ROLE_ART()[next.dept]||DEPT_ART.eng)+'</svg></span>'+
+      '<span class="gico '+DEPT_HUE[next.dept]+'"><svg viewBox="0 0 24 24">'+
+        (ROLE_ART()[next.dept]||DEPT_ART.eng)+'</svg></span>'+
       '<span class="cname">'+LOCK+next.name+'</span>'+
       '<span class="gsub">Откроется при обороте '+
         rub(Math.round(next.pay*1.25/1000)*1000)+'</span>';
@@ -4404,6 +4482,9 @@ const UPS_ART = {
   "Компания":'<path d="M4 20V8l6-3v15M10 20h10V12l-6-2.5"/><path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01"/>'
 };
 const upsArt = g => UPS_ART[g] || '<circle cx="12" cy="12" r="8"/>';
+const UPS_HUE = {"Задачи":"c2", "Созвоны":"c3", "Здоровье":"c1",
+  "Процессы":"c4", "Люди":"c3", "Компания":"c4"};
+const upsHue = g => UPS_HUE[g] || "c2";
 function paintUpsTree(){
   $("upsCash").textContent = "(" + rub(S.cash) + ")";
   const box = $("upsTree"); box.innerHTML = "";
@@ -4456,7 +4537,8 @@ function paintUpsTree(){
     d.className = "ub gcard " + st;
     const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
     d.innerHTML =
-      '<span class="gico"><svg viewBox="0 0 24 24">'+upsArt(S.upsTab)+'</svg></span>'+
+      '<span class="gico '+upsHue(S.upsTab)+'"><svg viewBox="0 0 24 24">'+
+        upsArt(S.upsTab)+'</svg></span>'+
       '<span class="un cname">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(upsGrade(u))+'</span>'+
       '<span class="ud gsub">'+u.desc+'</span>'+
       (st==="done" ? '<span class="up gprice">куплено</span>'
