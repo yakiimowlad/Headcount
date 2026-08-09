@@ -946,6 +946,88 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .finstep i{width:22px;height:3px;border-radius:2px;background:var(--hair);transition:background .3s}
 .finstep i.on{background:var(--acc)}
 .fin p{margin-bottom:20px}
+/* ══════════════════════════════════════════════════════════════════
+   КАРТОЧКИ: НАЙМ, УЛУЧШЕНИЯ, КОЛЬЦО ОТПУСКА
+   Сетка по две вместо списка строк. Строка отвечает на вопрос «что это»,
+   карточка — на вопрос «брать или нет»: в ней помещается вклад, цена и
+   значок, и всё это видно, не читая описания. Список из двадцати строк
+   пролистывают, сетку из двадцати карточек — рассматривают.
+   ══════════════════════════════════════════════════════════════════ */
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:12px}
+.gcard{position:relative;display:grid;gap:6px;padding:13px 12px 12px;text-align:left;
+  background:var(--sf);border:.5px solid var(--hair);border-radius:18px;
+  box-shadow:0 2px 0 var(--hair2);
+  transition:transform .1s var(--e),box-shadow .1s var(--e),opacity .3s}
+.gcard:active{transform:translateY(2px);box-shadow:0 0 0 var(--hair2)}
+.gcard.no,.gcard.lk{opacity:.5;box-shadow:none}
+.gcard.no:active,.gcard.lk:active{transform:none}
+.gcard.done{background:var(--acc-soft);border-color:transparent;box-shadow:none}
+/* Значок роли или группы. Цвет — грейд: он и так язык всей игры. */
+.gico{width:34px;height:34px;border-radius:12px;display:grid;place-items:center;
+  background:var(--hair2)}
+.gico svg{width:20px;height:20px;stroke:var(--mut);fill:none;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round}
+.gcard.can .gico{background:var(--acc-soft)} .gcard.can .gico svg{stroke:var(--acc-ink)}
+.gcard.done .gico svg{stroke:var(--acc-ink)}
+.cname{font-size:14px;font-weight:700;letter-spacing:-.3px;line-height:1.2}
+/* Вклад. Зелёное — деньги в месяц. Синее — меняет условия, а не кассу:
+   рекрутёр и юрист не приносят выручки и не должны выглядеть убыточными,
+   потому что покупают их не за неё. */
+.gnet{font-size:12.5px;font-weight:700;line-height:1.25;font-variant-numeric:tabular-nums}
+.gnet.up{color:var(--acc-ink)} .gnet.side{color:var(--blue)}
+.gnet.down{color:var(--wrn-ink)}
+.gsub{font-size:11.5px;color:var(--mut);line-height:1.3}
+.gprice{margin-top:2px;font-size:14px;font-weight:700;letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;color:var(--ink)}
+.gcard.no .gprice{color:var(--mut)}
+.gcard.done .gprice{color:var(--acc-ink)}
+.gcnt{position:absolute;top:10px;right:10px;min-width:20px;height:20px;padding:0 6px;
+  border-radius:10px;background:var(--hair2);color:var(--ink2);
+  font-size:11px;font-weight:700;line-height:20px;text-align:center;
+  font-variant-numeric:tabular-nums}
+/* Вкладки групп внутри модалки. Прокручиваются вбок: групп бывает шесть,
+   и переносить их в две строки значит съесть треть экрана. */
+.gtabs{display:flex;gap:7px;overflow-x:auto;padding:4px 2px 10px;
+  scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.gtabs::-webkit-scrollbar{display:none}
+.gtab{flex:none;padding:8px 14px;border-radius:14px;background:var(--hair2);
+  font-size:13px;font-weight:600;color:var(--ink2);white-space:nowrap;
+  transition:transform .1s var(--e)}
+.gtab:active{transform:scale(.96)}
+.gtab.on{background:var(--acc);color:#fff}
+:root[data-theme=dark] .gtab.on,:root:not([data-theme=light]) .gtab.on{color:#10210a}
+/* Ветка-лесенка осталась в разметке ради своих классов, но в сетке
+   линия и кружок не нужны: соседство карточек само показывает ветку. */
+.ub.gcard{padding:13px 12px 12px}
+.ub.gcard::before,.ub.gcard::after{display:none}
+.ub.gcard.lk{opacity:.5}
+.gtab i{font-style:normal;opacity:.65;margin-left:5px;font-variant-numeric:tabular-nums}
+
+/* ── Кольцо отпуска ──
+   Кнопка-виджет вместо строки с ценой. Кольцо — это выгорание: оно
+   заполняется, пока ты работаешь, и опустошается в отпуске. Полоса под
+   кнопкой отвечает на тот же вопрос, но её читают как прогресс, то есть
+   как «надо заполнить». Кольцо вокруг кнопки читается как запас. */
+.ring{position:relative;width:56px;height:56px;flex:none;display:grid;place-items:center}
+.ring svg{position:absolute;inset:0;width:56px;height:56px;transform:rotate(-90deg)}
+.ring circle{fill:none;stroke-width:4.5;stroke-linecap:round}
+/* Строка отпуска не должна расти от кольца: кнопка улучшений обязана
+   остаться на первом экране — это проверяет smoke.mjs. */
+#vac{padding-top:7px;padding-bottom:7px}
+.ring .rbg{stroke:var(--hair2)}
+.ring .rfg{stroke:var(--acc);transition:stroke-dashoffset .6s var(--e),stroke .6s}
+.ring.warm .rfg{stroke:var(--wrn)}
+.ring b{position:relative;font-size:14px;font-weight:700;letter-spacing:-.3px;
+  font-variant-numeric:tabular-nums;text-align:center;line-height:1.05}
+.ring small{display:block;font-size:8.5px;margin-top:1px;font-weight:600;color:var(--mut);
+  text-transform:uppercase;letter-spacing:.3px}
+.row.tap:active .ring{transform:scale(.94)}
+.ring{transition:transform .12s var(--e)}
+
+/* Чистыми по команде: «+520 · −300» без итога заставляет считать в уме. */
+.tmh .money b.net{font-weight:700;color:var(--acc-ink)}
+.tmh .money b.net.w{color:var(--wrn-ink)}
+
 /* ── Значок события в хронике ──
    Заменил серую полоску: полоска отвечала только «важное/неважное»,
    значок отвечает «про что». Лента листается глазами, а вчитываться
@@ -1102,6 +1184,46 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 [data-skin=cozy] nav button.on{background:var(--acc-soft);border-radius:16px}
 
 /* Прочие мелочи, где строгость мешает уюту. */
+/* ── Уютный скин, часть вторая: вложенность ──
+   Первый заход поменял цвет и тени, но язык остался прежним — список
+   строк с разделителями. Коузи-интерфейс устроен иначе: экран это
+   лоток, в лотке лежат предметы, у каждого свой край. Разделительных
+   линий в нём нет вообще — расстояние между предметами и есть граница.
+   Ниже именно это: строки становятся плитками, карточка — лотком,
+   заголовок раздела — ярлыком на лотке. */
+[data-skin=cozy] .card{padding:6px;box-shadow:0 4px 0 var(--cz-e),0 10px 22px rgba(120,96,54,.1)}
+[data-skin=cozy] .card>.row,[data-skin=cozy] .card>.team,[data-skin=cozy] .card>.gauge,
+[data-skin=cozy] .card>.bar{background:var(--cz);border-radius:16px;border:0;margin:4px;
+  padding:13px 15px}
+[data-skin=cozy] .card>.row+.row,[data-skin=cozy] .card>.bar+.bar{margin-top:6px}
+[data-skin=cozy] .card>.task{background:transparent;padding:12px 12px 6px}
+[data-skin=cozy] .row.tap:active{background:var(--cz-e)}
+/* Заголовок раздела — ярлык, а не набранная капслоком строка. */
+[data-skin=cozy] .k,[data-skin=cozy] .tgrp,[data-skin=cozy] .upsgrp{
+  display:inline-block;background:var(--cz);color:var(--ink2);
+  padding:6px 13px;border-radius:12px;letter-spacing:.3px;
+  box-shadow:0 2px 0 var(--cz-e);margin-bottom:10px}
+/* Карточка внутри лотка: чуть крупнее радиус и своя высота. */
+[data-skin=cozy] .gcard{border-radius:20px;border:0;box-shadow:0 4px 0 var(--cz-e)}
+[data-skin=cozy] .gcard:active{transform:translateY(4px);box-shadow:0 0 0 var(--cz-e)}
+[data-skin=cozy] .gcard.done{background:var(--acc-soft);box-shadow:0 4px 0 rgba(124,192,60,.35)}
+[data-skin=cozy] .gico{width:38px;height:38px;border-radius:14px}
+[data-skin=cozy] .gtab{border-radius:16px;padding:10px 16px;box-shadow:0 3px 0 var(--cz-e);
+  background:var(--cz)}
+[data-skin=cozy] .gtab.on{box-shadow:0 3px 0 var(--acc-e)}
+/* Хроника: строки тоже предметы. Разделители убраны — их роль играет
+   расстояние, как и везде в скине. */
+[data-skin=cozy] .le{border-bottom:0;margin:5px 8px;padding:10px 12px;
+  background:var(--cz);border-radius:16px}
+[data-skin=cozy] .le.noise{background:transparent}
+[data-skin=cozy] .le.lore{background:var(--wrn-soft);border-radius:18px}
+[data-skin=cozy] .lic{border-radius:11px;width:26px;height:26px;background:var(--sf)}
+[data-skin=cozy] .peek{padding:12px 14px}
+/* Таб-бар: активная вкладка приподнята, как ярлык на лотке. */
+[data-skin=cozy] nav button.on{box-shadow:0 3px 0 var(--cz-e)}
+[data-skin=cozy] .ring .rbg{stroke:var(--cz-e)}
+[data-skin=cozy] .gauge .bl,[data-skin=cozy] .bl{border-radius:8px}
+
 [data-skin=cozy] .chip{border-radius:12px;font-weight:600}
 [data-skin=cozy] .bl2{height:12px;border-radius:6px}
 [data-skin=cozy] .bl2 i{border-radius:6px}
@@ -1167,10 +1289,20 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
           <div class="bl"><i id="burnBar"></i></div>
         </div>
       </div>
+      <!-- Кольцо — это выгорание: заполняется, пока работаешь, пустеет
+           в отпуске. Полосу под кнопкой читают как прогресс, то есть как
+           «надо заполнить»; кольцо вокруг цены читается как запас. -->
       <div class="row tap" id="vac">
         <div class="rl"><div class="rn2">Взять отпуск</div>
-          <div class="rd">Две недели. Выручка встанет, выгорание уйдёт</div></div>
-        <div class="rp" id="vacPrice">—</div>
+          <div class="rd" id="vacHint">Две недели. Выручка встанет, выгорание уйдёт</div></div>
+        <div class="ring" id="vacRing">
+          <svg viewBox="0 0 56 56" aria-hidden="true">
+            <circle class="rbg" cx="28" cy="28" r="23"/>
+            <circle class="rfg" cx="28" cy="28" r="23" id="vacArc"
+                    stroke-dasharray="145" stroke-dashoffset="145"/>
+          </svg>
+          <b class="n" id="vacPrice">—<small>отпуск</small></b>
+        </div>
       </div>
     </div>
 
@@ -1879,7 +2011,7 @@ const C = {
     {id:"senior", dept:"eng",   tier:2, era:2, name:"Сеньор",            pay:400000, out:720000,
      desc:"Спрашивает «зачем» до того, как начнёт"},
     {id:"qa",     dept:"eng",   tier:1, era:1, name:"Тестировщик",       pay:200000, out:110000,
-     desc:"+15% разработке, дальше отдача падает"},
+     gain:"Ошибок на проде меньше", desc:"+15% разработке, дальше отдача падает"},
     {id:"support",dept:"ops",   tier:0, era:1, name:"Оператор поддержки",pay:65000,  out:140000,
      desc:"Первая линия. Слышит о продукте больше всех"},
     // Две роли, без которых блокеры были бы требованием невозможного.
@@ -1890,7 +2022,7 @@ const C = {
     {id:"design", dept:"eng",   tier:1, era:1, viaBlock:"b2", name:"Дизайнер",          pay:180000, out:280000,
      desc:"Рисует то, на что потом смотрят все и молча"},
     {id:"recruit",dept:"people",tier:1, era:1, name:"Рекрутер",          pay:130000, out:0,
-     desc:"Найм дешевле на 20%. Сам не приносит ничего"},
+     gain:"Найм дешевле", desc:"Найм дешевле на 20%. Сам не приносит ничего"},
     // Название по профессии, а не по ощущению: в списке вакансий рядом
     // с «мидлом» и «тестировщиком» «тот самый коллега» читался как шутка
     // не на своём месте. Шутка теперь в описании, где ей и место.
@@ -1901,7 +2033,7 @@ const C = {
     {id:"agent",  dept:"eng",   tier:3, era:4, name:"ИИ-агент",        pay:90000,  out:240000,
      desc:"Работает круглосуточно. Токены дорожают, а смотреть за ним всё равно человеку"},
     {id:"assist", dept:"ops",   tier:1, era:4, name:"Ассистент",       pay:90000,  out:60000,
-     desc:"Ходит на созвоны вместо тебя. Созвоны реже и короче"},
+     gain:"Созвоны реже и короче", desc:"Ходит на созвоны вместо тебя. Созвоны реже и короче"},
     // Человек, который в 2007-м держал на себе сервер, роутер и принтер.
     // Он был в каждой конторе, и его никто не считал айтишником.
     {id:"admin",  dept:"ops",   tier:0, name:"Системный администратор", pay:90000, out:150000,
@@ -1909,9 +2041,9 @@ const C = {
     {id:"sales",  dept:"ops",   tier:1, era:1, viaBlock:"b14", name:"Менеджер по продажам", pay:120000, out:340000,
      desc:"Приносит заказы. И сроки, о которых вас не спросили"},
     {id:"lawyer", dept:"ops",   tier:2, era:2, viaCrisis:"fine", name:"Юрист", pay:250000, out:120000,
-     desc:"Читает договоры до подписания. Штрафы и неустойки вдвое меньше"},
+     gain:"Штрафы вдвое меньше", desc:"Читает договоры до подписания. Штрафы и неустойки вдвое меньше"},
     {id:"pr",     dept:"ops",   tier:2, era:3, viaCrisis:"rep", name:"PR-менеджер", pay:210000, out:140000,
-     desc:"Отвечает на отзывы раньше, чем их прочитают. Удар по репутации вдвое короче"},
+     gain:"Отзывы гаснут быстрее", desc:"Отвечает на отзывы раньше, чем их прочитают. Удар по репутации вдвое короче"},
     {id:"content",dept:"ops",   tier:0, era:1, name:"Контент-менеджер",  pay:95000,  out:160000,
      desc:"Пишет тексты. Заказчик перепишет их сам, но позже"},
     {id:"writer", dept:"eng",   tier:1, era:2, viaBlock:"b17", name:"Технический писатель", pay:170000, out:210000,
@@ -3921,6 +4053,15 @@ const roleLocked = r => !roleRipe(r) || !(S.seen||[]).includes(r.id);
 // Открытые роли и ровно одна следующая под замком. Вываливать весь список
 // сразу — значит показать двадцать лет вперёд человеку, у которого пока
 // нет денег даже на стажёра.
+/* Кто сколько приносит. Выработка минус зарплата — это и есть ответ
+   на вопрос «зачем он». У пятерых он отрицательный, и это не ошибка
+   баланса: рекрутёра, юриста и тестировщика берут не за выручку.
+   Поэтому вклад показывается двумя разными цветами, а не одним со
+   знаком минус: зелёное — деньги, синее — условия. */
+const roleNet = r => (r.out||0) - (r.pay||0);
+// Те же значки отделов, что на «Компании»: разработка, поддержка, персонал.
+// Ссылкой, а не копией — иначе рано или поздно разъедутся.
+const ROLE_ART = () => ({eng:DEPT_ART.eng, ops:DEPT_ART.ops, people:DEPT_ART.hr});
 function paintHire(){
   const all  = C.roles.filter(r => (r.era||0) <= S.era);
   const open = all.filter(r => !roleLocked(r));
@@ -3933,34 +4074,35 @@ function paintHire(){
   }).join("|")+"|"+(next?next.id:"-");
   if(!changed("hire", key)) return;
   const box = $("hire"); box.innerHTML = "";
+  const grid = document.createElement("div");
+  grid.className = "grid2";
   open.forEach(r => {
-    const c = hireCost(r);
-    const ok = S.cash >= c;
-    const d = document.createElement("div");
-    d.className = "row " + (ok ? "tap" : "no");
+    const c = hireCost(r), ok = S.cash >= c, net = roleNet(r);
+    const d = document.createElement("button");
+    d.className = "gcard " + (ok ? "can" : "no");
     d.innerHTML =
-      '<div class="tier t'+r.tier+'"></div>'+
-      '<div class="rl"><div class="rn2">'+r.name+
-        (S.hired[r.id] ? ' <span class="cnt">'+S.hired[r.id]+'</span>' : '')+
-        gradeTag(r.tier)+'</div>'+
-      // Зарплата уехала из описания в колонку цены: вместе с шуткой она
-      // разгоняла строку на три ряда, и список переставал читаться.
-      '<div class="rd">'+r.desc+'</div></div>'+
-      // Только ФОТ. Будущая цена найма на 393 пикселях стоила больше, чем
-      // давала: она разгоняла колонку и зажимала описание в три строки.
-      '<div class="rp">'+rub(c)+'<small>ФОТ '+fmt(r.pay)+'</small></div>';
+      (S.hired[r.id] ? '<span class="gcnt">'+S.hired[r.id]+'</span>' : '')+
+      '<span class="gico"><svg viewBox="0 0 24 24">'+(ROLE_ART()[r.dept]||DEPT_ART.eng)+'</svg></span>'+
+      '<span class="cname">'+r.name+gradeTag(r.tier)+'</span>'+
+      (net > 0
+        ? '<span class="gnet up">+'+fmt(net)+' ₽/мес</span>'
+        : '<span class="gnet side">'+(r.gain || "меняет условия")+'</span>')+
+      '<span class="gsub">ФОТ '+fmt(r.pay)+'</span>'+
+      '<span class="gprice">'+rub(c)+'</span>';
     if(ok) d.onclick = () => { S.cash -= c; addStaff(r); sfx("hire"); sig.hire=sig.staff=null; paint(); };
-    box.appendChild(d);
+    grid.appendChild(d);
   });
   if(next){
     const d = document.createElement("div");
-    d.className = "row lk";
-    d.innerHTML = '<div class="rl"><div class="rn2">'+LOCK+next.name+'</div>'+
-      '<div class="rd">'+next.desc+'</div>'+
-      '<div class="need">Откроется, когда компания заработает '+
-      rub(Math.round(next.pay*1.25/1000)*1000)+'</div></div>';
-    box.appendChild(d);
+    d.className = "gcard lk";
+    d.innerHTML =
+      '<span class="gico"><svg viewBox="0 0 24 24">'+(ROLE_ART()[next.dept]||DEPT_ART.eng)+'</svg></span>'+
+      '<span class="cname">'+LOCK+next.name+'</span>'+
+      '<span class="gsub">Откроется при обороте '+
+        rub(Math.round(next.pay*1.25/1000)*1000)+'</span>';
+    grid.appendChild(d);
   }
+  box.appendChild(grid);
   if(!open.length && !next)
     box.innerHTML = '<div class="row"><div class="rl"><div class="rd">Нанимать больше некого.</div></div></div>';
 }
@@ -4029,7 +4171,9 @@ function paintStaff(){
       d.innerHTML =
         '<div class="tmh"><div class="tier t'+r.tier+'" style="height:15px"></div>'+
         '<b>'+r.name+'</b><span class="cnt">'+list.length+'</span>'+
-        '<span class="money"><i>+'+fmt(out)+'</i> · <s>−'+fmt(pay)+'</s></span></div>'+
+        '<span class="money"><i>+'+fmt(out)+'</i> · <s>−'+fmt(pay)+'</s>'+
+          ' · <b class="'+(out-pay>=0?"net":"net w")+'">'+(out-pay>=0?"+":"−")+
+          fmt(Math.abs(out-pay))+'</b></span></div>'+
         '<div class="chips">'+
           shown.map(p=>'<span class="chip">'+p.name+'</span>').join("")+
           (list.length>shown.length
@@ -4250,6 +4394,16 @@ function paintUpsBadge(){
     ? (n===1 ? "Одно можно купить прямо сейчас" : "Можно купить прямо сейчас: "+n)
     : "Инструменты, созвоны, здоровье";
 }
+/* Значок группы улучшений. Ветка узнаётся до чтения: инструмент,
+   календарь, сердце. Ключи — те же названия групп, что в данных. */
+const UPS_ART = {
+  "Задачи":'<path d="M4 7h16v12H4z"/><path d="M8 11h8M8 15h5"/>',
+  "Созвоны":'<rect x="3" y="6" width="12" height="12" rx="2.5"/><path d="M15 12l6-4v8z"/>',
+  "Здоровье":'<path d="M12 20s-7-4.4-7-9a4 4 0 0 1 7-2.6A4 4 0 0 1 19 11c0 4.6-7 9-7 9z"/>',
+  "Люди":'<rect x="4" y="6" width="16" height="14" rx="2.5"/><circle cx="12" cy="12" r="2"/><path d="M8.6 17.2a3.6 3.6 0 0 1 6.8 0"/>', "Процессы":'<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/>',
+  "Компания":'<path d="M4 20V8l6-3v15M10 20h10V12l-6-2.5"/><path d="M14 14h.01M14 17h.01M17 14h.01M17 17h.01"/>'
+};
+const upsArt = g => UPS_ART[g] || '<circle cx="12" cy="12" r="8"/>';
 function paintUpsTree(){
   $("upsCash").textContent = "(" + rub(S.cash) + ")";
   const box = $("upsTree"); box.innerHTML = "";
@@ -4260,40 +4414,59 @@ function paintUpsTree(){
   });
   loopsOpen().forEach(l => (grps[l.grp] = grps[l.grp] || []).push(l));
 
-  Object.keys(grps).forEach(g => {
-    // В ветке показываем купленное, доступное и одну следующую закрытую.
-    const list = grps[g];
-    const shown = [];
-    let lockedShown = false;
+  // Что показываем внутри ветки: купленное, доступное и одну следующую
+  // закрытую. Правило прежнее — поменялась только раскладка.
+  const shownOf = list => {
+    const out = []; let lockedShown = false;
     list.forEach(u => {
       const st = u.loop ? (S.cash>=u.cost ? "can" : "no") : upsState(u);
-      if(st === "lk"){
-        if(lockedShown) return;
-        lockedShown = true;
-      }
-      shown.push({u, st});
+      if(st === "lk"){ if(lockedShown) return; lockedShown = true; }
+      out.push({u, st});
     });
-    if(!shown.length) return;
-    const h = document.createElement("div");
-    h.className = "upsgrp"; h.textContent = g;
-    box.appendChild(h);
-    shown.forEach(({u, st}) => {
-      const d = document.createElement("div");
-      d.className = "ub " + st;
-      const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
-      d.innerHTML =
-        '<div class="un">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(upsGrade(u))+'</div>'+
-        '<div class="ud">'+u.desc+'</div>'+
-        (st==="done" ? '<div class="up" style="color:var(--mut)">куплено</div>'
-         : st==="lk" ? '<div class="need">'+(needs ? "Сначала: "+needs.name.toLowerCase()
-                                                  : "Откроется при обороте "+rub(u.cost))+'</div>'
-         : '<div class="up">'+rub(u.cost)+'</div>');
-      if(st === "can") d.onclick = () => buyUp(u);
-      box.appendChild(d);
-    });
-  });
-  if(!box.children.length)
+    return out;
+  };
+  const names = Object.keys(grps).filter(g => shownOf(grps[g]).length);
+  if(!names.length){
     box.innerHTML = '<div class="ud" style="padding:16px 0">Всё куплено. Работать быстрее уже не выйдет.</div>';
+    return;
+  }
+  // Вкладка помнится между открытиями, но не переживает исчезновение
+  // группы: ветка «Созвоны» кончается, и возвращаться было бы некуда.
+  if(!names.includes(S.upsTab)) S.upsTab = names[0];
+
+  const tabs = document.createElement("div");
+  tabs.className = "gtabs";
+  names.forEach(g => {
+    const can = shownOf(grps[g]).filter(x => x.st === "can").length;
+    const t = document.createElement("button");
+    t.className = "gtab" + (g === S.upsTab ? " on" : "");
+    t.innerHTML = g + (can ? '<i>'+can+'</i>' : '');
+    t.onclick = () => { sfx("tap"); S.upsTab = g; paintUpsTree(); };
+    tabs.appendChild(t);
+  });
+  box.appendChild(tabs);
+
+  const grid = document.createElement("div");
+  grid.className = "grid2";
+  grid.style.padding = "0";
+  shownOf(grps[S.upsTab]).forEach(({u, st}) => {
+    const d = document.createElement("button");
+    // Классы прежние: на них держится правило «купленное ярче некупленного»
+    // и проверка в smoke.mjs. Изменилась раскладка, а не смысл.
+    d.className = "ub gcard " + st;
+    const needs = u.req && !S.bought.has(u.req) ? C.ups.find(x=>x.id===u.req) : null;
+    d.innerHTML =
+      '<span class="gico"><svg viewBox="0 0 24 24">'+upsArt(S.upsTab)+'</svg></span>'+
+      '<span class="un cname">'+(st==="lk" ? LOCK : "")+u.name+gradeTag(upsGrade(u))+'</span>'+
+      '<span class="ud gsub">'+u.desc+'</span>'+
+      (st==="done" ? '<span class="up gprice">куплено</span>'
+       : st==="lk" ? '<span class="gsub">'+(needs ? "Сначала: "+needs.name.toLowerCase()
+                                                 : "Откроется при обороте "+rub(u.cost))+'</span>'
+       : '<span class="up gprice">'+rub(u.cost)+'</span>');
+    if(st === "can") d.onclick = () => buyUp(u);
+    grid.appendChild(d);
+  });
+  box.appendChild(grid);
 }
 function buyUp(u){
   if(S.cash < u.cost) return;
@@ -4555,7 +4728,7 @@ function paint(){
   bar.className = b>72 ? "hot" : b>40 ? "mid" : "";
   $("burnVal").textContent = Math.round(b)+"%";
   $("burnName").textContent = S.sick>0 ? "Больничный" : S.vacLeft>0 ? "Отпуск" : "Выгорание";
-  $("vacPrice").textContent = rub(vacCost());
+  paintRing();
 
   // ритм влияет на скорость волны: в потоке дышится ровнее
   S.beat = 900 + S.flow*420;
@@ -4638,6 +4811,31 @@ function coOpen(){
   return false;
 }
 const LOCK_HINT = {career:"нужны двое в одной роли", co:"нужно открыть ООО"};
+/* Кольцо отпуска. Три состояния одной кнопки: копится выгорание,
+   идёт отпуск, идёт больничный. Больше ничего показывать не нужно —
+   цена и так внутри. */
+function paintRing(){
+  const ring = $("vacRing"), arc = $("vacArc"), lab = $("vacPrice");
+  if(!ring) return;
+  const L = 145;                                   // длина окружности r=23
+  const b = Math.min(100, S.burn) / 100;
+  arc.style.strokeDashoffset = (L * (1 - b)).toFixed(1);
+  ring.classList.toggle("warm", S.burn > 55);
+  if(S.sick > 0)
+    lab.innerHTML = Math.ceil(S.sick) + '<small>болеешь</small>';
+  else if(S.vacLeft > 0)
+    lab.innerHTML = Math.ceil(S.vacLeft) + '<small>дней</small>';
+  else {
+    // «521 тыс» одной строкой шире кольца: число внутри, единицы под ним.
+    const t = fmt(vacCost()).split(" ");
+    lab.innerHTML = t[0] + '<small>' + (t[1] ? t[1]+" ₽" : "₽") + '</small>';
+  }
+  $("vacHint").textContent =
+    S.sick > 0    ? "Организм взял отпуск сам" :
+    S.vacLeft > 0 ? "Выручка встала, выгорание уходит" :
+    S.burn > 55   ? "Пора: дальше начнёшь болеть" :
+                    "Две недели. Выручка встанет, выгорание уйдёт";
+}
 function paintLocks(){
   const open = {work:true, team:true, career:careerOpen(), co:coOpen()};
   document.querySelectorAll("nav button").forEach(b => {
