@@ -65,7 +65,9 @@
     "БЛОКЕРЫ"          в тике: выдача и снятие
     "ООО"              llcOffer, регистрация, экономика до и после
     "МИНИ-ИГРЫ"        mgOpen, mgDue: событие по эпохе
+    "УРОВНИ"           mgLvl, mgRounds: длина и точность — две ручки сложности
     "paintTrain"       полка тренажёра: те же игры, но по своей воле
+    "ОФФЕРЫ"           PERKS, makeOffer: три места работы со своими эффектами
     "promoCost"        повышение стоит денег сразу, не только в ФОТ
     "checkEra"         смена эпохи · "showEraLike" экран объяснения
 
@@ -328,10 +330,10 @@ main{max-width:520px;margin:0 auto;
    задачи: та же охра для риска, тот же зелёный для попадания. */
 .dial{position:relative;height:46px;border-radius:14px;background:var(--sf);
   border:.5px solid var(--hair);overflow:hidden;margin-top:16px}
-.dzone{position:absolute;top:0;bottom:0;left:38%;width:24%;background:var(--acc-soft);
+.dzone{position:absolute;top:0;bottom:0;left:calc(50% - var(--zone,24%)/2);width:var(--zone,24%);background:var(--acc-soft);
   border-left:1.5px solid var(--acc);border-right:1.5px solid var(--acc)}
 .dpin{position:absolute;top:6px;bottom:6px;width:4px;border-radius:2px;background:var(--ink);
-  left:0;animation:sweep 1.15s linear infinite alternate}
+  left:0;animation:sweep var(--sweep,1.15s) linear infinite alternate}
 @keyframes sweep{from{left:2px}to{left:calc(100% - 6px)}}
 .dial.stop .dpin{animation-play-state:paused}
 .mgo{width:100%;text-align:left;padding:14px 16px;border-radius:14px;background:var(--sf);
@@ -1139,6 +1141,29 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 .wp2{animation:drift 13s linear infinite}
 .wsun{animation:sway 11s ease-in-out infinite}
 
+/* ── Офферы ──
+   Карточка во всю ширину: у каждого оффера три-четыре строки эффектов,
+   и в две колонки они превращаются в кашу. Цвет строки говорит вид:
+   зелёная — плюс, охряная — минус, фиолетовая — расклад между отделами. */
+.jrow{display:flex;align-items:center;gap:12px;margin:14px 0 10px}
+.jrow .later{padding:11px 18px}
+.jleft{font-size:13px;font-weight:600;color:var(--mut)}
+.offer{display:block;width:100%;text-align:left;padding:14px 16px;margin-bottom:10px;
+  border-radius:20px;background:var(--sf);border:0;
+  box-shadow:0 4px 0 var(--cz-e,var(--hair2)),var(--sh);
+  transition:transform .1s var(--e),box-shadow .1s var(--e)}
+.offer:active{transform:translateY(4px);box-shadow:0 0 0 var(--cz-e,var(--hair2)),var(--sh)}
+.ohead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:9px}
+.ohead b{font-size:17px;font-weight:700;letter-spacing:-.3px}
+.ohead em{font-style:normal;font-size:19px;font-weight:800;color:var(--acc-ink);
+  font-variant-numeric:tabular-nums}
+.operks{display:grid;gap:5px}
+.perk{font-size:13px;font-weight:600;line-height:1.3;padding-left:16px;position:relative}
+.perk::before{content:"";position:absolute;left:0;top:.45em;width:7px;height:7px;border-radius:50%}
+.perk.good{color:var(--g1)} .perk.good::before{background:var(--g1)}
+.perk.bad{color:var(--wrn-ink)} .perk.bad::before{background:var(--wrn)}
+.perk.rel{color:var(--g3)} .perk.rel::before{background:var(--g3)}
+
 /* ── Значок события в хронике ──
    Заменил серую полоску: полоска отвечала только «важное/неважное»,
    значок отвечает «про что». Лента листается глазами, а вчитываться
@@ -1640,6 +1665,24 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
   </div>
 </div>
 
+<!-- Офферы. Три места работы, у каждого свой множитель и своя цена:
+     чем выше ставка, тем больше минусов рядом с ней. -->
+<div class="scrim" id="jobScrim"></div>
+<div class="sheet tall" id="jobSheet">
+  <div class="sh-in">
+    <div class="grab"></div>
+    <div class="shead"><h2>Офферы</h2>
+      <button class="xbtn" id="jobClose" aria-label="Закрыть">×</button></div>
+    <p>Ставка растёт только при переходе. Чем больше множитель, тем
+       больше того, за что его платят.</p>
+    <div class="jrow">
+      <button class="later" id="jobReroll">Обновить</button>
+      <span class="jleft n" id="jobLeft"></span>
+    </div>
+    <div id="jobList"></div>
+  </div>
+</div>
+
 <!-- Дерево улучшений. Ветки идут лесенкой, как треки карьеры: видно,
      что куплено, что доступно и что за чем открывается. -->
 <div class="scrim" id="upsScrim"></div>
@@ -1821,7 +1864,7 @@ nav button.lockedtab span{font-size:9px;letter-spacing:.2px}
 // сохранение (v0.2), механика ритма (v0.3) и три концовки (v0.5) уже
 // сделаны, тиры и группировка (v0.4) — частично. Начинать с нуля значило
 // бы соврать самим себе.
-const VERSION = "1.4.4";
+const VERSION = "1.4.5";
 
 // Игровой месяц в секундах — теперь это ПОЛ, а не вся правда. Календарь
 // идёт всегда: 228 месяцев × 60 секунд = 3 часа 48 минут, если не делать
@@ -2457,7 +2500,7 @@ const S = {
   meetIn:70, meetLeft:0, era:-1, optIn:90, revIn:150, srvIn:140, gapIn:6, noiseIn:26, said:[],
   rtoSoft:false, rtoIn:60, growIn:55,
   blocker:null, blockersDone:[], blockIn:75, blockStart:0, blockTasks:0, taskCount:0,
-  mgIn:210, mgDone:[], mgAt:{},
+  mgIn:210, mgDone:[], mgAt:{}, mgLvl:{},
   // Оформление: "plain" — дашборд, "cozy" — уютный скин. Настройка, не прогресс.
   // Уютный — основное оформление игры. Строгий дашборд остался
   // в архиве: на нём игра выросла, и выбрасывать его незачем.
@@ -2470,7 +2513,7 @@ const S = {
   seen:[], revealIn:0,
   // Кризисы: что уже случалось и сколько ждать следующего.
   crisesSeen:[], crisisIn:110, repLeft:0,
-  jobs:0, jobAt:undefined,
+  jobs:0, jobAt:undefined, jobPerks:[], jobCo:null, offers:null, rerolls:3,
   deleg:0, delegAcc:0, legacy:1, lifetime:0, runs:0,
   // ритм
   flow:0, lastAct:0, recent:[], comboOn:false, comboSaid:0, beat:900,
@@ -2505,6 +2548,8 @@ function fmt(n){
 }
 const rub = n => fmt(n)+" ₽";
 const year = () => 2007 + Math.floor(S.month/12);
+// Перемешать на месте копию: вопросы тасуются каждый заход.
+const shuffle = a => { for(let i=a.length-1;i>0;i--){ const j=(Math.random()*(i+1))|0; [a[i],a[j]]=[a[j],a[i]]; } return a; };
 const pick = a => a[Math.floor(Math.random()*a.length)];
 
 // Цена, которая приходит после покупки. Плюс написан на карточке, минус
@@ -2775,7 +2820,7 @@ const soft = (n,step,cap) => 1 + cap*(1 - Math.pow(1-step/cap, n));
 // Норма управляемости растёт покупкой «ещё одного слоя управления».
 // Базовые восемь человек на руководителя — из документа.
 const SPAN = 8;
-const span = () => SPAN + (S.spanUp||0);
+const span = () => Math.round((SPAN + (S.spanUp||0)) * jobNum("span"));
 function mult(scope){
   const pool = scope==="all" ? S.staff.length : S.staff.filter(p=>p.dept===scope).length;
   if(!pool) return 1;
@@ -2801,6 +2846,11 @@ function revenueRaw(){
     let v=p.out;
     if(p.dept==="eng") v *= mE*qa*(p.role==="agent" ? 1 : drag);
     if(p.dept==="ops") v*=mO;
+    // Место работы решает, кто здесь приносит деньги: в продуктовой
+    // тянут разработчики, в агентстве продажники, где-то всё держится
+    // на контенте. Множители лежат в S.jobPerks и читаются на лету,
+    // поэтому следующий переход отменяет прошлый сам.
+    v *= jobDept(p.dept) * jobRole(p.role);
     r+=v;
   });
   // Маржу сотрудника трогать нельзя, хотя соблазн был. Выработка 1,7–1,8
@@ -2883,7 +2933,7 @@ const payroll  = () => S.llc ? payrollRaw() : 0;
 // открывший его «по правилам», попадал в кассовый разрыв без выхода.
 // Точка безубыточности прежняя по смыслу: три человека — рано, пять — пора.
 const LLC_COST = 300000, LLC_FIXED = 300000;
-const overhead = () => S.llc ? S.staff.length*OVERHEAD*S.ovhMul + LLC_FIXED : 0;
+const overhead = () => S.llc ? (S.staff.length*OVERHEAD*S.ovhMul*jobNum("ovh") + LLC_FIXED) : 0;
 // Прибыль, которая начнётся сразу после регистрации. Развилка про ООО
 // показывает это число прямым текстом — «сейчас это в минус» значит,
 // что юрлицо съест больше, чем принесёт, и надо подождать людей.
@@ -2903,7 +2953,7 @@ function hireCost(r, extra){
   // штат растёт медленно не потому, что игра запрещает, а потому что
   // так это и было. С регистрацией надбавка исчезает сама.
   const grey = S.llc ? 1 : 2;
-  return Math.round(r.pay*1.5*Math.pow(1.20,n)*grey*S.hireTax*(1-.2*(S.hired.recruit>0)));
+  return Math.round(r.pay*1.5*Math.pow(1.20,n)*grey*S.hireTax*jobNum("hire")*(1-.2*(S.hired.recruit>0)));
 }
 /* Повышение стоит денег сразу, а не только в ФОТ со следующего месяца.
    Так это и происходит: пересмотр вилки задним числом, доплата за
@@ -2921,7 +2971,7 @@ function addStaff(r){
 }
 // Ассистенты берут встречи на себя, ИИ-агенты требуют присмотра:
 // каждые двое отнимают у людей часть выработки на ревью за ними.
-const meetGapNow = () => S.meetGap * (1 + 0.55*S.hired.assist);
+const meetGapNow = () => S.meetGap * (1 + 0.55*S.hired.assist) * jobNum("meet");
 const meetLenNow = () => S.meetLen * Math.max(.45, 1 - .18*S.hired.assist);
 // Пол убран: раньше он приходился ровно на 13-го агента, и дальше их
 // присутствие не стоило людям вообще ничего. Теперь чем больше агентов,
@@ -2976,7 +3026,7 @@ function onBeat(){ const p = beatPhase(); return Math.abs(p - .52) < .19; }
 
 function burnMul(){
   // поток снижает прирост выгорания до 45%, ровный порядок задач — вдвое
-  return (1 - .45*S.flow) * comboMul();
+  return (1 - .45*S.flow) * comboMul() * jobNum("burn");
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -3034,7 +3084,7 @@ function pace(){
 }
 function clickVal(){
   const v = S.click * (S.legacy||1) * C.diffPay[task.diff] * (1 + .55*S.flow) * crewBoost()
-          * (1 - Math.min(.4, S.hired.intern*.08)) * callPenalty();
+          * (1 - Math.min(.4, S.hired.intern*.08)) * callPenalty() * jobNum("click");
   return year() < CAP_YEAR ? Math.min(v, EARLY_CAP) : v;
 }
 
@@ -3463,15 +3513,33 @@ const MG = {
       {q:"«Ну примерно, навскидку, ни к чему не обязывает»",
        a:["Назвать число вслух прямо на созвоне",
           "Дать вилку письмом: что входит, что нет, до какого числа держится",
-          "Написать «от 500 тысяч» и надеяться на лучшее"], right:1},
+          "Написать «от 500 тысяч» и надеяться на лучшее"], right:1,
+       trap:"Назвать вилку голосом, письмо прислать потом"},
       {q:"Разработчик оценил задачу в три дня",
        a:["Поставить три дня: он же профессионал",
           "Заложить его три дня плюс приёмку, правки и чужой отпуск",
-          "Умножить на три и никому не объяснять почему"], right:1},
+          "Умножить на три и никому не объяснять почему"], right:1,
+       trap:"Спросить второго разработчика и взять среднее"},
       {q:"Клиент просит минус тридцать процентов — объём большой",
        a:["Дать тридцать: объём и правда большой",
           "Убрать из сметы работ на тридцать и показать, что осталось",
-          "Отказать и не объяснять"], right:1}
+          "Отказать и не объяснять"], right:1,
+       trap:"Дать пятнадцать и надеяться, что хватит"},
+      {q:"В смету не заложили интеграцию с их 1Ы. Заметили на второй неделе",
+       a:["Доделать молча: сами виноваты",
+          "Сказать сразу, показать объём и предложить сдвиг сроков",
+          "Сказать в конце проекта, когда будет видно результат"], right:1,
+       trap:"Обменять интеграцию на снятие другой задачи"},
+      {q:"Заказчик хочет фикс-прайс на проект без техзадания",
+       a:["Согласиться: иначе уйдёт к другим",
+          "Фикс на первый этап — описание, дальше по нему",
+          "Назвать сумму с запасом в три раза"], right:1,
+       trap:"Фикс на всё, но с правом пересмотра раз в квартал"},
+      {q:"Правки идут четвёртую неделю и всё «мелкие»",
+       a:["Делать: правки же мелкие",
+          "Собрать их в список, показать часы и открыть новый этап",
+          "Перестать отвечать до конца месяца"], right:1,
+       trap:"Считать часы, но выставить в конце проекта"}
     ]
   },
   prompt: {
@@ -3487,24 +3555,78 @@ const MG = {
       {q:"Нужен разбор выгрузки из 1Ы",
        a:["«Напиши парсер»",
           "«Ты опытный инженер. Напиши парсер CSV, вот три строки примера, обработай пустые поля»",
-          "«Сделай красиво и быстро»"], right:1},
+          "«Сделай красиво и быстро»"], right:1,
+       trap:"«Напиши парсер CSV на питоне, вот пример файла»"},
       {q:"Ответ выглядит правильным, но метод не существует",
        a:["Попросить ещё раз, но вежливее",
           "Спросить, точно ли метод есть в этой версии, и приложить ссылку на документацию",
-          "Скопировать в прод — вдруг заработает"], right:1},
+          "Скопировать в прод — вдруг заработает"], right:1,
+       trap:"Попросить переписать без этого метода"},
       {q:"Нужен текст письма об отмене релиза",
        a:["«Напиши письмо про перенос релиза»",
           "«Напиши письмо на три абзаца: что переносим, почему, когда новая дата. Без слова «синергия»»",
-          "«Напиши что-нибудь официальное»"], right:1}
+          "«Напиши что-нибудь официальное»"], right:1,
+       trap:"«Напиши короткое письмо про перенос, тон нейтральный»"},
+      {q:"Модель уверенно называет несуществующую библиотеку",
+       a:["Поставить её и посмотреть, что будет",
+          "Попросить показать ссылку на пакет и проверить самому",
+          "Спросить, точно ли она существует"], right:1,
+       trap:"Попросить назвать три альтернативы и выбрать первую"},
+      {q:"Сгенерированный код работает, но никто не понимает как",
+       a:["Мержить: тесты зелёные",
+          "Попросить разобрать по частям и переписать понятнее",
+          "Оставить и написать в комментарии «не трогать»"], right:1,
+       trap:"Добавить тестов и мержить"},
+      {q:"Промпт на четыре экрана, а ответ хуже, чем неделю назад",
+       a:["Дописать ещё требований",
+          "Разрезать на два шага и проверить каждый отдельно",
+          "Сменить модель и надеяться"], right:1,
+       trap:"Убрать половину требований и сравнить"}
     ]
   }
 };
-let mgKey = null, mgRound = 0, mgHits = [], mgSelf = false;
+let mgKey = null, mgRound = 0, mgHits = [], mgSelf = false, mgQs = [];
 
-// Награда считается от текущей экономики, а не фиксированной суммой:
-// иначе к 2020-му мини-игра платит меньше одного тапа и становится
-// не событием, а помехой.
-function mgPrize(){ return Math.max(clickVal()*35, revenue()*0.8, 60000); }
+/* ── УРОВНИ ────────────────────────────────────────────────────────
+   Уровень растёт только за чистое прохождение: три из трёх, пять из
+   пяти. Ошибся — остался, где был. Так уровень означает «я это умею»,
+   а не «я сюда заходил».
+
+   Сложность собирается из двух ручек, и они независимы:
+   · ДЛИНА — сколько раундов подряд надо не ошибиться. Каждые два
+     уровня плюс раунд, потолок пять: дальше это уже не мини-игра,
+     а анкета.
+   · ТОЧНОСТЬ — насколько похожи неверные ответы на верный. С первого
+     уровня в выбор подмешивается «почти правильный» вариант, у бегунка
+     сужается зона и ускоряется сам бегунок.
+
+   Вместе они дают то, чего не даёт ни одна по отдельности: на пятом
+   уровне надо пять раз подряд отличить верное от почти верного.
+   ── */
+const mgLvl   = k => (S.mgLvl || {})[k] || 0;
+const mgRounds= k => Math.min(5, 3 + Math.floor(mgLvl(k)/2));
+// Награда растёт с уровнем: иначе качать его незачем.
+const mgLvlMul= k => 1 + mgLvl(k)*0.25;
+// Бегунок: зона уже, ход быстрее. Оба числа упираются в пол — иначе
+// к десятому уровню игра превращается в лотерею, а она не про реакцию.
+const mgZone  = k => Math.max(9, 24 * Math.pow(0.86, mgLvl(k)));
+const mgSpeed = k => Math.max(.45, 1.15 / Math.pow(1.12, mgLvl(k)));
+
+/* Награда считается от текущей экономики, а не фиксированной суммой:
+   иначе к 2020-му мини-игра платит меньше одного тапа и становится
+   не событием, а помехой.
+
+   Пола в 60 тысяч больше нет, и это правка по следам ботов. Пока
+   варианты стояли в неизменном порядке, выиграть было легко тому, кто
+   заметил закономерность, и тяжело всем остальным — цена победы просто
+   не была видна. Тасовка её вскрыла: в 2008-м идеальное прохождение
+   платило 132 тысячи при пике кассы за весь год в 340 — то есть два
+   найма даром и снежный ком дальше. Бот, который начал угадывать,
+   разогнал оборот 2015-го в тридцать раз против нормы.
+
+   Теперь награда всегда пропорциональна эпохе: в 2008-м это несколько
+   задач, в 2024-м — заметная сумма. Приятно, но не бесплатный найм. */
+function mgPrize(){ return Math.max(clickVal()*20, revenue()*0.5, 4000); }
 
 // Заход по своей воле платит вдвое меньше, чем то же самое случившееся
 // само: иначе «потренироваться» станет основным способом зарабатывать,
@@ -3518,6 +3640,14 @@ const mgNow   = k => S.era >= MG[k].era[0] && S.era <= MG[k].era[1];
 function mgOpen(key, self){
   mgKey = key; mgRound = 0; mgHits = []; mgSelf = !!self;
   const g = MG[key];
+  // Вопросы тасуются и режутся под длину уровня: на третьем заходе
+  // подряд одни и те же три вопроса — это уже не игра, а тест на память.
+  mgQs = g.qs ? shuffle(g.qs.slice()).slice(0, mgRounds(key)) : [];
+  const dial = document.querySelector(".dial");
+  if(dial){
+    dial.style.setProperty("--zone", mgZone(key).toFixed(1)+"%");
+    dial.style.setProperty("--sweep", mgSpeed(key).toFixed(2)+"s");
+  }
   $("mgT").textContent = g.title;
   $("mgOk").hidden = true;
   $("mgDial").hidden = key !== "dial";
@@ -3532,24 +3662,32 @@ function mgOpen(key, self){
 function mgDots(){
   const g = MG[mgKey];
   let h = '<div class="mgs">';
-  for(let i=0;i<g.rounds;i++)
+  for(let i=0;i<mgRounds(mgKey);i++)
     h += '<i class="'+(mgHits[i]===undefined?"":mgHits[i]?"win":"lose")+'"></i>';
   return h + '</div>';
 }
 function mgDraw(){
   const g = MG[mgKey];
-  $("mgStep").textContent = "ПОПЫТКА " + (mgRound+1) + " ИЗ " + g.rounds;
+  $("mgStep").textContent = "УРОВЕНЬ " + (mgLvl(mgKey)+1) +
+    " · " + (mgRound+1) + " ИЗ " + mgRounds(mgKey);
   if(mgKey === "dial"){
     $("mgD").innerHTML = g.desc + mgDots();
     document.querySelector(".dial").classList.remove("stop");
     $("mgHit").disabled = false;
   } else {
-    const it = g.qs[mgRound];
+    const it = mgQs[mgRound] || g.qs[mgRound % g.qs.length];
     $("mgD").innerHTML = it.q + mgDots();
-    $("mgPick").innerHTML = it.a.map((t,i)=>
-      '<button class="mgo" data-i="'+i+'">'+t+'</button>').join("");
+    // Со второго уровня в список падает ловушка — вариант, который
+    // звучит разумно и почти работает. Отличить его от верного и есть
+    // вся сложность: неверные ответы первого уровня отличались слишком
+    // громко, их выбирали не думая.
+    let opts = it.a.map((t,i) => ({t, ok:i === it.right}));
+    if(mgLvl(mgKey) >= 1 && it.trap) opts.push({t:it.trap, ok:false});
+    opts = shuffle(opts);
+    $("mgPick").innerHTML = opts.map((o,i)=>
+      '<button class="mgo" data-i="'+i+'">'+o.t+'</button>').join("");
     $("mgPick").querySelectorAll(".mgo").forEach(b => {
-      b.onclick = () => mgStep(+b.dataset.i === it.right);
+      b.onclick = () => mgStep(!!opts[+b.dataset.i].ok);
     });
   }
 }
@@ -3558,16 +3696,21 @@ function mgStep(hit){
   sfx(hit ? "hit" : "miss");
   if(hit) buzz(10);
   mgRound++;
-  if(mgRound < MG[mgKey].rounds){ mgDraw(); return; }
+  if(mgRound < mgRounds(mgKey)){ mgDraw(); return; }
   mgFinish();
 }
 function mgFinish(){
-  const g = MG[mgKey], n = mgHits.filter(Boolean).length, k = mgSelf ? MG_SELF : 1;
+  const g = MG[mgKey], n = mgHits.filter(Boolean).length;
+  const need = mgRounds(mgKey);
+  const k = (mgSelf ? MG_SELF : 1) * mgLvlMul(mgKey);
   S.mgAt = {...(S.mgAt||{}), [mgKey]: S.month};
   $("mgDial").hidden = true; $("mgPick").hidden = true;
   $("mgStep").textContent = "ИТОГ";
   $("mgOk").hidden = false;
-  if(n === g.rounds){
+  if(n === need){
+    // Чисто пройдено — уровень вверх. Он и есть вся прогрессия
+    // тренажёра: денег он приносит мало и приносить много не должен.
+    S.mgLvl = {...(S.mgLvl||{}), [mgKey]: mgLvl(mgKey) + 1};
     const v = mgPrize()*2.2*k;
     S.cash += v; S.earned += v; S.burn = Math.max(0, S.burn-8);
     $("mgD").innerHTML = g.ok + mgDots();
@@ -3628,7 +3771,7 @@ function paintTrain(){
   // Созвон, блокер и больничный уже занимают экран и время. Затевать
   // поверх них ещё одну игру — складывать окна друг на друга.
   const busy = onCall() || !!activeBlocker() || S.sick > 0;
-  const sig = (busy?"b|":"") + keys.map(k => k + (mgNow(k) ? mgWait(k) : "x")).join("|");
+  const sig = (busy?"b|":"") + keys.map(k => k + mgLvl(k) + (mgNow(k) ? mgWait(k) : "x")).join("|");
   if(sig === mgSig) return;
   mgSig = sig;
   $("mgGrid").innerHTML = keys.map(k => {
@@ -3638,7 +3781,8 @@ function paintTrain(){
       '<span class="mgobj" style="--tint:'+g.tint+';--tink:'+g.tink+'">'+
       '<svg viewBox="0 0 24 24">'+MG_ART[k]+'</svg></span>'+
       '<b>'+g.short+'</b>'+
-      '<em>'+(gone ? "было" : wait ? wait+" мес" : busy ? "не сейчас" : "готово")+'</em></button>';
+      '<em>'+(gone ? "было" : wait ? wait+" мес" : busy ? "не сейчас" :
+              "ур. "+(mgLvl(k)+1))+'</em></button>';
   }).join("");
   $("mgGrid").querySelectorAll(".mgtile").forEach(b => {
     b.onclick = () => { sfx("tap"); mgOpen(b.dataset.mg, true); };
@@ -3675,7 +3819,8 @@ function resetProgress(){
   // состояние, которого больше нет, и без явного закрытия провисят
   // поверх нового старта. Закрываем всё, что умеет открываться само.
   ["setSheet","setScrim","sheet","scrim","bSheet","bScrim",
-   "eraSheet","eraScrim","llcSheet","llcScrim","mgSheet","mgScrim"]
+   "eraSheet","eraScrim","llcSheet","llcScrim","mgSheet","mgScrim",
+   "jobSheet","jobScrim"]
     .forEach(id => $(id) && $(id).classList.remove("on"));
   $("blockbar").hidden = true; $("callbar").hidden = true;
   document.querySelector('nav button[data-tab=work]').click();
@@ -3722,6 +3867,21 @@ function doQuit(){
    инерция. К поздней игре механика гаснет сама: клики перестают быть
    заметной долей дохода.
    ══════════════════════════════════════════════════════════════ */
+/* ── ОФФЕРЫ ────────────────────────────────────────────────────────
+   Раньше «Сменить работу» была кнопкой с одним числом: жмёшь — ставка
+   выросла. Выбора не было, а вся индустрия держится ровно на нём.
+
+   Теперь на столе три оффера, и у каждого своя цена. Множитель больше —
+   минусов больше: так работает и в жизни, где +80% к ставке обычно
+   означает, что там горит. Один эффект в каждом оффере — про то, кто
+   в этой компании приносит деньги: у продуктовых тянут разработчики,
+   у аутсорса — продажники. Он не хороший и не плохой, он про то, кого
+   вам выгодно нанимать дальше.
+
+   Наборы собираются случайно из общего списка, поэтому два прохождения
+   не совпадают. Реролл бесплатный, но их три: если можно жать до
+   идеального оффера, выбора снова нет.
+   ── */
 const JOB_GAP = 6;                       // месяцев между переходами
 // Второй переход самый выгодный: на первом вас берут с улицы, на втором
 // уже есть чем торговаться. Дальше рынок остывает.
@@ -3736,19 +3896,149 @@ const JOB_SAY = [
   "Сменили работу. Бывший руководитель написал «всегда рады видеть». Вы не ответили.",
   "Ещё один переход. Коллеги в чате поздравили, половина из них — тоже бывшие коллеги."
 ];
-function changeJob(){
-  if(!jobReady()) return;
-  const m = jobMul();
-  S.click *= m;
+// Названия. Половина шутки в том, что они неразличимы.
+const CO_A = ["Ай","Диджитал","Гипер","Смарт","Нео","Тех","Про","Ред","Кибер","Мега"];
+const CO_B = ["софт","лаб","групп","систем","дата","линк","ворк","некст","хаб","бридж"];
+const coName = () => pick(CO_A) + pick(CO_B).toLowerCase();
+
+/* Эффекты места работы. Не мутируют состояние: они лежат в S.jobPerks
+   и читаются на лету, поэтому следующая смена работы отменяет прошлую
+   сама, без отката. Три вида: плюс, минус и «относительный» — тот,
+   что меняет расклад между отделами. */
+const PERKS = [
+  // ── плюсы
+  {id:"tools", t:"Инструменты покупают без вопросов", k:"good", click:1.25},
+  {id:"quiet", t:"Никто не пишет вечером",            k:"good", burn:.8},
+  {id:"hr",    t:"Сильный HR: люди держатся",         k:"good", retain:1.35},
+  {id:"budget",t:"Бюджет на найм есть",               k:"good", hire:.8},
+  {id:"async", t:"Всё письмом, созвонов мало",        k:"good", meet:1.5},
+  {id:"remote",t:"Удалёнка без вопросов",             k:"good", burn:.85, retain:1.15},
+  // ── минусы
+  {id:"fire",  t:"Вечный аврал",                      k:"bad",  burn:1.4},
+  {id:"meets", t:"Совещание по любому поводу",        k:"bad",  meet:.6},
+  {id:"churn", t:"Люди уходят каждый квартал",        k:"bad",  retain:.7},
+  {id:"cheap", t:"Экономят на всём",                  k:"bad",  ovh:1.25},
+  {id:"legacy",t:"Легаси, которое никто не помнит",   k:"bad",  click:.85},
+  {id:"micro", t:"Микроменеджмент",                   k:"bad",  burn:1.2, click:.92},
+  // ── относительные: кто здесь приносит деньги
+  {id:"prod",  t:"Продуктовая: тянут разработчики",   k:"rel",  dept:{eng:1.3, ops:.85}},
+  {id:"agency",t:"Агентство: тянут продажники",       k:"rel",  dept:{ops:1.35, eng:.88}},
+  {id:"design",t:"Дизайн решает всё",                 k:"rel",  dept:{eng:1.15}, role:{design:1.6}},
+  {id:"content",t:"Живут на контенте",                k:"rel",  dept:{ops:1.2}, role:{content:1.8}},
+  {id:"mgmt",  t:"Всё держится на управленцах",       k:"rel",  span:1.4, dept:{eng:.9, ops:.9}}
+];
+const perkOf = id => PERKS.find(p => p.id === id);
+const jobPerks = () => (S.jobPerks || []).map(perkOf).filter(Boolean);
+/* Эффекты разбираются один раз на смену работы, а не на каждого
+   сотрудника в каждом тике. Выручка обходит штат целиком — с тремя
+   сотнями людей поиск по списку эффектов на каждого стоил дороже
+   самой выручки. Ключ кэша — сам набор: сменилась работа, сменился
+   ключ, таблицы пересобрались. */
+let perkCache = { key: null, num: {}, dept: {}, role: {} };
+function perkTable(){
+  const key = (S.jobPerks || []).join("|");
+  if(perkCache.key === key) return perkCache;
+  const t = { key, num: {}, dept: {}, role: {} };
+  jobPerks().forEach(p => {
+    Object.keys(p).forEach(f => {
+      if(typeof p[f] === "number") t.num[f] = (t.num[f] ?? 1) * p[f];
+    });
+    Object.entries(p.dept || {}).forEach(([d,v]) => t.dept[d] = (t.dept[d] ?? 1) * v);
+    Object.entries(p.role || {}).forEach(([r,v]) => t.role[r] = (t.role[r] ?? 1) * v);
+  });
+  return (perkCache = t);
+}
+const jobNum  = (field, dflt) => perkTable().num[field] ?? (dflt ?? 1);
+const jobDept = d => perkTable().dept[d] ?? 1;
+const jobRole = r => perkTable().role[r] ?? 1;
+
+/* Три оффера на столе. Первый — спокойный и дешёвый, третий — дорогой
+   и злой; средний между ними. Разброс внутри ступени случайный, поэтому
+   «плохой» третий оффер иногда всё равно лучший на столе. */
+function makeOffer(i, rel){
+  const base = jobMul();
+  const mul = +(base * (0.7 + i*0.28 + Math.random()*0.22)).toFixed(2);
+  const heat = mul / base;                       // насколько оффер жадный
+  const bad  = heat > 1.15 ? 2 : heat > 0.95 ? 1 : 0;
+  const good = 2 - bad;
+  const take = (k,n) => shuffle(PERKS.filter(p => p.k===k)).slice(0,n).map(p=>p.id);
+  return { co: coName(), mul,
+           perks: [rel || take("rel",1)[0], ...take("good",good), ...take("bad",bad)] };
+}
+/* Раскладом между отделами офферы обязаны отличаться: три одинаковых
+   «всё держится на управленцах» — это не выбор, а один и тот же оффер
+   с разной ценой. Остальные эффекты пусть иногда совпадают: рынок
+   маленький, и «легаси» встречается везде. */
+function rollOffers(){
+  const rels = shuffle(PERKS.filter(p => p.k==="rel")).map(p=>p.id);
+  S.offers = [0,1,2].map(i => makeOffer(i, rels[i]));
+  S.rerolls = (S.rerolls ?? 3);
+}
+function takeOffer(i){
+  const o = (S.offers||[])[i];
+  if(!o || !jobReady()) return;
+  S.click *= o.mul;
+  S.jobPerks = o.perks;
+  S.jobCo = o.co;
   S.jobs = (S.jobs||0) + 1;
   S.jobAt = S.month;
-  S.burn = 0;                            // на новом месте первые недели не трогают
-  sfx("promote"); buzz([20,60,20]);
-  log(JOB_SAY[Math.min(S.jobs-1, JOB_SAY.length-1)] +
-      " Ставка выросла в "+m.toFixed(1)+" раза.", "lore");
-  paint();
+  S.burn = 0;
+  S.offers = null; S.rerolls = 3;
+  sfx("promote"); buzz([20,50,20]);
+  log("Перешли в <b>"+o.co+"</b>. Ставка ×"+o.mul.toFixed(2)+". " +
+      jobPerks().map(p=>p.t).join(" · ") + ".", "good");
+  closeJob(); bumpEcon(); paint();
 }
-$("jobRow").onclick = () => jobReady() ? changeJob() : snack("не чаще двух раз в год");
+/* Переход без выбора. Живёт ради ботов и тех, кто жмёт вслепую: берёт
+   средний оффер со стола. Отдельной экономики у него нет — это тот же
+   takeOffer, просто выбор сделали за вас. */
+function changeJob(){
+  if(!jobReady()) return;
+  if(!S.offers) rollOffers();
+  takeOffer(1);
+  log(JOB_SAY[Math.min(S.jobs-1, JOB_SAY.length-1)], "lore");
+}
+/* Экран офферов. Открывается по той же строке, что раньше меняла работу
+   одним тапом: теперь тап показывает, из чего выбирать. */
+function openJob(){
+  if(!jobReady()){ snack("Не чаще двух раз в игровой год"); return; }
+  if(!S.offers) rollOffers();
+  paintJob();
+  sfx("tap");
+  $("jobSheet").classList.add("on"); $("jobScrim").classList.add("on");
+}
+function closeJob(){
+  $("jobSheet").classList.remove("on"); $("jobScrim").classList.remove("on");
+}
+function paintJob(){
+  $("jobLeft").textContent = S.rerolls > 0
+    ? "Ещё " + S.rerolls : "Больше нет";
+  $("jobReroll").disabled = !(S.rerolls > 0);
+  const box = $("jobList"); box.innerHTML = "";
+  (S.offers||[]).forEach((o,i) => {
+    const d = document.createElement("button");
+    d.className = "offer";
+    d.innerHTML =
+      '<span class="ohead"><b>'+o.co+'</b><em>×'+o.mul.toFixed(2)+'</em></span>'+
+      '<span class="operks">'+ o.perks.map(id => {
+        const p = perkOf(id); if(!p) return "";
+        return '<span class="perk '+p.k+'">'+p.t+'</span>';
+      }).join("") +'</span>';
+    d.onclick = () => takeOffer(i);
+    box.appendChild(d);
+  });
+}
+$("jobRow").onclick = openJob;
+$("jobReroll").onclick = () => {
+  if(!(S.rerolls > 0)) return;
+  // Реролл бесплатный, но их три. Иначе выбор превращается в кнопку
+  // «дай мне идеальный оффер», а это уже не выбор.
+  const left = S.rerolls - 1;
+  rollOffers(); S.rerolls = left;
+  sfx("tap"); paintJob();
+};
+$("jobClose").onclick = () => { sfx("tap"); closeJob(); };
+$("jobScrim").onclick = closeJob;
 
 /* ══════════════════════════════════════════════════════════════
    НАСТРОЙКИ
@@ -4995,15 +5285,14 @@ function paint(){
     const ready = jobReady(), wait = jobWait();
     $("jobCard").className = "card" + (ready ? " ready" : "");
     $("jobMul").textContent = "×" + jobMul().toFixed(1);
-    $("jobState").textContent = ready ? "Можно" : "через " + wait + " мес";
+    $("jobState").textContent = ready ? "Выбрать" : "через " + wait + " мес";
     $("jobState").style.color = ready ? "var(--acc-ink)" : "var(--mut)";
     // Подпись отвечает на «что будет, если нажму», а не рассказывает
     // шутку повторно: шутка живёт в хронике, и там она свежая.
     $("jobHint").textContent =
-      !ready    ? "Ставка вырастет ×" + jobMul().toFixed(1) :
-      !S.jobs   ? "Единственный способ поднять свою ставку" :
-      S.jobs===1? "Второй переход дороже первого" :
-                  "Переходов: " + S.jobs + ". Рынок остывает";
+      !ready    ? "Ждать " + wait + " мес" :
+      S.jobCo   ? "Сейчас: " + S.jobCo + ". Три оффера на столе" :
+                  "Три оффера. Ставка растёт только так";
   }
   if(S.tab==="co") paintCo();
   paintLocks();
@@ -5513,11 +5802,11 @@ setInterval(() => {
     }
   }
 
-  if(S.opt){ S.optIn-=dtE; if(S.optIn<=0){ S.optIn=70*S.retain; loseStaff("Оптимизация штата"); } }
+  if(S.opt){ S.optIn-=dtE; if(S.optIn<=0){ S.optIn=70*S.retain*jobNum("retain"); loseStaff("Оптимизация штата"); } }
   // Возврат в офис оплачивается людьми, а не деньгами. Гибрид останавливает.
   if(S.rto && !S.rtoSoft){
     S.rtoIn -= dtE;
-    if(S.rtoIn<=0){ S.rtoIn = 60*S.retain; loseStaff("Не поехал в офис"); }
+    if(S.rtoIn<=0){ S.rtoIn = 60*S.retain*jobNum("retain"); loseStaff("Не поехал в офис"); }
   }
   // Стажёр — единственный, кто со временем дорожает сам. Ради этого его
   // и держат, хотя каждый месяц он приносит меньше, чем стоит.
@@ -5783,7 +6072,8 @@ window.GAME = {VERSION,S,C,revenue,payroll,overhead,profit,clickVal,hireCost,add
                bumpEcon,upLocked,
                changeJob,jobReady,jobMul,jobWait,upsReady,paintUpsTree,
                startQuit,doQuit,canQuit,legacyOf,migrate,countHired,resetProgress,SAVE_V,
-               MG,mgOpen,mgDue,mgPrize,mgWait,paintTrain,
+               MG,mgOpen,mgDue,mgPrize,mgWait,paintTrain,mgLvl,mgRounds,
+               PERKS,rollOffers,makeOffer,takeOffer,jobNum,jobDept,
                audioState:()=>({ac:!!AC, state:AC&&AC.state, music:musicOn}),
                ending,finish,godMode,
                saveGame,loadGame:restore,clearSave,serialize,readSave};

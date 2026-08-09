@@ -214,16 +214,35 @@ ok("время внутри мини-игры стоит", await page.evaluate(a
   document.getElementById("mgSheet").classList.remove("on");
   return stopped;
 }));
-ok("верные ответы платят", await page.evaluate(() => {
+// Вопросы и варианты тасуются каждый заход, поэтому кнопку ищем так же,
+// как её ищет игрок: по тексту вопроса на экране и тексту верного ответа.
+ok("верные ответы платят и поднимают уровень", await page.evaluate(() => {
   const G = window.GAME, S = G.S;
-  S.era = 5; S.mgDone = []; G.mgOpen("prompt");
+  S.era = 5; S.mgDone = []; S.mgLvl = {}; G.mgOpen("prompt");
   const before = S.cash;
-  for (let i = 0; i < 3; i++) {
-    const right = G.MG.prompt.qs[i].right;
-    document.querySelector('#mgPick .mgo[data-i="' + right + '"]').click();
+  for (let n = 0; n < 5; n++) {
+    const shown = document.getElementById("mgD").textContent;
+    const q = G.MG.prompt.qs.find(x => shown.startsWith(x.q));
+    if (!q) break;
+    const want = q.a[q.right];
+    const btn = [...document.querySelectorAll("#mgPick .mgo")].find(b => b.textContent === want);
+    if (!btn) return "не найден верный вариант";
+    btn.click();
+    if (document.getElementById("mgPick").hidden) break;
   }
+  const lvl = (S.mgLvl || {}).prompt || 0;
   document.getElementById("mgSheet").classList.remove("on");
-  return S.cash > before;
+  return S.cash > before && lvl === 1;
+}));
+ok("сложность растёт с уровнем", await page.evaluate(() => {
+  const G = window.GAME, S = G.S;
+  S.mgLvl = { prompt: 0 }; G.mgOpen("prompt");
+  const easy = document.querySelectorAll("#mgPick .mgo").length;
+  S.mgLvl = { prompt: 4 }; G.mgOpen("prompt");
+  const hard = document.querySelectorAll("#mgPick .mgo").length;
+  const rounds = document.getElementById("mgStep").textContent;
+  document.getElementById("mgSheet").classList.remove("on");
+  return hard > easy && /ИЗ 5/.test(rounds);
 }));
 
 console.log("\nЧёлка");
